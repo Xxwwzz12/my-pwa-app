@@ -1,47 +1,74 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
-  <title>Мое PWA</title>
-  <link rel="manifest" href="/manifest.json">
+<body>
+  <div id="chat-container">
+    <h1>Мой AI-помощник</h1>
+    <div id="chat-history"></div>
+    <div class="input-area">
+      <input type="text" id="user-input" placeholder="Задайте вопрос..." />
+      <button id="send-btn">Отправить</button>
+    </div>
+  </div>
+
   <style>
-    body {
-      font-family: -apple-system, sans-serif;
-      text-align: center;
-      padding: 40px;
-    }
-    button {
+    /* Стили для чата */
+    #chat-container {
+      max-width: 600px;
+      margin: 0 auto;
       padding: 20px;
-      background: #007AFF;
+      font-family: -apple-system, sans-serif;
+    }
+
+    #chat-history {
+      height: 60vh;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+      background: #f9f9f9;
+    }
+
+    .message {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 10px;
+      max-width: 80%;
+    }
+
+    .user-message {
+      background: #007aff;
+      color: white;
+      margin-left: auto;
+    }
+
+    .bot-message {
+      background: #e5e5ea;
+      margin-right: auto;
+    }
+
+    .input-area {
+      display: flex;
+      gap: 10px;
+    }
+
+    #user-input {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      font-size: 16px;
+    }
+
+    #send-btn {
+      padding: 0 25px;
+      background: #007aff;
       color: white;
       border: none;
-      border-radius: 12px;
-      font-size: 20px;
-      margin-top: 20px;
+      border-radius: 20px;
+      font-size: 16px;
     }
   </style>
-</head>
-<body>
-  <h1>Мое первое PWA!</h1>
-  <p>Создано в Glitch на iPhone</p>
-  <button id="myBtn">Проверить работу</button>
 
   <script>
-    document.getElementById("myBtn").addEventListener("click", () => {
-      alert("✅ Всё отлично работает!");
-    });
-
-    // Регистрируем Service Worker для PWA
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then(registration => {
-          console.log('Service Worker зарегистрирован:', registration);
-        })
-        .catch(error => {
-          console.log('Ошибка регистрации Service Worker:', error);
-        });
-    }
+    // Код для работы с API добавим на следующем шаге
   </script>
 </body>
-</html>
