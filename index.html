@@ -6,6 +6,7 @@
   <title>AI Помощник</title>
   <link rel="manifest" href="/manifest.json">
   <style>
+    /* Минимальные стили с иконками */
     * {
       margin: 0;
       padding: 0;
@@ -26,16 +27,6 @@
       position: relative;
     }
     
-    .container {
-      background: white;
-      border-radius: 14px;
-      padding: 30px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      z-index: 10;
-    }
-    
     .app-icons {
       display: flex;
       justify-content: center;
@@ -53,13 +44,12 @@
       align-items: center;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: transform 0.2s;
       border: 1px solid #e9ecef;
     }
     
     .app-icon:active {
       transform: scale(0.96);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     
     .app-icon i {
@@ -72,6 +62,15 @@
     
     #calendar-icon i {
       color: #f76707;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 14px;
+      padding: 30px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     
     h1 {
@@ -101,11 +100,6 @@
       transition: all 0.2s;
     }
     
-    .button:active {
-      background: #3a5ad9;
-      transform: translateY(1px);
-    }
-    
     .version {
       margin-top: 20px;
       font-size: 14px;
@@ -128,7 +122,6 @@
       z-index: 1000;
       display: none;
       font-family: monospace;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
     
     .log-toggle {
@@ -147,68 +140,6 @@
       z-index: 1001;
       cursor: pointer;
       font-weight: bold;
-    }
-    
-    .update-banner {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      right: 20px;
-      background: #fff;
-      color: #212529;
-      padding: 16px;
-      border-radius: 12px;
-      text-align: center;
-      z-index: 100;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-      display: none;
-      border: 1px solid #e9ecef;
-    }
-    
-    .update-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 15px;
-    }
-    
-    .update-button {
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    #update-button {
-      background: #4263eb;
-      color: white;
-      border: none;
-    }
-    
-    #later-button {
-      background: transparent;
-      color: #495057;
-      border: 1px solid #e9ecef;
-    }
-    
-    #force-update {
-      background: #f76707;
-      color: white;
-      border: none;
-      margin-top: 12px;
-      width: 100%;
-    }
-    
-    .update-title {
-      font-weight: 600;
-      font-size: 17px;
-      margin-bottom: 5px;
-    }
-    
-    .update-description {
-      color: #868e96;
-      font-size: 14px;
     }
   </style>
 </head>
@@ -230,17 +161,6 @@
     <button class="button" id="share-button" style="background: #f0f0f0; color: #333;">Поделиться</button>
     
     <div class="version" id="version-info">v2.3</div>
-  </div>
-  
-  <div class="update-banner" id="update-banner">
-    <div class="update-title">Доступно обновление!</div>
-    <div class="update-description">Установите последнюю версию для улучшения работы</div>
-    
-    <div class="update-buttons">
-      <button class="update-button" id="update-button">Обновить</button>
-      <button class="update-button" id="later-button">Позже</button>
-    </div>
-    <button class="update-button" id="force-update">Принудительное обновление</button>
   </div>
   
   <!-- Панель логов -->
@@ -279,15 +199,28 @@
       }
     }
     
-    // Инициализация логов
-    function initLogs() {
+    // Глобальный обработчик ошибок
+    window.addEventListener('error', (event) => {
+      const errorMsg = `ОШИБКА: ${event.message} в ${event.filename}:${event.lineno}`;
+      log(errorMsg);
+    });
+    
+    window.addEventListener('unhandledrejection', (event) => {
+      const reason = event.reason instanceof Error ? event.reason.message : event.reason;
+      log(`НЕОБРАБОТАННЫЙ PROMISE: ${reason}`);
+    });
+    
+    // Основная инициализация
+    function initApp() {
+      log('Запуск инициализации приложения');
+      
       try {
+        // Восстановление логов
         const savedLogs = localStorage.getItem('app_logs');
         if (savedLogs) {
           const parsedLogs = JSON.parse(savedLogs);
           logs.push(...parsedLogs.slice(-MAX_LOG_ENTRIES));
         }
-        log(`Инициализация системы логов. Версия приложения: ${APP_VERSION}`);
         
         // Переключение видимости логов
         const logToggle = document.getElementById('log-toggle');
@@ -299,212 +232,84 @@
         // Инициализация панели
         logPanel.textContent = logs.join('\n');
         logPanel.scrollTop = logPanel.scrollHeight;
-      } catch (e) {
-        console.error('Ошибка инициализации логов:', e);
-      }
-    }
-    
-    // Глобальный обработчик ошибок
-    window.addEventListener('error', (event) => {
-      const errorMsg = `ОШИБКА: ${event.message} в ${event.filename}:${event.lineno}`;
-      log(errorMsg);
-      console.error('Global error:', event.message, event.filename, event.lineno);
-    });
-    
-    window.addEventListener('unhandledrejection', (event) => {
-      const reason = event.reason instanceof Error ? event.reason.message : event.reason;
-      log(`НЕОБРАБОТАННЫЙ PROMISE: ${reason}`);
-      console.error('Unhandled promise rejection:', event.reason);
-    });
-    
-    // Основная инициализация
-    function initApp() {
-      log('Запуск инициализации приложения');
-      
-      // Элементы интерфейса
-      const chatIcon = document.getElementById('chat-icon');
-      const calendarIcon = document.getElementById('calendar-icon');
-      const startButton = document.getElementById('start-button');
-      const shareButton = document.getElementById('share-button');
-      const versionInfo = document.getElementById('version-info');
-      const updateBanner = document.getElementById('update-banner');
-      const updateButton = document.getElementById('update-button');
-      const laterButton = document.getElementById('later-button');
-      const forceUpdateButton = document.getElementById('force-update');
-      
-      // Отображение версии
-      function displayVersion() {
-        try {
-          const savedVersion = localStorage.getItem('app_version') || '1.0';
-          versionInfo.textContent = `v${savedVersion}`;
-          log(`Отображена версия: v${savedVersion}`);
-        } catch (e) {
-          log(`Ошибка отображения версии: ${e.message}`);
-          versionInfo.textContent = 'v1.0';
+        
+        // Элементы интерфейса
+        const chatIcon = document.getElementById('chat-icon');
+        const calendarIcon = document.getElementById('calendar-icon');
+        const startButton = document.getElementById('start-button');
+        const shareButton = document.getElementById('share-button');
+        const versionInfo = document.getElementById('version-info');
+        
+        // Отображение версии
+        const savedVersion = localStorage.getItem('app_version') || '1.0';
+        versionInfo.textContent = `v${savedVersion}`;
+        log(`Отображена версия: v${savedVersion}`);
+        
+        // Функция для открытия чата
+        function openChat() {
+          log('Открытие чата');
+          window.location.href = 'chat.html';
         }
-      }
-      
-      // Проверка новой версии
-      function checkForUpdates() {
-        try {
-          log('Проверка обновлений');
-          const savedVersion = localStorage.getItem('app_version');
+        
+        // Обработчики для запуска чата
+        chatIcon.addEventListener('click', openChat);
+        startButton.addEventListener('click', openChat);
+        
+        // Обработчик иконки календаря
+        calendarIcon.addEventListener('click', () => {
+          log('Нажата иконка календаря');
+          alert('Функция календаря в разработке. Следите за обновлениями!');
+        });
+        
+        // Функция "Поделиться"
+        shareButton.addEventListener('click', () => {
+          log('Нажата кнопка "Поделиться"');
+          const shareUrl = window.location.href;
           
-          if (savedVersion !== APP_VERSION) {
-            log(`Найдена новая версия: ${APP_VERSION} (текущая: ${savedVersion})`);
-            updateBanner.style.display = 'block';
-          } else {
-            log('Версия актуальна');
-          }
-        } catch (e) {
-          log(`Ошибка проверки обновлений: ${e.message}`);
-        }
-      }
-      
-      // Функция для открытия чата
-      function openChat() {
-        log('Открытие чата');
-        window.location.href = 'chat.html';
-      }
-      
-      // Обработчики для запуска чата
-      chatIcon.addEventListener('click', openChat);
-      startButton.addEventListener('click', openChat);
-      
-      // Обработчик иконки календаря
-      calendarIcon.addEventListener('click', () => {
-        log('Нажата иконка календаря');
-        alert('Функция календаря в разработке. Следите за обновлениями!');
-      });
-      
-      // Функция "Поделиться"
-      shareButton.addEventListener('click', () => {
-        log('Нажата кнопка "Поделиться"');
-        const shareUrl = window.location.href;
-        
-        if (navigator.share) {
-          navigator.share({
-            title: 'AI Помощник',
-            text: 'Попробуйте это приложение с ИИ!',
-            url: shareUrl
-          }).catch(error => {
-            log(`Ошибка Share API: ${error}`);
-            copyToClipboard(shareUrl);
-          });
-        } else {
-          copyToClipboard(shareUrl);
-        }
-      });
-      
-      // Функция копирования в буфер обмена
-      function copyToClipboard(text) {
-        navigator.clipboard.writeText(text).then(() => {
-          log('Ссылка скопирована в буфер обмена');
-          alert('Ссылка скопирована в буфер обмена!');
-        }).catch(err => {
-          log(`Ошибка копирования: ${err}`);
-          prompt('Скопируйте ссылку:', text);
-        });
-      }
-      
-      // Обработчики обновления
-      updateButton.addEventListener('click', () => {
-        log('Нажата кнопка Обновить');
-        try {
-          localStorage.setItem('app_version', APP_VERSION);
-          window.location.reload();
-        } catch (e) {
-          log(`Ошибка обновления: ${e.message}`);
-          window.location.reload();
-        }
-      });
-      
-      laterButton.addEventListener('click', () => {
-        log('Нажата кнопка Позже');
-        updateBanner.style.display = 'none';
-      });
-      
-      // Обработчик принудительного обновления
-      forceUpdateButton.addEventListener('click', () => {
-        log('Начато принудительное обновление');
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.getRegistration().then(reg => {
-            if (reg) {
-              reg.unregister().then(() => {
-                log('ServiceWorker удален');
-                // Очищаем кэш
-                caches.keys().then(cacheNames => {
-                  log(`Удаление ${cacheNames.length} кэшей`);
-                  Promise.all(
-                    cacheNames.map(cacheName => caches.delete(cacheName))
-                  .then(() => {
-                    log('Кэш очищен');
-                    localStorage.setItem('app_version', APP_VERSION);
-                    window.location.reload(true);
-                  });
-                });
-              }).catch(e => log(`Ошибка удаления SW: ${e}`));
-            }
-          });
-        }
-      });
-      
-      // Инициализация
-      displayVersion();
-      
-      // Регистрация Service Worker для PWA
-      if ('serviceWorker' in navigator) {
-        log('Поддержка ServiceWorker доступна');
-        window.addEventListener('load', () => {
-          log('Регистрация ServiceWorker');
-          navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-              log('ServiceWorker зарегистрирован');
-              
-              // Проверка обновлений Service Worker
-              registration.addEventListener('updatefound', () => {
-                log('Обнаружено обновление ServiceWorker');
-                const newWorker = registration.installing;
-                newWorker.addEventListener('statechange', () => {
-                  log(`Состояние SW: ${newWorker.state}`);
-                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    log('Доступно обновление приложения');
-                    checkForUpdates();
-                  }
-                });
-              });
-              
-              // Проверка обновлений каждые 10 минут
-              setInterval(() => {
-                log('Проверка обновлений SW по таймеру');
-                registration.update();
-              }, 600000);
-            })
-            .catch(error => {
-              log(`Ошибка регистрации SW: ${error}`);
+          if (navigator.share) {
+            navigator.share({
+              title: 'AI Помощник',
+              text: 'Попробуйте это приложение с ИИ!',
+              url: shareUrl
+            }).catch(error => {
+              log(`Ошибка Share API: ${error}`);
+              copyToClipboard(shareUrl);
             });
-        });
-        
-        // Слушаем сообщения от Service Worker
-        navigator.serviceWorker.addEventListener('message', event => {
-          log(`Сообщение от SW: ${event.data.type}`);
-          if (event.data.type === 'NEW_VERSION_AVAILABLE') {
-            checkForUpdates();
+          } else {
+            copyToClipboard(shareUrl);
           }
         });
-      } else {
-        log('ServiceWorker не поддерживается');
+        
+        // Функция копирования в буфер обмена
+        function copyToClipboard(text) {
+          navigator.clipboard.writeText(text).then(() => {
+            log('Ссылка скопирована в буфер обмена');
+            alert('Ссылка скопирована в буфер обмена!');
+          }).catch(err => {
+            log(`Ошибка копирования: ${err}`);
+            prompt('Скопируйте ссылку:', text);
+          });
+        }
+        
+        log('Инициализация приложения завершена');
+      } catch (e) {
+        log(`КРИТИЧЕСКАЯ ОШИБКА ИНИЦИАЛИЗАЦИИ: ${e.message}`);
+        console.error('Init error:', e);
       }
-      
-      // Автоматическая проверка обновлений
-      setTimeout(checkForUpdates, 3000);
-      log('Инициализация приложения завершена');
     }
     
     // Запуск приложения после загрузки
     window.addEventListener('DOMContentLoaded', () => {
-      initLogs();
-      initApp();
+      // Добавляем задержку для диагностики
+      setTimeout(() => {
+        if (!document.getElementById('start-button')) {
+          log('FATAL: Основные элементы интерфейса не загружены');
+          document.body.innerHTML = '<h1 style="color:red">Ошибка загрузки</h1><p>Попробуйте перезагрузить страницу</p>';
+          return;
+        }
+        
+        initApp();
+      }, 300);
     });
   </script>
 </body>
