@@ -207,9 +207,49 @@
       cursor: pointer;
       font-weight: bold;
     }
+    
+    /* Индикатор обновления */
+    #update-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #4263eb;
+      color: white;
+      padding: 12px;
+      text-align: center;
+      z-index: 10000;
+      display: none;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    
+    #update-progress progress {
+      width: 80%;
+      height: 8px;
+      margin: 8px auto;
+      display: block;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    #update-progress progress::-webkit-progress-bar {
+      background-color: rgba(255,255,255,0.3);
+      border-radius: 4px;
+    }
+    
+    #update-progress progress::-webkit-progress-value {
+      background-color: white;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
+  <!-- Индикатор процесса обновления -->
+  <div id="update-progress">
+    <div>Идет обновление приложения...</div>
+    <progress value="0" max="100"></progress>
+  </div>
+  
   <div class="app-icons">
     <div class="app-icon" id="chat-icon">
       <i>💬</i>
@@ -226,7 +266,7 @@
     <button class="button" id="start-button">Начать чат</button>
     <button class="button" id="share-button" style="background: #f0f0f0; color: #333;">Поделиться</button>
     
-    <div class="version" id="version-info">v2.3</div>
+    <div class="version" id="version-info">v2.4</div>
   </div>
   
   <div class="update-banner" id="update-banner">
@@ -246,7 +286,7 @@
 
   <script>
     // Конфигурация приложения
-    const APP_VERSION = "2.3";
+    const APP_VERSION = "2.4";
     
     // Система логов
     const logs = [];
@@ -320,6 +360,8 @@
         const updateButton = document.getElementById('update-button');
         const laterButton = document.getElementById('later-button');
         const forceUpdateButton = document.getElementById('force-update');
+        const updateProgress = document.getElementById('update-progress');
+        const progressBar = updateProgress.querySelector('progress');
         
         // Отображение версии
         const savedVersion = localStorage.getItem('app_version') || '1.0';
@@ -439,6 +481,109 @@
           }
         }
         
+        // Функция дистанционного обновления PWA
+        async function remoteUpdatePWA() {
+          log('Запуск дистанционного обновления PWA');
+          updateProgress.style.display = 'block';
+          progressBar.value = 10;
+          
+          try {
+            // 1. Проверяем наличие Service Worker
+            if (!('serviceWorker' in navigator)) {
+              throw new Error('Service Worker не поддерживается');
+            }
+            
+            const registration = await navigator.serviceWorker.getRegistration();
+            if (!registration) {
+              throw new Error('Service Worker не зарегистрирован');
+            }
+            
+            progressBar.value = 30;
+            
+            // 2. Проверяем наличие новой версии
+            const newWorker = registration.installing || registration.waiting;
+            if (newWorker) {
+              log('Найден ожидающий Service Worker');
+              
+              // Отправляем команду на немедленную активацию
+              newWorker.postMessage({ type: 'SKIP_WAITING' });
+              
+              // Ждем активации
+              return new Promise((resolve) => {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'activated') {
+                    log('Новый Service Worker активирован');
+                    progressBar.value = 60;
+                    resolve();
+                  }
+                });
+              });
+            } else {
+              // Если нет ожидающего SW, запускаем проверку обновлений
+              log('Проверка обновлений на сервере');
+              const newRegistration = await registration.update();
+              
+              if (newRegistration.installing) {
+                log('Обнаружена новая версия, запускаем процесс установки');
+                progressBar.value = 40;
+                return remoteUpdatePWA(); // Рекурсивный вызов
+              } else {
+                log('Уже установлена последняя версия');
+                return;
+              }
+            }
+          } catch (e) {
+            log(`Ошибка дистанционного обновления: ${e.message}`);
+            throw e;
+          } finally {
+            progressBar.value = 100;
+            setTimeout(() => {
+              updateProgress.style.display = 'none';
+            }, 1000);
+          }
+        }
+        
+        // Автоматическая проверка для дистанционного обновления
+        function checkForRemoteUpdate() {
+          const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+          const savedVersion = localStorage.getItem('app_version');
+          
+          if (isPWA && savedVersion !== APP_VERSION) {
+            log('Обнаружены условия для дистанционного обновления');
+            setTimeout(async () => {
+              try {
+                await remoteUpdatePWA();
+                
+                // Обновляем кэш
+                const cacheNames = await caches.keys();
+                log(`Очистка ${cacheNames.length} кэшей`);
+                await Promise.all(
+                  cacheNames.map(cacheName => {
+                    if (!cacheName.includes(APP_VERSION)) {
+                      log(`Удаление старого кэша: ${cacheName}`);
+                      return caches.delete(cacheName);
+                    }
+                  })
+                );
+                
+                // Обновляем данные приложения
+                localStorage.setItem('app_version', APP_VERSION);
+                log('Локальные данные обновлены');
+                
+                // Перезагружаем страницу
+                log('Принудительная перезагрузка для активации новой версии');
+                setTimeout(() => {
+                  window.location.reload(true);
+                }, 1000);
+                
+              } catch (e) {
+                log(`Автоматическое обновление не удалось: ${e.message}`);
+                updateBanner.style.display = 'block';
+              }
+            }, 3000);
+          }
+        }
+        
         // Регистрация Service Worker для PWA
         if ('serviceWorker' in navigator) {
           log('Поддержка ServiceWorker доступна');
@@ -506,6 +651,9 @@
             updateBanner.style.display = 'block';
           }
         }, 3000);
+        
+        // Проверка для дистанционного обновления
+        checkForRemoteUpdate();
         
         log('Инициализация приложения завершена');
       } catch (e) {
