@@ -1,13 +1,15 @@
 {
   "name": "AI Помощник",
   "short_name": "AI Assistant",
-  "description": "Ваш персональный помощник с искусственным интеллектом",
+  "description": "Ваш персональный помощник с искусственным интеллектом и интеграцией с календарем",
   "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
-  "theme_color": "#4263eb",
-  "background_color": "#f0f2f5",
+  "theme_color": "#121212",
+  "background_color": "#0a0a0a",
   "id": "/",
+  "categories": ["productivity", "utilities"],
+  "orientation": "portrait",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -20,18 +22,21 @@
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512-maskable.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
   "screenshots": [],
   "features": [
-    "Чат с ИИ",
-    "Календарь событий",
-    "Оффлайн доступ",
-    "Автоматические обновления"
-  ],
-  "categories": [
-    "productivity",
-    "utilities"
+    "Чат с ИИ на базе Gemini",
+    "Создание событий в календаре",
+    "Работа в оффлайн-режиме",
+    "Автоматические обновления",
+    "Темная/светлая темы"
   ],
   "shortcuts": [
     {
@@ -41,14 +46,26 @@
       "url": "/chat.html",
       "icons": [
         {
-          "src": "/icon-192.png",
+          "src": "/icon-chat.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Создать событие",
+      "short_name": "Событие",
+      "description": "Добавить новое событие в календарь",
+      "url": "/chat.html?command=calendar",
+      "icons": [
+        {
+          "src": "/icon-calendar.png",
           "sizes": "96x96"
         }
       ]
     }
   ],
   "share_target": {
-    "action": "/",
+    "action": "/share.html",
     "method": "GET",
     "params": {
       "title": "title",
@@ -62,5 +79,7 @@
       "url": "/index.html?action=%s"
     }
   ],
-  "file_handlers": []
+  "file_handlers": [],
+  "related_applications": [],
+  "prefer_related_applications": false
 }
