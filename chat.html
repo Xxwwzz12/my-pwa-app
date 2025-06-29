@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>AI Чат | Помощник</title>
   <style>
-    /* Все стили из предыдущей версии остаются без изменений */
     * {
       margin: 0;
       padding: 0;
@@ -24,6 +23,7 @@
       --header-bg: #f9f9fb;
       --border: #e0e0e0;
       --error: #ff6b6b;
+      --success: #40c057;
     }
     
     @media (prefers-color-scheme: dark) {
@@ -125,6 +125,12 @@
     
     .error-bubble {
       background: var(--error);
+      color: white;
+      border-bottom-left-radius: 4px;
+    }
+    
+    .success-bubble {
+      background: var(--success);
       color: white;
       border-bottom-left-radius: 4px;
     }
@@ -257,6 +263,136 @@
       cursor: pointer;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
+    
+    .auth-container {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .auth-box {
+      background: var(--header-bg);
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+    }
+    
+    .auth-title {
+      font-size: 22px;
+      margin-bottom: 15px;
+      color: var(--text-primary);
+    }
+    
+    .auth-text {
+      margin-bottom: 25px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    
+    .google-btn {
+      background: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 14px 24px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      transition: all 0.2s;
+    }
+    
+    .google-btn:hover {
+      background: #3367d6;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .google-btn:active {
+      transform: translateY(0);
+    }
+    
+    .google-btn i {
+      margin-right: 12px;
+      font-size: 20px;
+    }
+    
+    .calendar-icon {
+      display: inline-block;
+      background: #1a73e8;
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 30px;
+      margin-right: 8px;
+    }
+    
+    .event-details {
+      margin-top: 10px;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 12px;
+      border-left: 4px solid var(--primary);
+    }
+    
+    .event-details h4 {
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      justify-content: center;
+    }
+    
+    .action-btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+    
+    .confirm-btn {
+      background: var(--success);
+      color: white;
+    }
+    
+    .cancel-btn {
+      background: var(--error);
+      color: white;
+    }
+    
+    .edit-btn {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .auth-info {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
   </style>
 </head>
 <body>
@@ -264,7 +400,7 @@
     <div class="back-button" id="back-button">
       <i>⬅️</i>
     </div>
-    <div class="header-title">AI Чат (Gemini)</div>
+    <div class="header-title">AI Чат (Gemini + Calendar)</div>
   </div>
   
   <div class="chat-container" id="chat-container">
@@ -295,21 +431,46 @@
   <button class="clear-button" id="clear-button">
     <i>🗑️</i>
   </button>
+  
+  <div id="auth-container" class="auth-container">
+    <div class="auth-box">
+      <div class="auth-title">Авторизация Google</div>
+      <div class="auth-text">
+        Для создания событий в календаре необходимо авторизоваться через Google.
+        Это даст приложению доступ только к вашему календарю.
+      </div>
+      <button id="google-auth-btn" class="google-btn">
+        <i>G</i> Войти через Google
+      </button>
+      <div class="auth-info">
+        Ваши данные защищены и не передаются третьим лицам.
+        Вы можете отозвать доступ в любое время.
+      </div>
+    </div>
+  </div>
 
   <script>
-    // Конфигурация API
-    const API_KEY = "AIzaSyAiX_Ff0F9pq1yMGEZz_lVrk6RtdQ13u3k";
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+    // Конфигурация
+    const GEMINI_API_KEY = "AIzaSyAiX_Ff0F9pq1yMGEZz_lVrk6RtdQ13u3k";
+    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
     
-    // Состояние чата
-    const chatHistory = JSON.parse(localStorage.getItem('chat_history')) || [];
-    const chatContainer = document.getElementById('chat-container');
-    const emptyState = document.getElementById('empty-state');
-    const messageInput = document.getElementById('message-input');
-    const sendButton = document.getElementById('send-button');
-    const backButton = document.getElementById('back-button');
-    const clearButton = document.getElementById('clear-button');
-    const typingIndicator = document.getElementById('typing-indicator');
+    // Ваши данные OAuth
+    const CLIENT_ID = "49278149176-a0vgmul2ik4oi5ui845egi4iul1scsre.apps.googleusercontent.com";
+    const CLIENT_SECRET = "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";
+    const REDIRECT_URI = window.location.origin + '/oauth2callback';
+    const CALENDAR_SCOPES = "https://www.googleapis.com/auth/calendar.events";
+    const CALENDAR_API = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
+    
+    // Состояние приложения
+    let calendarAuthToken = null;
+    let isCreatingEvent = false;
+    let eventDetails = {
+      summary: "",
+      description: "",
+      start: null,
+      end: null,
+      timeZone: "Europe/Moscow"
+    };
     
     // Инициализация чата
     function initChat() {
@@ -336,9 +497,255 @@
       });
       
       clearButton.addEventListener('click', clearChatHistory);
+      
+      // Проверка команды календаря
+      if (localStorage.getItem('calendar_command') === 'true') {
+        localStorage.removeItem('calendar_command');
+        startCalendarCreation();
+      }
+      
+      // Инициализация Google Auth
+      initGoogleAuth();
     }
     
-    // Отправка сообщения
+    // Инициализация Google авторизации
+    function initGoogleAuth() {
+      // Проверяем, есть ли сохраненный токен
+      const savedToken = localStorage.getItem('google_calendar_token');
+      if (savedToken) {
+        calendarAuthToken = savedToken;
+        return;
+      }
+      
+      // Проверяем параметры URL для токена
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get('access_token');
+      
+      if (accessToken) {
+        calendarAuthToken = accessToken;
+        localStorage.setItem('google_calendar_token', accessToken);
+        
+        // Очищаем URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Если мы в процессе создания события, продолжаем
+        if (isCreatingEvent) {
+          continueEventCreation();
+        }
+        return;
+      }
+      
+      // Обработчик кнопки авторизации
+      document.getElementById('google-auth-btn').addEventListener('click', () => {
+        authenticateGoogle();
+      });
+    }
+    
+    // Авторизация через Google
+    function authenticateGoogle() {
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=${encodeURIComponent(CALENDAR_SCOPES)}&prompt=consent`;
+      window.location.href = authUrl;
+    }
+    
+    // Начало создания события
+    function startCalendarCreation() {
+      isCreatingEvent = true;
+      
+      // Проверяем авторизацию
+      if (!calendarAuthToken) {
+        showAuthPopup();
+        return;
+      }
+      
+      addMessage("Хорошо, давайте создадим событие в календаре. Пожалуйста, опишите, что вы хотите добавить. Например: 'Поставь встречу с клиентом завтра в 15:00 на 1 час'", 'assistant');
+    }
+    
+    // Показ попапа авторизации
+    function showAuthPopup() {
+      document.getElementById('auth-container').style.display = 'flex';
+    }
+    
+    // Продолжение создания события после авторизации
+    function continueEventCreation() {
+      addMessage("Отлично, вы авторизованы! Теперь опишите событие, которое нужно добавить в календарь.", 'assistant');
+    }
+    
+    // Обработка сообщений для календаря
+    async function handleCalendarCommand(userMessage) {
+      try {
+        // Формируем промпт для Gemini
+        const prompt = `Пользователь хочет создать событие в календаре: "${userMessage}". 
+        Извлеките следующие данные в формате JSON:
+        {
+          "summary": "Краткое название события",
+          "description": "Подробное описание",
+          "start": "Дата и время начала в формате ISO 8601 (например: 2023-11-20T15:00:00)",
+          "end": "Дата и время окончания в формате ISO 8601 (например: 2023-11-20T16:00:00)",
+          "timeZone": "Europe/Moscow"
+        }
+        Если какая-то информация отсутствует, верните null в соответствующем поле.`;
+        
+        // Показываем индикатор набора
+        showTypingIndicator();
+        
+        // Отправляем запрос к Gemini
+        const response = await fetch(GEMINI_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [{
+              role: 'user',
+              parts: [{ text: prompt }]
+            }]
+          })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || 'Ошибка при обработке запроса');
+        }
+        
+        const data = await response.json();
+        const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        // Парсим JSON ответ
+        const eventData = parseEventData(responseText);
+        
+        // Проверяем полноту данных
+        if (!eventData.summary || !eventData.start || !eventData.end) {
+          requestMissingInfo(eventData);
+          return;
+        }
+        
+        // Сохраняем детали события
+        eventDetails = eventData;
+        
+        // Подтверждаем детали у пользователя
+        confirmEventDetails();
+      } catch (error) {
+        addMessage(`Ошибка: ${error.message || 'Не удалось обработать запрос'}`, 'error');
+      } finally {
+        hideTypingIndicator();
+      }
+    }
+    
+    // Парсинг данных события из ответа Gemini
+    function parseEventData(text) {
+      try {
+        // Пытаемся найти JSON в ответе
+        const jsonStart = text.indexOf('{');
+        const jsonEnd = text.lastIndexOf('}') + 1;
+        const jsonString = text.substring(jsonStart, jsonEnd);
+        return JSON.parse(jsonString);
+      } catch (e) {
+        console.error('Ошибка парсинга JSON:', e);
+        return {
+          summary: null,
+          description: null,
+          start: null,
+          end: null,
+          timeZone: 'Europe/Moscow'
+        };
+      }
+    }
+    
+    // Запрос недостающей информации
+    function requestMissingInfo(eventData) {
+      let missingFields = [];
+      
+      if (!eventData.summary) missingFields.push("название события");
+      if (!eventData.start) missingFields.push("время начала");
+      if (!eventData.end) missingFields.push("время окончания");
+      
+      const message = `Пожалуйста, укажите ${missingFields.join(', ')}:`;
+      addMessage(message, 'assistant');
+    }
+    
+    // Подтверждение деталей события
+    function confirmEventDetails() {
+      const startTime = new Date(eventDetails.start).toLocaleString('ru-RU', {
+        weekday: 'long', 
+        day: 'numeric', 
+        month: 'long', 
+        hour: '2-digit', 
+        minute: '2-digit'
+      });
+      
+      const endTime = new Date(eventDetails.end).toLocaleString('ru-RU', {
+        hour: '2-digit', 
+        minute: '2-digit'
+      });
+      
+      const message = `Подтвердите детали события:
+        <div class="event-details">
+          <h4>📝 ${eventDetails.summary}</h4>
+          ${eventDetails.description ? `<p>${eventDetails.description}</p>` : ''}
+          <p>📅 <strong>Начало:</strong> ${startTime}</p>
+          <p>⏱️ <strong>Окончание:</strong> ${endTime}</p>
+        </div>
+        <div class="action-buttons">
+          <button id="confirm-event" class="action-btn confirm-btn">Подтвердить</button>
+          <button id="cancel-event" class="action-btn cancel-btn">Отменить</button>
+        </div>`;
+      
+      addMessage(message, 'assistant');
+      
+      // Обработчики кнопок
+      setTimeout(() => {
+        document.getElementById('confirm-event')?.addEventListener('click', createCalendarEvent);
+        document.getElementById('cancel-event')?.addEventListener('click', () => {
+          addMessage("Создание события отменено", 'assistant');
+          isCreatingEvent = false;
+        });
+      }, 100);
+    }
+    
+    // Создание события в Google Calendar
+    async function createCalendarEvent() {
+      try {
+        showTypingIndicator();
+        
+        const response = await fetch(CALENDAR_API, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${calendarAuthToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            summary: eventDetails.summary,
+            description: eventDetails.description || '',
+            start: {
+              dateTime: eventDetails.start,
+              timeZone: eventDetails.timeZone
+            },
+            end: {
+              dateTime: eventDetails.end,
+              timeZone: eventDetails.timeZone
+            }
+          })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || 'Ошибка при создании события');
+        }
+        
+        const event = await response.json();
+        const eventUrl = event.htmlLink;
+        
+        addMessage(`✅ Событие "${eventDetails.summary}" успешно создано! <a href="${eventUrl}" target="_blank" style="color: #1a73e8; text-decoration: underline;">Посмотреть в календаре</a>`, 'success');
+        isCreatingEvent = false;
+      } catch (error) {
+        addMessage(`❌ Ошибка при создании события: ${error.message}`, 'error');
+      } finally {
+        hideTypingIndicator();
+      }
+    }
+    
+    // Обновленная функция sendMessage
     async function sendMessage() {
       const message = messageInput.value.trim();
       if (!message) return;
@@ -346,7 +753,7 @@
       // Блокируем кнопку отправки
       sendButton.disabled = true;
       
-      // Добавление сообщения пользователя
+      // Добавляем сообщение пользователя
       addMessage(message, 'user');
       
       // Очистка поля ввода
@@ -354,62 +761,28 @@
       messageInput.style.height = 'auto';
       messageInput.focus();
       
-      // Получение ответа от ИИ
-      try {
-        await getAIResponse(message);
-      } catch (error) {
-        console.error('Ошибка API:', error);
-        addMessage(`Ошибка: ${error.message || 'Не удалось получить ответ'}`, 'error');
-      } finally {
-        // Разблокируем кнопку отправки
-        sendButton.disabled = false;
+      // Если в процессе создания события
+      if (isCreatingEvent) {
+        await handleCalendarCommand(message);
+      } else {
+        // Проверяем, не является ли сообщение командой для календаря
+        if (message.toLowerCase().includes('календар') || 
+            message.toLowerCase().includes('событи') || 
+            message.toLowerCase().includes('встреч')) {
+          startCalendarCreation();
+        } else {
+          // Обычная обработка сообщения
+          await getAIResponse(message);
+        }
       }
+      
+      // Разблокируем кнопку отправки
+      sendButton.disabled = false;
     }
     
-    // Добавление сообщения в чат
-    function addMessage(text, sender) {
-      // Скрываем пустое состояние
-      if (emptyState.style.display !== 'none') {
-        emptyState.style.display = 'none';
-      }
-      
-      // Создаем элемент сообщения
-      const messageDiv = document.createElement('div');
-      messageDiv.className = `message message-${sender}`;
-      
-      const bubble = document.createElement('div');
-      bubble.className = `bubble ${sender}-bubble`;
-      bubble.textContent = text;
-      
-      const timestamp = document.createElement('div');
-      timestamp.className = 'timestamp';
-      timestamp.textContent = getCurrentTime();
-      
-      messageDiv.appendChild(bubble);
-      messageDiv.appendChild(timestamp);
-      
-      chatContainer.appendChild(messageDiv);
-      
-      // Прокрутка вниз
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-      
-      // Сохранение в историю
-      if (sender !== 'error') {
-        chatHistory.push({
-          text,
-          sender,
-          time: new Date().toISOString()
-        });
-        
-        localStorage.setItem('chat_history', JSON.stringify(chatHistory));
-      }
-    }
-    
-    // Получение ответа от ИИ
+    // Отправка запроса к Gemini API
     async function getAIResponse(userMessage) {
-      // Показываем индикатор набора сообщения
-      typingIndicator.style.display = 'flex';
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+      showTypingIndicator();
       
       try {
         // Формируем историю для контекста
@@ -434,7 +807,7 @@
         };
         
         // Отправляем запрос
-        const response = await fetch(API_URL, {
+        const response = await fetch(GEMINI_API_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -460,10 +833,65 @@
         addMessage(aiText, 'assistant');
       } catch (error) {
         console.error('Ошибка API:', error);
-        addMessage(`Ошибка: ${error.message || 'Не удалось получить ответ'}`, 'error');
+        addMessage(`❌ Ошибка: ${error.message || 'Не удалось получить ответ'}`, 'error');
       } finally {
-        // Скрываем индикатор
-        typingIndicator.style.display = 'none';
+        hideTypingIndicator();
+      }
+    }
+    
+    // Показать индикатор набора
+    function showTypingIndicator() {
+      typingIndicator.style.display = 'flex';
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+    
+    // Скрыть индикатор набора
+    function hideTypingIndicator() {
+      typingIndicator.style.display = 'none';
+    }
+    
+    // Добавление сообщения в чат
+    function addMessage(text, sender) {
+      // Скрываем пустое состояние
+      if (emptyState.style.display !== 'none') {
+        emptyState.style.display = 'none';
+      }
+      
+      // Создаем элемент сообщения
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message message-${sender}`;
+      
+      const bubble = document.createElement('div');
+      bubble.className = `bubble ${sender}-bubble`;
+      
+      // Обрабатываем HTML-сообщения
+      if (text.includes('<') && text.includes('>')) {
+        bubble.innerHTML = text;
+      } else {
+        bubble.textContent = text;
+      }
+      
+      const timestamp = document.createElement('div');
+      timestamp.className = 'timestamp';
+      timestamp.textContent = getCurrentTime();
+      
+      messageDiv.appendChild(bubble);
+      messageDiv.appendChild(timestamp);
+      
+      chatContainer.appendChild(messageDiv);
+      
+      // Прокрутка вниз
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+      
+      // Сохранение в историю (если не ошибка и не содержит кнопок)
+      if (sender !== 'error' && !text.includes('<button')) {
+        chatHistory.push({
+          text,
+          sender,
+          time: new Date().toISOString()
+        });
+        
+        localStorage.setItem('chat_history', JSON.stringify(chatHistory));
       }
     }
     
@@ -493,7 +921,13 @@
         
         const bubble = document.createElement('div');
         bubble.className = `bubble ${message.sender}-bubble`;
-        bubble.textContent = message.text;
+        
+        // Обрабатываем HTML-сообщения
+        if (message.text.includes('<') && message.text.includes('>')) {
+          bubble.innerHTML = message.text;
+        } else {
+          bubble.textContent = message.text;
+        }
         
         const timestamp = document.createElement('div');
         timestamp.className = 'timestamp';
@@ -521,12 +955,18 @@
     }
     
     // Запуск приложения после загрузки
-    window.addEventListener('DOMContentLoaded', initChat);
-    
-    // Глобальный обработчик ошибок
-    window.addEventListener('error', (event) => {
-      console.error('Global error:', event.error);
-      addMessage('Произошла внутренняя ошибка приложения', 'error');
+    window.addEventListener('DOMContentLoaded', () => {
+      // Инициализация переменных
+      const chatHistory = JSON.parse(localStorage.getItem('chat_history')) || [];
+      const chatContainer = document.getElementById('chat-container');
+      const emptyState = document.getElementById('empty-state');
+      const messageInput = document.getElementById('message-input');
+      const sendButton = document.getElementById('send-button');
+      const backButton = document.getElementById('back-button');
+      const clearButton = document.getElementById('clear-button');
+      const typingIndicator = document.getElementById('typing-indicator');
+      
+      initChat();
     });
   </script>
 </body>
