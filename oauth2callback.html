@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OAuth Redirect</title>
+  <script>
+    // Извлекаем токен из URL
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    const accessToken = params.get('access_token');
+    
+    if (accessToken) {
+      // Сохраняем токен в localStorage
+      localStorage.setItem('google_calendar_token', accessToken);
+      
+      // Перенаправляем обратно в чат
+      window.location.href = '/chat.html';
+    } else {
+      document.body.innerHTML = '<h1>Ошибка авторизации</h1><p>Токен не получен.</p>';
+    }
+  </script>
+</head>
+<body>
+  <p>Пожалуйста, подождите, идет обработка авторизации...</p>
+</body>
+</html>
