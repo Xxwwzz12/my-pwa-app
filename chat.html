@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -14,30 +14,38 @@
     
     :root {
       --primary: #4263eb;
+      --accent: #4263eb;
       --user-bubble: #4263eb;
-      --assistant-bubble: #f0f2f5;
-      --text-primary: #1d1d1f;
-      --text-secondary: #86868b;
-      --background: #ffffff;
-      --input-bg: #f0f2f5;
-      --header-bg: #f9f9fb;
-      --border: #e0e0e0;
+      --assistant-bubble: #1e1e1e;
+      --text-primary: #ffffff;
+      --text-secondary: #b0b0b0;
+      --background: #0a0a0a;
+      --surface: #121212;
+      --input-bg: #1e1e1e;
+      --header-bg: #121212;
+      --border: #2a2a2a;
       --error: #ff6b6b;
       --success: #40c057;
+      --card-bg: #1e1e1e;
+      --shadow: rgba(0, 0, 0, 0.4);
     }
     
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --background: #000000;
-        --text-primary: #f5f5f7;
-        --text-secondary: #a1a1a6;
-        --user-bubble: #0a84ff;
-        --assistant-bubble: #1c1c1e;
-        --input-bg: #1c1c1e;
-        --header-bg: #1c1c1e;
-        --border: #2c2c2e;
-        --error: #ff453a;
-      }
+    [data-theme="light"] {
+      --primary: #4263eb;
+      --accent: #4263eb;
+      --user-bubble: #4263eb;
+      --assistant-bubble: #f0f0f0;
+      --text-primary: #121212;
+      --text-secondary: #5a5a5a;
+      --background: #f5f5f5;
+      --surface: #ffffff;
+      --input-bg: #f0f0f0;
+      --header-bg: #ffffff;
+      --border: #e0e0e0;
+      --error: #ff453a;
+      --success: #40c057;
+      --card-bg: #ffffff;
+      --shadow: rgba(0, 0, 0, 0.08);
     }
     
     body {
@@ -47,6 +55,7 @@
       display: flex;
       flex-direction: column;
       color: var(--text-primary);
+      transition: background 0.3s ease;
     }
     
     .header {
@@ -70,11 +79,27 @@
       background: var(--input-bg);
       margin-right: 12px;
       cursor: pointer;
+      transition: transform 0.2s;
+      border: 1px solid var(--border);
+    }
+    
+    .back-button:active {
+      transform: scale(0.9);
     }
     
     .header-title {
       font-size: 18px;
       font-weight: 600;
+    }
+    
+    .theme-toggle {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 5px;
     }
     
     .chat-container {
@@ -83,6 +108,8 @@
       padding: 16px;
       display: flex;
       flex-direction: column;
+      scroll-behavior: smooth;
+      padding-bottom: 80px; /* Пространство для ввода */
     }
     
     .message {
@@ -90,6 +117,16 @@
       margin-bottom: 20px;
       display: flex;
       flex-direction: column;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeIn 0.3s forwards;
+    }
+    
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
     
     .message-user {
@@ -103,12 +140,14 @@
     }
     
     .bubble {
-      padding: 12px 16px;
+      padding: 14px 18px;
       border-radius: 18px;
-      margin-bottom: 4px;
+      margin-bottom: 8px;
       position: relative;
       word-wrap: break-word;
       line-height: 1.5;
+      font-size: 16px;
+      box-shadow: 0 2px 8px var(--shadow);
     }
     
     .user-bubble {
@@ -121,6 +160,7 @@
       background: var(--assistant-bubble);
       color: var(--text-primary);
       border-bottom-left-radius: 4px;
+      border: 1px solid var(--border);
     }
     
     .error-bubble {
@@ -138,16 +178,18 @@
     .timestamp {
       font-size: 12px;
       color: var(--text-secondary);
+      padding: 0 8px;
     }
     
     .typing-indicator {
       display: none;
       background: var(--assistant-bubble);
-      padding: 12px 16px;
+      padding: 14px 18px;
       border-radius: 18px;
       margin-bottom: 20px;
       align-self: flex-start;
       border-bottom-left-radius: 4px;
+      border: 1px solid var(--border);
     }
     
     .typing-indicator span {
@@ -181,30 +223,36 @@
       align-items: center;
       position: sticky;
       bottom: 0;
+      z-index: 5;
+      transition: transform 0.3s;
     }
     
     .message-input {
       flex: 1;
       background: var(--input-bg);
-      border-radius: 20px;
-      padding: 12px 18px;
-      border: none;
+      border-radius: 24px;
+      padding: 14px 20px;
+      border: 1px solid var(--border);
       font-size: 16px;
       color: var(--text-primary);
       resize: none;
       max-height: 120px;
       overflow-y: auto;
+      transition: all 0.3s;
+      box-shadow: 0 2px 8px var(--shadow);
     }
     
     .message-input:focus {
       outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(66, 99, 235, 0.2);
     }
     
     .send-button {
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
-      background: var(--primary);
+      background: var(--accent);
       color: white;
       display: flex;
       align-items: center;
@@ -212,11 +260,18 @@
       margin-left: 12px;
       cursor: pointer;
       border: none;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px var(--shadow);
+    }
+    
+    .send-button:active {
+      transform: scale(0.9);
     }
     
     .send-button:disabled {
       background: var(--text-secondary);
       cursor: not-allowed;
+      transform: none;
     }
     
     .empty-state {
@@ -233,6 +288,7 @@
     .empty-state i {
       font-size: 48px;
       margin-bottom: 16px;
+      color: var(--accent);
     }
     
     .empty-state h2 {
@@ -250,8 +306,8 @@
       position: fixed;
       bottom: 80px;
       right: 16px;
-      background: var(--primary);
-      color: white;
+      background: var(--card-bg);
+      color: var(--text-primary);
       border: none;
       border-radius: 50%;
       width: 50px;
@@ -261,7 +317,13 @@
       justify-content: center;
       z-index: 5;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 12px var(--shadow);
+      border: 1px solid var(--border);
+      transition: transform 0.2s;
+    }
+    
+    .clear-button:active {
+      transform: scale(0.9);
     }
     
     .auth-container {
@@ -271,19 +333,21 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.85);
       z-index: 1000;
       align-items: center;
       justify-content: center;
     }
     
     .auth-box {
-      background: var(--header-bg);
+      background: var(--card-bg);
       border-radius: 16px;
       padding: 30px;
       max-width: 400px;
       width: 90%;
       text-align: center;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     }
     
     .auth-title {
@@ -344,15 +408,16 @@
     .event-details {
       margin-top: 10px;
       padding: 15px;
-      background: rgba(0, 0, 0, 0.05);
+      background: rgba(255, 255, 255, 0.05);
       border-radius: 12px;
-      border-left: 4px solid var(--primary);
+      border-left: 4px solid var(--accent);
     }
     
     .event-details h4 {
       margin-bottom: 8px;
       display: flex;
       align-items: center;
+      color: var(--text-primary);
     }
     
     .action-buttons {
@@ -369,6 +434,11 @@
       cursor: pointer;
       transition: all 0.2s;
       border: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    
+    .action-btn:active {
+      transform: scale(0.95);
     }
     
     .confirm-btn {
@@ -382,7 +452,7 @@
     }
     
     .edit-btn {
-      background: var(--primary);
+      background: var(--accent);
       color: white;
     }
     
@@ -393,14 +463,37 @@
       font-size: 13px;
       color: var(--text-secondary);
     }
+    
+    /* Адаптация под клавиатуру */
+    @media (max-height: 600px) {
+      .header {
+        position: static;
+      }
+      
+      .input-area {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+      }
+      
+      .chat-container {
+        padding-bottom: 160px;
+      }
+      
+      .clear-button {
+        bottom: 160px;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="header">
     <div class="back-button" id="back-button">
-      <i>⬅️</i>
+      <i>←</i>
     </div>
-    <div class="header-title">AI Чат (Gemini + Calendar)</div>
+    <div class="header-title">AI Чат</div>
+    <button class="theme-toggle" id="theme-toggle">🌓</button>
   </div>
   
   <div class="chat-container" id="chat-container">
@@ -450,6 +543,11 @@
   </div>
 
   <script>
+    // Глобальные переменные для элементов
+    let chatHistory = [];
+    let chatContainer, emptyState, messageInput, sendButton, backButton, 
+        clearButton, typingIndicator, authContainer, themeToggle;
+
     // Конфигурация
     const GEMINI_API_KEY = "AIzaSyAiX_Ff0F9pq1yMGEZz_lVrk6RtdQ13u3k";
     const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
@@ -475,7 +573,12 @@
     // Инициализация чата
     function initChat() {
       // Загрузка истории чата
+      chatHistory = JSON.parse(localStorage.getItem('chat_history')) || [];
       renderChatHistory();
+      
+      // Установка темы
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
       
       // Назначение обработчиков
       backButton.addEventListener('click', () => {
@@ -494,9 +597,14 @@
       messageInput.addEventListener('input', function() {
         this.style.height = 'auto';
         this.style.height = (this.scrollHeight) + 'px';
+        scrollToBottom();
       });
       
       clearButton.addEventListener('click', clearChatHistory);
+      themeToggle.addEventListener('click', toggleTheme);
+      
+      // Обработка открытия клавиатуры
+      window.addEventListener('resize', handleResize);
       
       // Проверка команды календаря
       if (localStorage.getItem('calendar_command') === 'true') {
@@ -506,6 +614,29 @@
       
       // Инициализация Google Auth
       initGoogleAuth();
+      
+      // Фокус на поле ввода
+      setTimeout(() => {
+        messageInput.focus();
+      }, 300);
+    }
+    
+    // Переключение темы
+    function toggleTheme() {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+    }
+    
+    // Обработка изменения размера экрана (клавиатура)
+    function handleResize() {
+      scrollToBottom();
+    }
+    
+    // Прокрутка вниз
+    function scrollToBottom() {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
     }
     
     // Инициализация Google авторизации
@@ -627,6 +758,7 @@
         confirmEventDetails();
       } catch (error) {
         addMessage(`Ошибка: ${error.message || 'Не удалось обработать запрос'}`, 'error');
+        isCreatingEvent = false;
       } finally {
         hideTypingIndicator();
       }
@@ -759,7 +891,6 @@
       // Очистка поля ввода
       messageInput.value = '';
       messageInput.style.height = 'auto';
-      messageInput.focus();
       
       // Если в процессе создания события
       if (isCreatingEvent) {
@@ -778,6 +909,7 @@
       
       // Разблокируем кнопку отправки
       sendButton.disabled = false;
+      scrollToBottom();
     }
     
     // Отправка запроса к Gemini API
@@ -836,13 +968,14 @@
         addMessage(`❌ Ошибка: ${error.message || 'Не удалось получить ответ'}`, 'error');
       } finally {
         hideTypingIndicator();
+        scrollToBottom();
       }
     }
     
     // Показать индикатор набора
     function showTypingIndicator() {
       typingIndicator.style.display = 'flex';
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+      scrollToBottom();
     }
     
     // Скрыть индикатор набора
@@ -881,7 +1014,7 @@
       chatContainer.appendChild(messageDiv);
       
       // Прокрутка вниз
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+      scrollToBottom();
       
       // Сохранение в историю (если не ошибка и не содержит кнопок)
       if (sender !== 'error' && !text.includes('<button')) {
@@ -939,9 +1072,7 @@
       });
       
       // Прокрутка вниз
-      setTimeout(() => {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-      }, 100);
+      setTimeout(scrollToBottom, 100);
     }
     
     // Форматирование времени
@@ -956,15 +1087,16 @@
     
     // Запуск приложения после загрузки
     window.addEventListener('DOMContentLoaded', () => {
-      // Инициализация переменных
-      const chatHistory = JSON.parse(localStorage.getItem('chat_history')) || [];
-      const chatContainer = document.getElementById('chat-container');
-      const emptyState = document.getElementById('empty-state');
-      const messageInput = document.getElementById('message-input');
-      const sendButton = document.getElementById('send-button');
-      const backButton = document.getElementById('back-button');
-      const clearButton = document.getElementById('clear-button');
-      const typingIndicator = document.getElementById('typing-indicator');
+      // Инициализация элементов
+      chatContainer = document.getElementById('chat-container');
+      emptyState = document.getElementById('empty-state');
+      messageInput = document.getElementById('message-input');
+      sendButton = document.getElementById('send-button');
+      backButton = document.getElementById('back-button');
+      clearButton = document.getElementById('clear-button');
+      typingIndicator = document.getElementById('typing-indicator');
+      authContainer = document.getElementById('auth-container');
+      themeToggle = document.getElementById('theme-toggle');
       
       initChat();
     });
