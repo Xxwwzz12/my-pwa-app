@@ -287,6 +287,7 @@
   <script>
     // Конфигурация приложения
     const APP_VERSION = "2.4";
+    const MAJOR_VERSION = APP_VERSION.split('.')[0];
     
     // Система логов
     const logs = [];
@@ -332,11 +333,29 @@
       log('Запуск инициализации приложения');
       
       try {
+        // Инициализация канала синхронизации
+        const updateChannel = new BroadcastChannel('app-updates');
+        
+        // Обработка сообщений из других вкладок
+        updateChannel.onmessage = (event) => {
+          if (event.data.type === 'FORCE_UPDATE_STARTED') {
+            log('Обнаружено принудительное обновление в другой вкладке');
+            window.location.reload();
+          }
+        };
+        
         // Восстановление логов
         const savedLogs = localStorage.getItem('app_logs');
         if (savedLogs) {
           const parsedLogs = JSON.parse(savedLogs);
           logs.push(...parsedLogs.slice(-MAX_LOG_ENTRIES));
+        }
+        
+        // Восстановление после прерванного обновления
+        if (localStorage.getItem('update_in_progress') {
+          log('Обнаружено прерванное обновление. Восстановление...');
+          localStorage.removeItem('update_in_progress');
+          await remoteUpdatePWA();
         }
         
         // Переключение видимости логов
@@ -429,6 +448,8 @@
         laterButton.addEventListener('click', () => {
           log('Нажата кнопка Позже');
           updateBanner.style.display = 'none';
+          // Запоминаем время откладывания
+          localStorage.setItem('update_dismissed', Date.now().toString());
         });
         
         // Обработчик принудительного обновления
@@ -441,6 +462,10 @@
         async function forceServiceWorkerUpdate() {
           if ('serviceWorker' in navigator) {
             try {
+              // Уведомляем о начале обновления
+              localStorage.setItem('update_in_progress', 'true');
+              updateChannel.postMessage({ type: 'FORCE_UPDATE_STARTED' });
+              
               const registration = await navigator.serviceWorker.getRegistration();
               if (registration) {
                 log('Найден Service Worker, удаляем...');
@@ -474,6 +499,8 @@
             } catch (e) {
               log(`Ошибка принудительного обновления: ${e.message}`);
               alert('Ошибка обновления. Попробуйте очистить кэш браузера вручную.');
+            } finally {
+              localStorage.removeItem('update_in_progress');
             }
           } else {
             log('Service Worker не поддерживается браузером');
@@ -486,9 +513,22 @@
           log('Запуск дистанционного обновления PWA');
           updateProgress.style.display = 'block';
           progressBar.value = 10;
+          localStorage.setItem('update_in_progress', 'true');
           
           try {
-            // 1. Проверяем наличие Service Worker
+            // 1. Проверка на критическое обновление
+            const savedVersion = localStorage.getItem('app_version') || '1.0';
+            const savedMajor = savedVersion.split('.')[0];
+            
+            if (MAJOR_VERSION > parseInt(savedMajor) + 1) {
+              log('Критическое обновление! Требуется полная перезагрузка данных');
+              localStorage.clear();
+              sessionStorage.clear();
+              await forceServiceWorkerUpdate();
+              return;
+            }
+            
+            // 2. Проверяем наличие Service Worker
             if (!('serviceWorker' in navigator)) {
               throw new Error('Service Worker не поддерживается');
             }
@@ -500,7 +540,7 @@
             
             progressBar.value = 30;
             
-            // 2. Проверяем наличие новой версии
+            // 3. Проверяем наличие новой версии
             const newWorker = registration.installing || registration.waiting;
             if (newWorker) {
               log('Найден ожидающий Service Worker');
@@ -539,8 +579,19 @@
             progressBar.value = 100;
             setTimeout(() => {
               updateProgress.style.display = 'none';
+              localStorage.removeItem('update_in_progress');
             }, 1000);
           }
+        }
+        
+        // Интеллектуальное отображение баннера обновления
+        function showUpdateBanner() {
+          const lastDismissed = localStorage.getItem('update_dismissed');
+          if (lastDismissed && Date.now() - parseInt(lastDismissed) < 86400000) {
+            log('Обновление отложено пользователем менее суток назад');
+            return;
+          }
+          updateBanner.style.display = 'block';
         }
         
         // Автоматическая проверка для дистанционного обновления
@@ -578,7 +629,7 @@
                 
               } catch (e) {
                 log(`Автоматическое обновление не удалось: ${e.message}`);
-                updateBanner.style.display = 'block';
+                showUpdateBanner();
               }
             }, 3000);
           }
@@ -606,7 +657,7 @@
                   if (newWorker.state === 'installed') {
                     if (navigator.serviceWorker.controller) {
                       log('Доступно обновление приложения');
-                      updateBanner.style.display = 'block';
+                      showUpdateBanner();
                     } else {
                       log('Service Worker установлен впервые');
                     }
@@ -630,7 +681,7 @@
             log(`Сообщение от SW: ${event.data?.type || 'unknown'}`);
             if (event.data?.type === 'NEW_VERSION_AVAILABLE') {
               log('Получено уведомление о новой версии от SW');
-              updateBanner.style.display = 'block';
+              showUpdateBanner();
             }
           });
           
@@ -648,7 +699,7 @@
           log('Автоматическая проверка обновлений');
           if (savedVersion !== APP_VERSION) {
             log(`Обнаружена новая версия: ${APP_VERSION}`);
-            updateBanner.style.display = 'block';
+            showUpdateBanner();
           }
         }, 3000);
         
