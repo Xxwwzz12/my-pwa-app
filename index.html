@@ -241,6 +241,57 @@
       background-color: white;
       border-radius: 4px;
     }
+    
+    /* Панель диагностики */
+    #debug-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #333;
+      color: white;
+      padding: 10px;
+      z-index: 10000;
+      display: none;
+    }
+    
+    #debug-logs {
+      height: 200px;
+      overflow: auto;
+      background: #111;
+      padding: 10px;
+      margin-top: 10px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    
+    #debug-toggle {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 10001;
+      background: #4263eb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    
+    #debug-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .debug-button {
+      background: #555;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -266,7 +317,7 @@
     <button class="button" id="start-button">Начать чат</button>
     <button class="button" id="share-button" style="background: #f0f0f0; color: #333;">Поделиться</button>
     
-    <div class="version" id="version-info">v2.4</div>
+    <div class="version" id="version-info">v2.5</div>
   </div>
   
   <div class="update-banner" id="update-banner">
@@ -283,10 +334,23 @@
   <!-- Панель логов -->
   <div class="log-panel" id="log-panel"></div>
   <button class="log-toggle" id="log-toggle">L</button>
+  
+  <!-- Панель диагностики -->
+  <div id="debug-panel">
+    <div id="debug-buttons">
+      <button class="debug-button" id="refresh-logs">Обновить логи</button>
+      <button class="debug-button" id="clear-logs">Очистить логи</button>
+      <button class="debug-button" id="unregister-sw">Удалить SW</button>
+      <button class="debug-button" id="clear-cache">Очистить кэш</button>
+      <button class="debug-button" id="force-reload">Принудительно перезагрузить</button>
+    </div>
+    <div id="debug-logs"></div>
+  </div>
+  <button id="debug-toggle">Debug</button>
 
   <script>
     // Конфигурация приложения
-    const APP_VERSION = "2.4";
+    const APP_VERSION = "2.5";
     const MAJOR_VERSION = APP_VERSION.split('.')[0];
     
     // Система логов
@@ -306,6 +370,13 @@
         if (logPanel) {
           logPanel.textContent = logs.join('\n');
           logPanel.scrollTop = logPanel.scrollHeight;
+        }
+        
+        // Обновляем панель диагностики
+        const debugLogs = document.getElementById('debug-logs');
+        if (debugLogs && debugLogs.textContent) {
+          debugLogs.textContent += logEntry + '\n';
+          debugLogs.scrollTop = debugLogs.scrollHeight;
         }
         
         console.log(logEntry);
@@ -352,7 +423,7 @@
         }
         
         // Восстановление после прерванного обновления
-        if (localStorage.getItem('update_in_progress') {
+        if (localStorage.getItem('update_in_progress')) {
           log('Обнаружено прерванное обновление. Восстановление...');
           localStorage.removeItem('update_in_progress');
           await remoteUpdatePWA();
@@ -705,6 +776,70 @@
         
         // Проверка для дистанционного обновления
         checkForRemoteUpdate();
+        
+        // Инициализация панели диагностики
+        const debugToggle = document.getElementById('debug-toggle');
+        const debugPanel = document.getElementById('debug-panel');
+        const debugLogs = document.getElementById('debug-logs');
+        
+        debugToggle.addEventListener('click', () => {
+          debugPanel.style.display = debugPanel.style.display === 'block' ? 'none' : 'block';
+        });
+        
+        // Обновление логов
+        document.getElementById('refresh-logs').addEventListener('click', () => {
+          debugLogs.textContent = logs.join('\n');
+        });
+        
+        // Очистка логов
+        document.getElementById('clear-logs').addEventListener('click', () => {
+          localStorage.removeItem('app_logs');
+          logs.length = 0;
+          logPanel.textContent = '';
+          debugLogs.textContent = '';
+          log('Логи очищены');
+        });
+        
+        // Удаление Service Worker
+        document.getElementById('unregister-sw').addEventListener('click', async () => {
+          log('Попытка удаления Service Worker');
+          try {
+            if ('serviceWorker' in navigator) {
+              const registration = await navigator.serviceWorker.getRegistration();
+              if (registration) {
+                await registration.unregister();
+                log('Service Worker успешно удален');
+                alert('Service Worker удален! Перезагрузите страницу.');
+              } else {
+                log('Service Worker не найден');
+              }
+            }
+          } catch (e) {
+            log(`Ошибка удаления SW: ${e.message}`);
+          }
+        });
+        
+        // Очистка кэша
+        document.getElementById('clear-cache').addEventListener('click', async () => {
+          log('Попытка очистки кэша');
+          try {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
+            log(`Удалено ${cacheNames.length} кэшей`);
+            alert('Кэш очищен!');
+          } catch (e) {
+            log(`Ошибка очистки кэша: ${e.message}`);
+          }
+        });
+        
+        // Принудительная перезагрузка
+        document.getElementById('force-reload').addEventListener('click', () => {
+          log('Принудительная перезагрузка страницы');
+          window.location.reload(true);
+        });
+        
+        // Инициализируем панель диагностики
+        debugLogs.textContent = logs.join('\n');
         
         log('Инициализация приложения завершена');
       } catch (e) {
