@@ -1,49 +1,247 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Оффлайн режим</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Оффлайн режим | AI Помощник</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
     body {
-      font-family: -apple-system, sans-serif;
-      text-align: center;
-      padding: 40px 20px;
-      background: #f0f2f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #f0f2f5 0%, #e4e7eb 100%);
       height: 100vh;
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .offline-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+      color: #ff6b6b;
     }
     
     h1 {
-      color: #e03131;
-      margin-bottom: 20px;
+      font-size: 28px;
+      margin-bottom: 15px;
+      color: #333;
     }
     
-    .retry-btn {
+    p {
+      font-size: 17px;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+    
+    .status {
+      padding: 10px 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      font-size: 15px;
+      margin: 20px 0;
+      display: inline-block;
+      transition: all 0.3s;
+    }
+    
+    .status.online {
+      background: #40c057;
+      color: white;
+    }
+    
+    .status.offline {
+      background: #ff6b6b;
+      color: white;
+    }
+    
+    .button {
+      display: inline-block;
+      padding: 14px 28px;
       background: #4263eb;
       color: white;
       border: none;
       border-radius: 10px;
-      padding: 14px 30px;
       font-size: 17px;
+      font-weight: 500;
       cursor: pointer;
-      margin-top: 20px;
+      margin-top: 15px;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    
+    .button:hover {
+      background: #364fc7;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(66, 99, 235, 0.25);
+    }
+    
+    .button:active {
+      transform: translateY(0);
+    }
+    
+    .tips {
+      margin-top: 30px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      text-align: left;
+    }
+    
+    .tips h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+      color: #495057;
+    }
+    
+    .tips ul {
+      padding-left: 20px;
+      color: #666;
+    }
+    
+    .tips li {
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    .waves {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%234263eb' fill-opacity='0.1' d='M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,122.7C960,149,1056,203,1152,208C1248,213,1344,171,1392,149.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+      background-size: cover;
     }
   </style>
 </head>
 <body>
-  <h1>Нет подключения к интернету</h1>
-  <p>Приложение работает в оффлайн режиме. Для работы чата требуется интернет.</p>
-  
-  <button class="retry-btn" id="retry-btn">Повторить попытку</button>
+  <div class="container">
+    <div class="offline-icon">📶</div>
+    <h1>Кажется, вы оффлайн</h1>
+    <p>Приложению не удалось подключиться к интернету. Пожалуйста, проверьте ваше подключение к сети.</p>
+    
+    <div id="connection-status" class="status offline">
+      <span id="status-text">Соединение отсутствует</span>
+    </div>
+    
+    <button id="reload-button" class="button pulse">Попробовать снова</button>
+    
+    <div class="tips">
+      <h2>Что можно сделать:</h2>
+      <ul>
+        <li>Проверьте подключение к Wi-Fi или мобильной сети</li>
+        <li>Убедитесь, что режим полета выключен</li>
+        <li>Перезагрузите роутер или модем</li>
+        <li>Попробуйте зайти позже, когда соединение восстановится</li>
+      </ul>
+    </div>
+    
+    <div class="waves"></div>
+  </div>
 
   <script>
-    document.getElementById('retry-btn').addEventListener('click', () => {
+    const statusEl = document.getElementById('connection-status');
+    const statusText = document.getElementById('status-text');
+    const reloadButton = document.getElementById('reload-button');
+    
+    // Обновляем статус подключения
+    function updateConnectionStatus() {
+      if (navigator.onLine) {
+        statusEl.className = 'status online';
+        statusText.textContent = 'Соединение восстановлено!';
+        
+        // Обновляем иконку
+        document.querySelector('.offline-icon').textContent = '✅';
+        document.querySelector('.offline-icon').style.color = '#40c057';
+        
+        // Перезагружаем страницу через 2 секунды
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        statusEl.className = 'status offline';
+        statusText.textContent = 'Соединение отсутствует';
+      }
+    }
+    
+    // Обработчик кнопки перезагрузки
+    reloadButton.addEventListener('click', () => {
       window.location.reload();
     });
+    
+    // Обработчики событий сети
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
+    
+    // Инициализация статуса
+    updateConnectionStatus();
+    
+    // Автоматическая попытка перезагрузки каждые 10 секунд
+    setInterval(() => {
+      if (navigator.onLine) {
+        window.location.reload();
+      }
+    }, 10000);
+    
+    // Анимация кнопки при наведении
+    reloadButton.addEventListener('mouseenter', () => {
+      reloadButton.classList.remove('pulse');
+    });
+    
+    reloadButton.addEventListener('mouseleave', () => {
+      if (!navigator.onLine) {
+        reloadButton.classList.add('pulse');
+      }
+    });
+    
+    // Проверка доступности сервера
+    async function checkServerStatus() {
+      try {
+        const response = await fetch('/?healthcheck=1', {
+          method: 'HEAD',
+          cache: 'no-store'
+        });
+        
+        if (response.ok) {
+          statusText.textContent = 'Сервер доступен, проблема с клиентом';
+        } else {
+          statusText.textContent = 'Проблема с сервером';
+        }
+      } catch (error) {
+        statusText.textContent = 'Сервер недоступен';
+      }
+    }
+    
+    // Проверяем сервер через 5 секунд
+    setTimeout(checkServerStatus, 5000);
   </script>
 </body>
 </html>
