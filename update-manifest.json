@@ -1,25 +1,69 @@
 {
-  "version": "2.4",
+  "version": "2.5",
+  "release_date": "2023-11-15",
   "files": [
     {
       "url": "/index.html",
-      "hash": "sha256-abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-      "critical": true
+      "hash": "sha256-a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890",
+      "critical": true,
+      "size": 15432
     },
     {
       "url": "/chat.html",
-      "hash": "sha256-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-      "critical": true
+      "hash": "sha256-0987654321fedcba9876543210fedcba9876543210fedcba9876543210",
+      "critical": true,
+      "size": 8765
+    },
+    {
+      "url": "/sw.js",
+      "hash": "sha256-2468135790acbde1234567890abcdef1234567890abcdef1234567890abcd",
+      "critical": true,
+      "size": 5432
+    },
+    {
+      "url": "/offline.html",
+      "hash": "sha256-13579bdf02468ace1234567890abcdef1234567890abcdef1234567890abc",
+      "critical": true,
+      "size": 4321
     },
     {
       "url": "/styles.css",
-      "hash": "sha256-9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
-      "critical": false
+      "hash": "sha256-9876543210fedcba0987654321fedcba0987654321fedcba0987654321",
+      "critical": false,
+      "size": 7654
     },
     {
-      "url": "/lazy/calendar.js",
+      "url": "/app.js",
+      "hash": "sha256-abcdef1234567890abcdef1234567890abcdef1234567890abcdef12345678",
+      "critical": false,
+      "size": 12345
+    },
+    {
+      "url": "/icon-192.png",
       "hash": "sha256-1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-      "critical": false
+      "critical": false,
+      "size": 3456
+    },
+    {
+      "url": "/manifest.json",
+      "hash": "sha256-567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12",
+      "critical": true,
+      "size": 876
     }
-  ]
+  ],
+  "integrity_report_url": "/api/integrity",
+  "changelog": {
+    "ru": [
+      "Добавлена система диагностики",
+      "Улучшено автономное поведение",
+      "Оптимизирована загрузка ресурсов",
+      "Исправлены проблемы с обновлением"
+    ],
+    "en": [
+      "Added diagnostic system",
+      "Improved offline behavior",
+      "Optimized resource loading",
+      "Fixed update issues"
+    ]
+  }
 }
