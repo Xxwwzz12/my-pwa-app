@@ -1,3 +1,4 @@
+// Используем старый синтаксис для совместимости с Node.js 10
 require('dotenv').config();
 const express = require('express');
 const app = express();
@@ -7,7 +8,6 @@ app.use(express.static('public'));
 
 // Маршрут для обработки callback от Google
 app.get('/auth/callback', (req, res) => {
-  // Получаем токен из параметров запроса
   const token = req.query.access_token;
   
   if (!token) {
@@ -19,8 +19,8 @@ app.get('/auth/callback', (req, res) => {
   res.redirect(`/chat.html#access_token=${token}`);
 });
 
-// Запуск сервера
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Node version: ${process.version}`);
 });
