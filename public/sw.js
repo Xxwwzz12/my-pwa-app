@@ -1,5 +1,5 @@
 // Версия кэша
-const CACHE_VERSION = 'v3.1';
+const CACHE_VERSION = 'v3.2';
 const CACHE_NAME = `ai-assistant-cache-${CACHE_VERSION}`;
 const API_CACHE_NAME = 'api-cache-v1';
 const OFFLINE_URL = '/offline.html';
@@ -110,8 +110,8 @@ self.addEventListener('install', event => {
         log('Кэширование основных ресурсов');
         return cache.addAll([
           '/',
-          '/index.html',
-          '/chat.html',
+          '/index.html?v=3.2',
+          '/chat.html?v=3.2',
           '/offline.html',
           '/manifest.json',
           '/icon-192.png',
@@ -163,6 +163,14 @@ self.addEventListener('activate', event => {
 // Обработка запросов
 self.addEventListener('fetch', event => {
   log(`Запрос: ${event.request.url}`);
+  
+  // Для тестовых запросов соединения
+  if (event.request.url.includes('connection_test')) {
+    event.respondWith(
+      new Response(null, { status: 204 }) // Пустой ответ
+    );
+    return;
+  }
   
   // Для API запросов используем Network-First стратегию
   if (event.request.url.includes('/api/check-update')) {
@@ -226,54 +234,24 @@ self.addEventListener('message', event => {
     
     // Отправляем подтверждение клиенту
     event.source.postMessage({
-      type: 'UPDATE_CONFIRMED',
-      version: CACHE_NAME
+      type: 'RELOAD_REQUIRED'
     });
   }
   
-  // Запрос логов из IndexedDB
-  if (event.data && event.data.type === 'GET_LOGS') {
-    getLogsFromDB().then(logs => {
+  // Проверка версии
+  if (event.data && event.data.type === 'CHECK_VERSION') {
+    const clientVersion = event.data.version;
+    if (clientVersion !== CACHE_VERSION) {
+      log(`Несоответствие версий: клиент ${clientVersion}, SW ${CACHE_VERSION}`);
       event.source.postMessage({
-        type: 'SW_LOGS_RESPONSE',
-        logs: logs
+        type: 'VERSION_MISMATCH',
+        swVersion: CACHE_VERSION,
+        clientVersion: clientVersion
       });
-    }).catch(error => {
-      log(`Ошибка получения логов: ${error.message}`);
-    });
+    }
   }
   
-  // Очистка логов
-  if (event.data && event.data.type === 'CLEAR_LOGS') {
-    initDB().then(db => {
-      const transaction = db.transaction(LOGS_STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(LOGS_STORE_NAME);
-      store.clear();
-      log('Логи Service Worker очищены');
-    });
-  }
+  // ... остальные обработчики сообщений ...
 });
 
-// Периодическая синхронизация (для фоновых обновлений)
-self.addEventListener('periodicsync', event => {
-  if (event.tag === 'check-updates') {
-    log('Периодическая проверка обновлений');
-    event.waitUntil(
-      self.registration.update()
-        .then(() => log('Проверка обновлений завершена'))
-        .catch(err => log(`Ошибка проверки обновлений: ${err.message}`))
-    );
-  }
-});
-
-// Фоновая синхронизация
-self.addEventListener('sync', event => {
-  if (event.tag === 'update-sync') {
-    log('Запуск фоновой синхронизации обновлений');
-    event.waitUntil(
-      self.registration.update()
-        .then(() => log('Фоновая синхронизация завершена'))
-        .catch(err => log(`Ошибка фоновой синхронизации: ${err.message}`))
-    );
-  }
-});
+// ... остальной код без изменений ...

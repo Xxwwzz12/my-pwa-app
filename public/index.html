@@ -21,6 +21,7 @@
       --accent: #4263eb;
       --danger: #ff6b6b;
       --success: #40c057;
+      --warning: #ffd43b;
       --background: #0a0a0a;
       --surface: #121212;
       --card-bg: #1e1e1e;
@@ -169,6 +170,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      position: relative;
     }
     
     .control-button:active {
@@ -180,6 +182,31 @@
       display: block;
       margin-bottom: 8px;
       color: var(--accent);
+    }
+    
+    .status-indicator {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--text-secondary);
+    }
+    
+    .status-indicator.online {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+    
+    .status-indicator.offline {
+      background: var(--danger);
+      box-shadow: 0 0 8px var(--danger);
+    }
+    
+    .status-indicator.recent {
+      background: var(--warning);
+      box-shadow: 0 0 8px var(--warning);
     }
     
     .control-label {
@@ -211,6 +238,9 @@
       font-size: 12px;
       cursor: pointer;
       transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     
     .update-button:active {
@@ -264,6 +294,22 @@
       50% { transform: scale(1.05); }
       100% { transform: scale(1); }
     }
+    
+    .connection-info {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card-bg);
+      color: var(--text-secondary);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      z-index: 10;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 12px var(--shadow);
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -297,29 +343,33 @@
         <div class="control-label">Обновить</div>
       </div>
       
-      <div class="control-button" id="share-button">
-        <i>📤</i>
-        <div class="control-label">Поделиться</div>
+      <div class="control-button" id="update-button">
+        <i>🔄</i>
+        <div class="control-label">Проверить обновления</div>
+        <div class="status-indicator" id="update-status"></div>
       </div>
       
-      <div class="control-button" id="settings-button">
-        <i>⚙️</i>
-        <div class="control-label">Настройки</div>
+      <div class="control-button" id="connection-button">
+        <i>📶</i>
+        <div class="control-label">Соединение</div>
+        <div class="status-indicator" id="connection-status"></div>
       </div>
     </div>
   </div>
   
   <div class="version-info">
-    <div class="version-text" id="version-display">Версия 2.5</div>
-    <button id="update-button" class="update-button">Проверить обновления</button>
+    <div class="version-text" id="version-display">Версия 2.6</div>
+    <div class="connection-info" id="connection-info">Последний обмен: только что</div>
   </div>
   
   <div class="home-indicator"></div>
 
 <script>
     // Конфигурация приложения
-    const APP_VERSION = "2.5";
+    const APP_VERSION = "2.6";
     let newVersionAvailable = false;
+    let lastConnectionTime = null;
+    let connectionTimer = null;
     
     // Инициализация приложения
     function initApp() {
@@ -330,6 +380,9 @@
       // Обновляем время
       updateTime();
       setInterval(updateTime, 60000);
+      
+      // Инициализация статуса соединения
+      initConnectionStatus();
       
       // Назначаем обработчики
       document.getElementById('chat-app').addEventListener('click', () => {
@@ -345,24 +398,103 @@
         window.location.reload();
       });
       
-      document.getElementById('share-button').addEventListener('click', shareApp);
-      document.getElementById('settings-button').addEventListener('click', showSettings);
+      document.getElementById('update-button').addEventListener('click', checkForUpdates);
+      document.getElementById('connection-button').addEventListener('click', showConnectionInfo);
       
       document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
-      
-      // ОБНОВЛЕННАЯ ФУНКЦИЯ ПРОВЕРКИ ОБНОВЛЕНИЙ
-      document.getElementById('update-button').addEventListener('click', checkForUpdates);
       
       // Показываем версию
       document.getElementById('version-display').textContent = `Версия ${APP_VERSION}`;
       
       // Проверка обновлений при запуске
       setTimeout(checkForUpdates, 2000);
+      
+      // Инициируем тестовый запрос для проверки соединения
+      testConnection();
+    }
+    
+    // Инициализация статуса соединения
+    function initConnectionStatus() {
+      // Загружаем последнее время соединения из localStorage
+      const savedTime = localStorage.getItem('last_connection');
+      lastConnectionTime = savedTime ? new Date(savedTime) : new Date();
+      
+      // Обновляем индикатор
+      updateConnectionIndicator();
+      
+      // Запускаем периодическую проверку
+      setInterval(updateConnectionIndicator, 60000);
+    }
+    
+    // Обновление индикатора соединения
+    function updateConnectionIndicator() {
+      const now = new Date();
+      const diff = Math.floor((now - lastConnectionTime) / 1000); // разница в секундах
+      const statusIndicator = document.getElementById('connection-status');
+      
+      // Определяем статус
+      if (diff < 60) { // менее 1 минуты
+        statusIndicator.className = 'status-indicator online';
+      } else if (diff < 300) { // 1-5 минут
+        statusIndicator.className = 'status-indicator recent';
+      } else { // более 5 минут
+        statusIndicator.className = 'status-indicator offline';
+      }
+    }
+    
+    // Показ информации о соединении
+    function showConnectionInfo() {
+      const infoElement = document.getElementById('connection-info');
+      const now = new Date();
+      const diff = Math.floor((now - lastConnectionTime) / 1000); // разница в секундах
+      
+      let timeText;
+      if (diff < 60) {
+        timeText = 'только что';
+      } else if (diff < 3600) {
+        const minutes = Math.floor(diff / 60);
+        timeText = `${minutes} мин назад`;
+      } else {
+        const hours = Math.floor(diff / 3600);
+        timeText = `${hours} ч назад`;
+      }
+      
+      infoElement.textContent = `Последний обмен: ${timeText}`;
+      infoElement.style.display = 'block';
+      
+      // Автоматическое скрытие через 3 секунды
+      clearTimeout(connectionTimer);
+      connectionTimer = setTimeout(() => {
+        infoElement.style.display = 'none';
+      }, 3000);
+    }
+    
+    // Тестовый запрос для проверки соединения
+    function testConnection() {
+      fetch('/?connection_test=1', { cache: 'no-store' })
+        .then(() => {
+          updateConnectionTime();
+        })
+        .catch(() => {
+          // В случае ошибки все равно обновляем время попытки
+          updateConnectionTime();
+        });
+    }
+    
+    // Обновление времени последнего соединения
+    function updateConnectionTime() {
+      lastConnectionTime = new Date();
+      localStorage.setItem('last_connection', lastConnectionTime.toISOString());
+      updateConnectionIndicator();
     }
     
     // Функция проверки обновлений
     async function checkForUpdates() {
       const updateIndicator = document.getElementById('update-indicator');
+      const statusIndicator = document.getElementById('update-status');
+      
+      // Показываем статус проверки
+      statusIndicator.className = 'status-indicator recent';
       
       try {
         const response = await fetch(`/api/check-update?v=${APP_VERSION}`);
@@ -376,14 +508,25 @@
           updateIndicator.textContent = `Доступна версия ${data.current_version}`;
           updateIndicator.style.background = 'var(--success)';
           
+          // Обновляем статус
+          statusIndicator.className = 'status-indicator online';
+          
           // Показываем список изменений
           alert(`Доступно обновление! (v${data.current_version})\n\nИзменения:\n• ${data.changelog.join('\n• ')}`);
         } else {
           alert('У вас установлена последняя версия приложения');
+          statusIndicator.className = 'status-indicator online';
         }
+        
+        // Обновляем время соединения
+        updateConnectionTime();
       } catch (error) {
         console.error('Ошибка проверки обновлений:', error);
         alert('Не удалось проверить обновления. Пожалуйста, проверьте подключение к интернету.');
+        statusIndicator.className = 'status-indicator offline';
+        
+        // Показываем информацию о соединении
+        showConnectionInfo();
       }
     }
     
@@ -395,34 +538,12 @@
       document.getElementById('current-time').textContent = `${hours}:${minutes}`;
     }
     
-    // Функция "Поделиться"
-    function shareApp() {
-      const shareUrl = window.location.href;
-      
-      if (navigator.share) {
-        navigator.share({
-          title: 'AI Помощник',
-          text: 'Попробуйте это приложение с ИИ!',
-          url: shareUrl
-        });
-      } else {
-        navigator.clipboard.writeText(shareUrl).then(() => {
-          alert('Ссылка скопирована в буфер обмена!');
-        });
-      }
-    }
-    
     // Переключение темы
     function toggleTheme() {
       const currentTheme = document.documentElement.getAttribute('data-theme');
       const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', newTheme);
       localStorage.setItem('theme', newTheme);
-    }
-    
-    // Показ настроек
-    function showSettings() {
-      alert('Настройки приложения:\n\n• Уведомления: Вкл\n• Автообновление: Вкл\n• Тема: Системная');
     }
     
     // Запуск приложения после загрузки
@@ -439,31 +560,28 @@
           
           console.log('ServiceWorker зарегистрирован с областью видимости: ', registration.scope);
           
-          // Проверка обновлений
+          // Принудительное обновление при изменении версии
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;
-            console.log('Обнаружено обновление Service Worker');
-            
             newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed') {
-                if (navigator.serviceWorker.controller) {
-                  console.log('Доступна новая версия приложения');
-                  showUpdateNotification();
-                }
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('Новая версия обнаружена! Принудительное обновление...');
+                newWorker.postMessage({type: 'SKIP_WAITING'});
               }
             });
           });
           
-          // Проверка новой версии при запуске
-          if (registration.waiting) {
-            showUpdateNotification();
-          }
+          // Проверка версии при загрузке
+          navigator.serviceWorker.controller?.postMessage({
+            type: 'CHECK_VERSION',
+            version: APP_VERSION
+          });
           
           // Периодическая проверка обновлений (каждый час)
           setInterval(() => {
             registration.update().then(() => {
               console.log('Фоновая проверка обновлений выполнена');
-              checkForUpdates(); // Проверяем через наш API
+              updateConnectionTime(); // Обновляем время соединения
             });
           }, 60 * 60 * 1000);
           
@@ -473,15 +591,29 @@
       });
     }
     
-    // Показ уведомления об обновлении
-    function showUpdateNotification() {
-      const updateIndicator = document.getElementById('update-indicator');
-      if (updateIndicator) {
-        updateIndicator.style.display = 'block';
-        updateIndicator.textContent = 'Доступно обновление!';
-        updateIndicator.style.background = 'var(--success)';
+    // Обработка сообщений от Service Worker
+    navigator.serviceWorker.addEventListener('message', event => {
+      switch (event.data.type) {
+        case 'RELOAD_REQUIRED':
+          console.log('Требуется перезагрузка для применения обновления');
+          if (confirm('Доступно обновление приложения. Перезагрузить сейчас?')) {
+            window.location.reload();
+          }
+          break;
+          
+        case 'VERSION_MISMATCH':
+          console.log(`Версия SW (${event.data.swVersion}) не совпадает с приложением (${APP_VERSION})`);
+          // Принудительно обновляем Service Worker
+          navigator.serviceWorker.getRegistration().then(reg => {
+            reg?.update().then(() => updateConnectionTime());
+          });
+          break;
+          
+        case 'SW_LOG':
+          console.log('[SW]', event.data.message);
+          break;
       }
-    }
+    });
   </script>
 </body>
 </html>

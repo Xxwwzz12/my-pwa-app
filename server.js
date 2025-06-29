@@ -19,6 +19,17 @@ app.get('/api/check-update', (req, res) => {
   }
 });
 
+// Обработчик для тестов соединения
+app.get('/', (req, res) => {
+  if (req.query.connection_test) {
+    // Для тестовых запросов - просто отвечаем OK
+    res.sendStatus(204);
+  } else {
+    // Обычный запрос - отправляем index.html
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  }
+});
+
 // Fallback-роут для SPA (все остальные запросы)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
