@@ -2,174 +2,532 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>AI Чат</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>AI Чат | Помощник</title>
   <style>
-    * { 
-      margin: 0; 
-      padding: 0; 
-      box-sizing: border-box; 
+    /* Все стили из предыдущей версии остаются без изменений */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
     }
     
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      display: flex; 
-      flex-direction: column; 
+    :root {
+      --primary: #4263eb;
+      --user-bubble: #4263eb;
+      --assistant-bubble: #f0f2f5;
+      --text-primary: #1d1d1f;
+      --text-secondary: #86868b;
+      --background: #ffffff;
+      --input-bg: #f0f2f5;
+      --header-bg: #f9f9fb;
+      --border: #e0e0e0;
+      --error: #ff6b6b;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #000000;
+        --text-primary: #f5f5f7;
+        --text-secondary: #a1a1a6;
+        --user-bubble: #0a84ff;
+        --assistant-bubble: #1c1c1e;
+        --input-bg: #1c1c1e;
+        --header-bg: #1c1c1e;
+        --border: #2c2c2e;
+        --error: #ff453a;
+      }
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
       height: 100vh;
-      background: #f8f9fa;
-      color: #333;
+      background: var(--background);
+      display: flex;
+      flex-direction: column;
+      color: var(--text-primary);
     }
     
-    #chat-header {
-      background: #4263eb;
-      color: white;
-      padding: 16px 0;
-      text-align: center;
-      position: relative;
-      flex-shrink: 0;
-      font-weight: 500;
-      font-size: 18px;
+    .header {
+      background: var(--header-bg);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
     
-    #back-btn {
-      position: absolute;
-      left: 12px;
-      background: none;
-      border: none;
-      color: white;
-      font-size: 24px;
+    .back-button {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--input-bg);
+      margin-right: 12px;
       cursor: pointer;
     }
     
-    #chat-container {
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .chat-container {
       flex: 1;
       overflow-y: auto;
       padding: 16px;
+      display: flex;
+      flex-direction: column;
     }
     
     .message {
       max-width: 85%;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .message-user {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+    
+    .message-assistant {
+      align-self: flex-start;
+      align-items: flex-start;
+    }
+    
+    .bubble {
       padding: 12px 16px;
-      margin: 10px 0;
       border-radius: 18px;
-      font-size: 16px;
+      margin-bottom: 4px;
+      position: relative;
+      word-wrap: break-word;
+      line-height: 1.5;
     }
     
-    .user-message {
-      background: #4263eb;
+    .user-bubble {
+      background: var(--user-bubble);
       color: white;
-      margin-left: auto;
+      border-bottom-right-radius: 4px;
     }
     
-    .bot-message {
-      background: #e9ecef;
-      margin-right: auto;
+    .assistant-bubble {
+      background: var(--assistant-bubble);
+      color: var(--text-primary);
+      border-bottom-left-radius: 4px;
+    }
+    
+    .error-bubble {
+      background: var(--error);
+      color: white;
+      border-bottom-left-radius: 4px;
+    }
+    
+    .timestamp {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    
+    .typing-indicator {
+      display: none;
+      background: var(--assistant-bubble);
+      padding: 12px 16px;
+      border-radius: 18px;
+      margin-bottom: 20px;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    
+    .typing-indicator span {
+      height: 8px;
+      width: 8px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+      animation: typing 1s infinite;
+    }
+    
+    .typing-indicator span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    
+    .typing-indicator span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-5px); }
     }
     
     .input-area {
-      display: flex;
-      padding: 12px;
-      border-top: 1px solid #e9ecef;
-      background: white;
-      flex-shrink: 0;
-    }
-    
-    #user-input {
-      flex: 1;
       padding: 12px 16px;
-      border: 1px solid #e9ecef;
-      border-radius: 25px;
-      font-size: 16px;
+      border-top: 1px solid var(--border);
+      background: var(--header-bg);
+      display: flex;
+      align-items: center;
+      position: sticky;
+      bottom: 0;
     }
     
-    #send-btn {
+    .message-input {
+      flex: 1;
+      background: var(--input-bg);
+      border-radius: 20px;
+      padding: 12px 18px;
+      border: none;
+      font-size: 16px;
+      color: var(--text-primary);
+      resize: none;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    
+    .message-input:focus {
+      outline: none;
+    }
+    
+    .send-button {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       margin-left: 12px;
-      padding: 12px 20px;
-      background: #4263eb;
+      cursor: pointer;
+      border: none;
+    }
+    
+    .send-button:disabled {
+      background: var(--text-secondary);
+      cursor: not-allowed;
+    }
+    
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+      color: var(--text-secondary);
+    }
+    
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    
+    .empty-state h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+    
+    .empty-state p {
+      max-width: 300px;
+      line-height: 1.4;
+    }
+    
+    .clear-button {
+      position: fixed;
+      bottom: 80px;
+      right: 16px;
+      background: var(--primary);
       color: white;
       border: none;
-      border-radius: 25px;
-      font-size: 16px;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
       cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
   </style>
 </head>
 <body>
-  <div id="chat-header">
-    <button id="back-btn">←</button>
-    <span>AI Чат</span>
+  <div class="header">
+    <div class="back-button" id="back-button">
+      <i>⬅️</i>
+    </div>
+    <div class="header-title">AI Чат (Gemini)</div>
   </div>
   
-  <div id="chat-container"></div>
+  <div class="chat-container" id="chat-container">
+    <div class="empty-state" id="empty-state">
+      <i>💬</i>
+      <h2>Начните разговор</h2>
+      <p>Задайте вопрос или начните беседу с вашим ИИ-помощником</p>
+    </div>
+  </div>
+  
+  <div class="typing-indicator" id="typing-indicator">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
   
   <div class="input-area">
-    <input type="text" id="user-input" placeholder="Введите сообщение...">
-    <button id="send-btn">Отправить</button>
+    <textarea 
+      class="message-input" 
+      id="message-input" 
+      placeholder="Напишите сообщение..." 
+      rows="1"></textarea>
+    <button class="send-button" id="send-button">
+      <i>↑</i>
+    </button>
   </div>
+  
+  <button class="clear-button" id="clear-button">
+    <i>🗑️</i>
+  </button>
 
   <script>
-    // Глобальное логирование
-    const logs = [];
+    // Конфигурация API
+    const API_KEY = "AIzaSyAiX_Ff0F9pq1yMGEZz_lVrk6RtdQ13u3k";
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
     
-    function log(message) {
-      const timestamp = new Date().toLocaleTimeString();
-      const logEntry = `[${timestamp}] ${message}`;
-      logs.push(logEntry);
-      console.log(logEntry);
-    }
+    // Состояние чата
+    const chatHistory = JSON.parse(localStorage.getItem('chat_history')) || [];
+    const chatContainer = document.getElementById('chat-container');
+    const emptyState = document.getElementById('empty-state');
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+    const backButton = document.getElementById('back-button');
+    const clearButton = document.getElementById('clear-button');
+    const typingIndicator = document.getElementById('typing-indicator');
     
-    // Инициализация
-    log('Запуск страницы чата');
-    
-    try {
-      const chatContainer = document.getElementById('chat-container');
-      const userInput = document.getElementById('user-input');
-      const sendBtn = document.getElementById('send-btn');
-      const backBtn = document.getElementById('back-btn');
+    // Инициализация чата
+    function initChat() {
+      // Загрузка истории чата
+      renderChatHistory();
       
-      // Добавление сообщения
-      function addMessage(text, isUser) {
-        const msg = document.createElement('div');
-        msg.className = isUser ? 'message user-message' : 'message bot-message';
-        msg.textContent = text;
-        chatContainer.appendChild(msg);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-      }
-      
-      // Отправка сообщения
-      function handleSend() {
-        const msg = userInput.value.trim();
-        if (!msg) return;
-        
-        addMessage(msg, true);
-        userInput.value = '';
-        
-        // Заглушка вместо реального AI
-        setTimeout(() => {
-          addMessage("Это демо-версия чата. Реальный AI будет подключен позже.", false);
-        }, 1000);
-      }
-      
-      // Обработчики событий
-      sendBtn.addEventListener('click', handleSend);
-      userInput.addEventListener('keypress', e => {
-        if (e.key === 'Enter') handleSend();
-      });
-      
-      backBtn.addEventListener('click', () => {
+      // Назначение обработчиков
+      backButton.addEventListener('click', () => {
         window.location.href = 'index.html';
       });
       
-      // Приветствие
-      addMessage("Привет! Я ваш AI-помощник. Чем могу помочь?", false);
+      sendButton.addEventListener('click', sendMessage);
       
-      log('Инициализация чата завершена');
-    } catch (e) {
-      log(`ОШИБКА ЧАТА: ${e.message}`);
-      document.getElementById('chat-container').innerHTML = 
-        '<p style="color:red; padding:20px; text-align:center">Ошибка инициализации чата</p>';
+      messageInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+      
+      messageInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+      });
+      
+      clearButton.addEventListener('click', clearChatHistory);
     }
+    
+    // Отправка сообщения
+    async function sendMessage() {
+      const message = messageInput.value.trim();
+      if (!message) return;
+      
+      // Блокируем кнопку отправки
+      sendButton.disabled = true;
+      
+      // Добавление сообщения пользователя
+      addMessage(message, 'user');
+      
+      // Очистка поля ввода
+      messageInput.value = '';
+      messageInput.style.height = 'auto';
+      messageInput.focus();
+      
+      // Получение ответа от ИИ
+      try {
+        await getAIResponse(message);
+      } catch (error) {
+        console.error('Ошибка API:', error);
+        addMessage(`Ошибка: ${error.message || 'Не удалось получить ответ'}`, 'error');
+      } finally {
+        // Разблокируем кнопку отправки
+        sendButton.disabled = false;
+      }
+    }
+    
+    // Добавление сообщения в чат
+    function addMessage(text, sender) {
+      // Скрываем пустое состояние
+      if (emptyState.style.display !== 'none') {
+        emptyState.style.display = 'none';
+      }
+      
+      // Создаем элемент сообщения
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message message-${sender}`;
+      
+      const bubble = document.createElement('div');
+      bubble.className = `bubble ${sender}-bubble`;
+      bubble.textContent = text;
+      
+      const timestamp = document.createElement('div');
+      timestamp.className = 'timestamp';
+      timestamp.textContent = getCurrentTime();
+      
+      messageDiv.appendChild(bubble);
+      messageDiv.appendChild(timestamp);
+      
+      chatContainer.appendChild(messageDiv);
+      
+      // Прокрутка вниз
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+      
+      // Сохранение в историю
+      if (sender !== 'error') {
+        chatHistory.push({
+          text,
+          sender,
+          time: new Date().toISOString()
+        });
+        
+        localStorage.setItem('chat_history', JSON.stringify(chatHistory));
+      }
+    }
+    
+    // Получение ответа от ИИ
+    async function getAIResponse(userMessage) {
+      // Показываем индикатор набора сообщения
+      typingIndicator.style.display = 'flex';
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+      
+      try {
+        // Формируем историю для контекста
+        const history = chatHistory.slice(-6).map(msg => ({
+          role: msg.sender === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.text }]
+        }));
+        
+        // Формируем запрос
+        const requestBody = {
+          contents: [
+            ...history,
+            {
+              role: 'user',
+              parts: [{ text: userMessage }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 1024
+          }
+        };
+        
+        // Отправляем запрос
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || 'Ошибка API');
+        }
+        
+        const data = await response.json();
+        
+        // Извлекаем текст ответа
+        const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (!aiText) {
+          throw new Error('ИИ не вернул ответ');
+        }
+        
+        // Добавляем ответ в чат
+        addMessage(aiText, 'assistant');
+      } catch (error) {
+        console.error('Ошибка API:', error);
+        addMessage(`Ошибка: ${error.message || 'Не удалось получить ответ'}`, 'error');
+      } finally {
+        // Скрываем индикатор
+        typingIndicator.style.display = 'none';
+      }
+    }
+    
+    // Очистка истории чата
+    function clearChatHistory() {
+      if (confirm('Вы уверены, что хотите очистить всю историю чата?')) {
+        localStorage.removeItem('chat_history');
+        chatHistory.length = 0;
+        chatContainer.innerHTML = '';
+        emptyState.style.display = 'flex';
+      }
+    }
+    
+    // Отображение истории чата
+    function renderChatHistory() {
+      if (chatHistory.length === 0) {
+        emptyState.style.display = 'flex';
+        return;
+      }
+      
+      emptyState.style.display = 'none';
+      chatContainer.innerHTML = '';
+      
+      chatHistory.forEach(message => {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message message-${message.sender}`;
+        
+        const bubble = document.createElement('div');
+        bubble.className = `bubble ${message.sender}-bubble`;
+        bubble.textContent = message.text;
+        
+        const timestamp = document.createElement('div');
+        timestamp.className = 'timestamp';
+        timestamp.textContent = formatTime(message.time);
+        
+        messageDiv.appendChild(bubble);
+        messageDiv.appendChild(timestamp);
+        chatContainer.appendChild(messageDiv);
+      });
+      
+      // Прокрутка вниз
+      setTimeout(() => {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }, 100);
+    }
+    
+    // Форматирование времени
+    function formatTime(isoString) {
+      const date = new Date(isoString);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    function getCurrentTime() {
+      return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    // Запуск приложения после загрузки
+    window.addEventListener('DOMContentLoaded', initChat);
+    
+    // Глобальный обработчик ошибок
+    window.addEventListener('error', (event) => {
+      console.error('Global error:', event.error);
+      addMessage('Произошла внутренняя ошибка приложения', 'error');
+    });
   </script>
 </body>
 </html>
