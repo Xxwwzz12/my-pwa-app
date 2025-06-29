@@ -572,6 +572,34 @@
     
     // Инициализация чата
     function initChat() {
+      // [ШАРИНГ] Проверка и обработка контента для шаринга
+      const sharedContent = localStorage.getItem('shared_content');
+      if (sharedContent) {
+        try {
+          const { title, text, url } = JSON.parse(sharedContent);
+          localStorage.removeItem('shared_content');
+          
+          // Формируем сообщение для ИИ
+          const sharedMessage = `Пользователь поделился контентом: 
+            Заголовок: ${title || 'нет'}
+            Текст: ${text || 'нет'}
+            Ссылка: ${url || 'нет'}
+            
+            Предложи идеи как использовать этот контент.`;
+          
+          // Добавляем сообщение в историю
+          addMessage(sharedMessage, 'user');
+          
+          // Имитируем отправку сообщения
+          setTimeout(() => {
+            getAIResponse(sharedMessage);
+          }, 1000);
+          
+        } catch (e) {
+          console.error('Ошибка обработки шаринга:', e);
+        }
+      }
+      
       // Загрузка истории чата
       chatHistory = JSON.parse(localStorage.getItem('chat_history')) || [];
       renderChatHistory();
@@ -1101,7 +1129,11 @@
       initChat();
     });
   </script>
+  
+  <!-- Добавляем скрипт для регистрации Service Worker -->
   <script src="/service-worker-registration.js"></script>
+  
+  <!-- Добавляем общий скрипт приложения -->
   <script src="/app.js"></script>
 </body>
 </html>
