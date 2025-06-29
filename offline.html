@@ -221,27 +221,6 @@
         reloadButton.classList.add('pulse');
       }
     });
-    
-    // Проверка доступности сервера
-    async function checkServerStatus() {
-      try {
-        const response = await fetch('/?healthcheck=1', {
-          method: 'HEAD',
-          cache: 'no-store'
-        });
-        
-        if (response.ok) {
-          statusText.textContent = 'Сервер доступен, проблема с клиентом';
-        } else {
-          statusText.textContent = 'Проблема с сервером';
-        }
-      } catch (error) {
-        statusText.textContent = 'Сервер недоступен';
-      }
-    }
-    
-    // Проверяем сервер через 5 секунд
-    setTimeout(checkServerStatus, 5000);
   </script>
 </body>
 </html>

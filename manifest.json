@@ -2,7 +2,7 @@
   "name": "AI Помощник",
   "short_name": "AI Assistant",
   "description": "Ваш персональный помощник с искусственным интеллектом",
-  "start_url": "/",
+  "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
   "theme_color": "#4263eb",
@@ -56,6 +56,11 @@
       "url": "url"
     }
   },
-  "protocol_handlers": [],
+  "protocol_handlers": [
+    {
+      "protocol": "web+aiassistant",
+      "url": "/index.html?action=%s"
+    }
+  ],
   "file_handlers": []
 }

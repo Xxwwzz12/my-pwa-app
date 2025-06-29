@@ -111,7 +111,6 @@ self.addEventListener('install', event => {
           '/index.html',
           '/chat.html',
           '/offline.html',
-          '/icon-192.png',
           '/manifest.json'
         ]);
       })
