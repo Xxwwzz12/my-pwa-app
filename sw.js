@@ -1,5 +1,5 @@
 // Версия кэша
-const CACHE_NAME = 'ai-assistant-cache-v2.5';
+const CACHE_NAME = 'ai-assistant-cache-v3.0';
 const OFFLINE_URL = '/offline.html';
 const LOGS_DB_NAME = 'SW_Logs_DB';
 const LOGS_STORE_NAME = 'logs';
@@ -111,7 +111,9 @@ self.addEventListener('install', event => {
           '/index.html',
           '/chat.html',
           '/offline.html',
-          '/manifest.json'
+          '/manifest.json',
+          '/icon-192.png',
+          '/icon-512.png'
         ]);
       })
       .catch(error => {
