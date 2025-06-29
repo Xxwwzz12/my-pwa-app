@@ -193,6 +193,42 @@
       padding: 15px;
       font-size: 14px;
       color: var(--text-tertiary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .version-text {
+      margin-bottom: 8px;
+    }
+    
+    .update-button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .update-button:active {
+      transform: scale(0.95);
+    }
+    
+    .update-indicator {
+      display: none;
+      position: fixed;
+      top: 60px;
+      right: 16px;
+      background: var(--success);
+      color: white;
+      border-radius: 20px;
+      padding: 5px 15px;
+      font-size: 12px;
+      z-index: 100;
+      animation: pulse 2s infinite;
     }
     
     .home-indicator {
@@ -222,6 +258,12 @@
     .app-icon:hover::after {
       opacity: 1;
     }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
   </style>
 </head>
 <body>
@@ -231,6 +273,8 @@
       <button class="theme-toggle" id="theme-toggle">🌓</button>
     </div>
   </div>
+  
+  <div class="update-indicator" id="update-indicator">Доступно обновление!</div>
   
   <div class="app-grid">
     <div class="app-icon" id="chat-app">
@@ -265,13 +309,17 @@
     </div>
   </div>
   
-  <div class="version-info" id="version-display">Версия 2.5</div>
+  <div class="version-info">
+    <div class="version-text" id="version-display">Версия 2.5</div>
+    <button id="update-button" class="update-button">Проверить обновления</button>
+  </div>
   
   <div class="home-indicator"></div>
 
   <script>
     // Конфигурация приложения
     const APP_VERSION = "2.5";
+    let newVersionAvailable = false;
     
     // Инициализация приложения
     function initApp() {
@@ -301,9 +349,13 @@
       document.getElementById('settings-button').addEventListener('click', showSettings);
       
       document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+      document.getElementById('update-button').addEventListener('click', checkForUpdates);
       
       // Показываем версию
       document.getElementById('version-display').textContent = `Версия ${APP_VERSION}`;
+      
+      // Проверка обновлений при запуске
+      setTimeout(checkForUpdates, 2000);
     }
     
     // Обновляем время в статус-баре
@@ -344,10 +396,72 @@
       alert('Настройки приложения:\n\n• Уведомления: Вкл\n• Автообновление: Вкл\n• Тема: Системная');
     }
     
+    // Проверка обновлений
+    function checkForUpdates() {
+      const updateIndicator = document.getElementById('update-indicator');
+      
+      // Эмуляция проверки - в реальном приложении здесь будет запрос к серверу
+      const shouldUpdate = Math.random() > 0.5;
+      
+      if (shouldUpdate) {
+        newVersionAvailable = true;
+        updateIndicator.style.display = 'block';
+        updateIndicator.textContent = 'Доступно обновление!';
+        updateIndicator.style.background = 'var(--success)';
+      } else {
+        alert('У вас установлена последняя версия приложения');
+      }
+    }
+    
     // Запуск приложения после загрузки
     window.addEventListener('DOMContentLoaded', initApp);
   </script>
-  <script src="/service-worker-registration.js"></script>
-  <script src="/app.js"></script>
+  
+  <!-- Скрипт для работы с Service Worker -->
+  <script>
+    // Регистрация Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('/service-worker-registration.js');
+          
+          console.log('ServiceWorker зарегистрирован с областью видимости: ', registration.scope);
+          
+          // Проверка обновлений
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            console.log('Обнаружено обновление Service Worker');
+            
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed') {
+                if (navigator.serviceWorker.controller) {
+                  console.log('Доступна новая версия приложения');
+                  showUpdateNotification();
+                }
+              }
+            });
+          });
+          
+          // Проверка новой версии при запуске
+          if (registration.waiting) {
+            showUpdateNotification();
+          }
+          
+        } catch (error) {
+          console.error('Ошибка регистрации Service Worker: ', error);
+        }
+      });
+    }
+    
+    // Показ уведомления об обновлении
+    function showUpdateNotification() {
+      const updateIndicator = document.getElementById('update-indicator');
+      if (updateIndicator) {
+        updateIndicator.style.display = 'block';
+        updateIndicator.textContent = 'Доступно обновление!';
+        updateIndicator.style.background = 'var(--success)';
+      }
+    }
+  </script>
 </body>
 </html>
