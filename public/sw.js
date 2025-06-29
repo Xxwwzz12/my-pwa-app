@@ -1,5 +1,7 @@
 // Версия кэша
-const CACHE_NAME = 'ai-assistant-cache-v3.0';
+const CACHE_VERSION = 'v3.1';
+const CACHE_NAME = `ai-assistant-cache-${CACHE_VERSION}`;
+const API_CACHE_NAME = 'api-cache-v1';
 const OFFLINE_URL = '/offline.html';
 const LOGS_DB_NAME = 'SW_Logs_DB';
 const LOGS_STORE_NAME = 'logs';
@@ -150,7 +152,7 @@ self.addEventListener('activate', event => {
           log(`Отправка NEW_VERSION_AVAILABLE клиенту: ${client.url}`);
           client.postMessage({
             type: 'NEW_VERSION_AVAILABLE',
-            version: CACHE_NAME.split('-').pop()
+            version: CACHE_VERSION
           });
         });
       });
@@ -158,10 +160,29 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Стратегия работы с запросами
+// Обработка запросов
 self.addEventListener('fetch', event => {
   log(`Запрос: ${event.request.url}`);
   
+  // Для API запросов используем Network-First стратегию
+  if (event.request.url.includes('/api/check-update')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(networkResponse => {
+          // Кэшируем свежий ответ
+          const responseClone = networkResponse.clone();
+          caches.open(API_CACHE_NAME)
+            .then(cache => cache.put(event.request, responseClone));
+          return networkResponse;
+        })
+        .catch(() => {
+          // При ошибке сети - возвращаем из кэша
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
   // Для навигационных запросов используем другую стратегию
   if (event.request.mode === 'navigate') {
     event.respondWith(

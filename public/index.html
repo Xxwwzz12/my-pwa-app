@@ -316,7 +316,7 @@
   
   <div class="home-indicator"></div>
 
-  <script>
+<script>
     // Конфигурация приложения
     const APP_VERSION = "2.5";
     let newVersionAvailable = false;
@@ -349,6 +349,8 @@
       document.getElementById('settings-button').addEventListener('click', showSettings);
       
       document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+      
+      // ОБНОВЛЕННАЯ ФУНКЦИЯ ПРОВЕРКИ ОБНОВЛЕНИЙ
       document.getElementById('update-button').addEventListener('click', checkForUpdates);
       
       // Показываем версию
@@ -356,6 +358,33 @@
       
       // Проверка обновлений при запуске
       setTimeout(checkForUpdates, 2000);
+    }
+    
+    // Функция проверки обновлений
+    async function checkForUpdates() {
+      const updateIndicator = document.getElementById('update-indicator');
+      
+      try {
+        const response = await fetch(`/api/check-update?v=${APP_VERSION}`);
+        if (!response.ok) throw new Error('Ошибка сети');
+        
+        const data = await response.json();
+        
+        if (data.update_available) {
+          newVersionAvailable = true;
+          updateIndicator.style.display = 'block';
+          updateIndicator.textContent = `Доступна версия ${data.current_version}`;
+          updateIndicator.style.background = 'var(--success)';
+          
+          // Показываем список изменений
+          alert(`Доступно обновление! (v${data.current_version})\n\nИзменения:\n• ${data.changelog.join('\n• ')}`);
+        } else {
+          alert('У вас установлена последняя версия приложения');
+        }
+      } catch (error) {
+        console.error('Ошибка проверки обновлений:', error);
+        alert('Не удалось проверить обновления. Пожалуйста, проверьте подключение к интернету.');
+      }
     }
     
     // Обновляем время в статус-баре
@@ -396,23 +425,6 @@
       alert('Настройки приложения:\n\n• Уведомления: Вкл\n• Автообновление: Вкл\n• Тема: Системная');
     }
     
-    // Проверка обновлений
-    function checkForUpdates() {
-      const updateIndicator = document.getElementById('update-indicator');
-      
-      // Эмуляция проверки - в реальном приложении здесь будет запрос к серверу
-      const shouldUpdate = Math.random() > 0.5;
-      
-      if (shouldUpdate) {
-        newVersionAvailable = true;
-        updateIndicator.style.display = 'block';
-        updateIndicator.textContent = 'Доступно обновление!';
-        updateIndicator.style.background = 'var(--success)';
-      } else {
-        alert('У вас установлена последняя версия приложения');
-      }
-    }
-    
     // Запуск приложения после загрузки
     window.addEventListener('DOMContentLoaded', initApp);
   </script>
@@ -423,7 +435,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const registration = await navigator.serviceWorker.register('/service-worker-registration.js');
+          const registration = await navigator.serviceWorker.register('/sw.js');
           
           console.log('ServiceWorker зарегистрирован с областью видимости: ', registration.scope);
           
@@ -446,6 +458,14 @@
           if (registration.waiting) {
             showUpdateNotification();
           }
+          
+          // Периодическая проверка обновлений (каждый час)
+          setInterval(() => {
+            registration.update().then(() => {
+              console.log('Фоновая проверка обновлений выполнена');
+              checkForUpdates(); // Проверяем через наш API
+            });
+          }, 60 * 60 * 1000);
           
         } catch (error) {
           console.error('Ошибка регистрации Service Worker: ', error);

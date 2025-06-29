@@ -1,6 +1,6 @@
 {
-  "version": "2.5",
-  "release_date": "2023-11-15",
+  "version": "2.6",
+  "release_date": "2023-11-20",
   "files": [
     {
       "url": "/index.html",
@@ -54,16 +54,16 @@
   "integrity_report_url": "/api/integrity",
   "changelog": {
     "ru": [
-      "Добавлена система диагностики",
-      "Улучшено автономное поведение",
-      "Оптимизирована загрузка ресурсов",
-      "Исправлены проблемы с обновлением"
+      "Реализована реальная проверка обновлений через API",
+      "Добавлено кэширование запросов к /api/check-update",
+      "Улучшено оффлайн-поведение приложения",
+      "Обновлен механизм работы Service Worker"
     ],
     "en": [
-      "Added diagnostic system",
+      "Implemented real update checks via API",
+      "Added caching for /api/check-update requests",
       "Improved offline behavior",
-      "Optimized resource loading",
-      "Fixed update issues"
+      "Updated Service Worker mechanism"
     ]
   }
 }
