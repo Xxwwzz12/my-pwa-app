@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -16,25 +16,32 @@
     }
     
     :root {
-      --primary: #4263eb;
+      --primary: #ffffff;
+      --primary-dark: #1a1a1a;
+      --accent: #4263eb;
       --danger: #ff6b6b;
       --success: #40c057;
-      --warning: #f76707;
-      --text-primary: #1d1d1f;
-      --text-secondary: #86868b;
-      --background: #f2f2f6;
-      --card-bg: #ffffff;
-      --card-shadow: rgba(0, 0, 0, 0.1);
+      --background: #0a0a0a;
+      --surface: #121212;
+      --card-bg: #1e1e1e;
+      --text-primary: #ffffff;
+      --text-secondary: #b0b0b0;
+      --text-tertiary: #8a8a8a;
+      --border: #2a2a2a;
+      --shadow: rgba(0, 0, 0, 0.4);
     }
     
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --background: #000000;
-        --text-primary: #f5f5f7;
-        --text-secondary: #a1a1a6;
-        --card-bg: #1c1c1e;
-        --card-shadow: rgba(255, 255, 255, 0.05);
-      }
+    [data-theme="light"] {
+      --primary: #000000;
+      --primary-dark: #f0f0f0;
+      --background: #f5f5f5;
+      --surface: #ffffff;
+      --card-bg: #ffffff;
+      --text-primary: #121212;
+      --text-secondary: #5a5a5a;
+      --text-tertiary: #8a8a8a;
+      --border: #e0e0e0;
+      --shadow: rgba(0, 0, 0, 0.08);
     }
     
     body {
@@ -46,6 +53,8 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      color: var(--text-primary);
+      transition: background 0.3s ease;
     }
     
     .status-bar {
@@ -54,20 +63,30 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      color: var(--text-primary);
       font-size: 17px;
       font-weight: 600;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
     }
     
     .time {
       font-weight: 600;
     }
     
+    .theme-toggle {
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 5px;
+    }
+    
     .app-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 24px;
-      padding: 20px;
+      gap: 20px;
+      padding: 24px;
       max-width: 500px;
       margin: 0 auto;
       flex-grow: 1;
@@ -83,65 +102,84 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      box-shadow: 0 4px 20px var(--card-shadow);
+      box-shadow: 0 6px 16px var(--shadow);
       cursor: pointer;
-      transition: transform 0.1s, opacity 0.2s;
+      transition: transform 0.2s, box-shadow 0.3s;
       position: relative;
       overflow: hidden;
       user-select: none;
+      border: 1px solid var(--border);
     }
     
     .app-icon:active {
-      transform: scale(0.92);
-      opacity: 0.8;
+      transform: scale(0.95);
+    }
+    
+    .app-icon:hover {
+      box-shadow: 0 8px 24px var(--shadow);
     }
     
     .app-icon i {
-      font-size: 40px;
-      margin-bottom: 8px;
+      font-size: 36px;
+      margin-bottom: 12px;
+      color: var(--accent);
     }
     
     .app-name {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 500;
       color: var(--text-primary);
       text-align: center;
       max-width: 80%;
     }
     
+    .app-description {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: 6px;
+      padding: 0 10px;
+      text-align: center;
+    }
+    
     .control-panel {
-      background: var(--card-bg);
-      border-radius: 24px;
+      background: var(--surface);
+      border-radius: 24px 24px 0 0;
       padding: 20px;
-      margin: 20px;
-      box-shadow: 0 4px 20px var(--card-shadow);
+      margin-top: auto;
+      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+      border-top: 1px solid var(--border);
     }
     
     .control-row {
       display: flex;
       justify-content: space-between;
       margin-bottom: 15px;
+      gap: 10px;
     }
     
     .control-button {
       flex: 1;
-      background: rgba(0, 0, 0, 0.05);
+      background: var(--card-bg);
       border-radius: 14px;
-      padding: 15px;
+      padding: 15px 10px;
       text-align: center;
-      margin: 0 5px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.1s;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     
     .control-button:active {
-      background: rgba(0, 0, 0, 0.1);
+      transform: scale(0.95);
     }
     
     .control-button i {
       font-size: 24px;
       display: block;
       margin-bottom: 8px;
+      color: var(--accent);
     }
     
     .control-label {
@@ -154,42 +192,7 @@
       text-align: center;
       padding: 15px;
       font-size: 14px;
-      color: var(--text-secondary);
-    }
-    
-    .log-panel {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(0, 0, 0, 0.85);
-      color: white;
-      padding: 15px;
-      font-size: 12px;
-      max-height: 200px;
-      overflow-y: auto;
-      z-index: 1000;
-      display: none;
-      font-family: monospace;
-    }
-    
-    .log-toggle {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1001;
-      cursor: pointer;
-      font-weight: bold;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      color: var(--text-tertiary);
     }
     
     .home-indicator {
@@ -201,26 +204,31 @@
       bottom: 8px;
       left: 50%;
       transform: translateX(-50%);
-      opacity: 0.6;
+      opacity: 0.3;
     }
     
-    /* Анимации */
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
+    .app-icon::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity 0.3s;
     }
     
-    .pulse {
-      animation: pulse 2s infinite;
+    .app-icon:hover::after {
+      opacity: 1;
     }
   </style>
 </head>
 <body>
   <div class="status-bar">
     <div class="time" id="current-time">9:41</div>
-    <div class="status-icons">
-      <span id="network-status">📶</span>
+    <div>
+      <button class="theme-toggle" id="theme-toggle">🌓</button>
     </div>
   </div>
   
@@ -228,11 +236,13 @@
     <div class="app-icon" id="chat-app">
       <i>💬</i>
       <div class="app-name">AI Чат</div>
+      <div class="app-description">Общение с ИИ-помощником</div>
     </div>
     
     <div class="app-icon" id="calendar-app">
       <i>📅</i>
       <div class="app-name">Календарь</div>
+      <div class="app-description">Управление событиями</div>
     </div>
   </div>
   
@@ -248,46 +258,26 @@
         <div class="control-label">Поделиться</div>
       </div>
       
-      <div class="control-button" id="update-button">
-        <i>⬇️</i>
-        <div class="control-label">Обновить</div>
-      </div>
-    </div>
-    
-    <div class="control-row">
-      <div class="control-button" id="version-info-button">
-        <i>ℹ️</i>
-        <div class="control-label">Версия</div>
-      </div>
-      
-      <div class="control-button" id="log-button">
-        <i>📝</i>
-        <div class="control-label">Логи</div>
-      </div>
-      
-      <div class="control-button" id="debug-button">
-        <i>🐞</i>
-        <div class="control-label">Диагностика</div>
+      <div class="control-button" id="settings-button">
+        <i>⚙️</i>
+        <div class="control-label">Настройки</div>
       </div>
     </div>
   </div>
   
   <div class="version-info" id="version-display">Версия 2.5</div>
   
-  <div class="log-panel" id="log-panel"></div>
-  <button class="log-toggle" id="log-toggle">L</button>
-  
   <div class="home-indicator"></div>
 
   <script>
     // Конфигурация приложения
     const APP_VERSION = "2.5";
-    const logs = [];
-    const MAX_LOG_ENTRIES = 100;
     
     // Инициализация приложения
     function initApp() {
-      log('Инициализация приложения');
+      // Установка темы из localStorage
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
       
       // Обновляем время
       updateTime();
@@ -295,59 +285,25 @@
       
       // Назначаем обработчики
       document.getElementById('chat-app').addEventListener('click', () => {
-        log('Открытие чата');
         window.location.href = 'chat.html';
       });
       
       document.getElementById('calendar-app').addEventListener('click', () => {
-        log('Открытие календаря');
-        window.open('https://calendar.google.com', '_blank');
+        localStorage.setItem('calendar_command', 'true');
+        window.location.href = 'chat.html';
       });
       
       document.getElementById('refresh-button').addEventListener('click', () => {
-        log('Ручное обновление страницы');
         window.location.reload();
       });
       
       document.getElementById('share-button').addEventListener('click', shareApp);
-      document.getElementById('update-button').addEventListener('click', checkForUpdates);
-      document.getElementById('version-info-button').addEventListener('click', showVersionInfo);
-      document.getElementById('log-button').addEventListener('click', toggleLogPanel);
-      document.getElementById('debug-button').addEventListener('click', showDebugInfo);
+      document.getElementById('settings-button').addEventListener('click', showSettings);
+      
+      document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
       
       // Показываем версию
       document.getElementById('version-display').textContent = `Версия ${APP_VERSION}`;
-      
-      // Инициализируем лог-панель
-      document.getElementById('log-toggle').addEventListener('click', toggleLogPanel);
-      
-      // Проверяем обновления при запуске
-      setTimeout(checkForUpdates, 3000);
-    }
-    
-    // Функция для логирования
-    function log(message) {
-      try {
-        const timestamp = new Date().toLocaleTimeString();
-        const logEntry = `[${timestamp}] ${message}`;
-        
-        logs.push(logEntry);
-        if (logs.length > MAX_LOG_ENTRIES) logs.shift();
-        
-        // Обновляем панель логов
-        const logPanel = document.getElementById('log-panel');
-        if (logPanel) {
-          logPanel.textContent = logs.join('\n');
-          logPanel.scrollTop = logPanel.scrollHeight;
-        }
-        
-        console.log(logEntry);
-        
-        // Сохраняем логи в localStorage
-        localStorage.setItem('app_logs', JSON.stringify(logs));
-      } catch (e) {
-        console.error('Ошибка логирования:', e);
-      }
     }
     
     // Обновляем время в статус-баре
@@ -360,7 +316,6 @@
     
     // Функция "Поделиться"
     function shareApp() {
-      log('Нажата кнопка "Поделиться"');
       const shareUrl = window.location.href;
       
       if (navigator.share) {
@@ -368,92 +323,29 @@
           title: 'AI Помощник',
           text: 'Попробуйте это приложение с ИИ!',
           url: shareUrl
-        }).catch(error => {
-          log(`Ошибка Share API: ${error}`);
-          copyToClipboard(shareUrl);
         });
       } else {
-        copyToClipboard(shareUrl);
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          alert('Ссылка скопирована в буфер обмена!');
+        });
       }
     }
     
-    // Функция копирования в буфер обмена
-    function copyToClipboard(text) {
-      navigator.clipboard.writeText(text).then(() => {
-        log('Ссылка скопирована в буфер обмена');
-        alert('Ссылка скопирована в буфер обмена!');
-      }).catch(err => {
-        log(`Ошибка копирования: ${err}`);
-        prompt('Скопируйте ссылку:', text);
-      });
+    // Переключение темы
+    function toggleTheme() {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
     }
     
-    // Проверка обновлений
-    function checkForUpdates() {
-      log('Проверка обновлений...');
-      const updateButton = document.getElementById('update-button');
-      updateButton.classList.add('pulse');
-      
-      // Эмуляция проверки обновлений
-      setTimeout(() => {
-        const hasUpdate = Math.random() > 0.5;
-        
-        if (hasUpdate) {
-          log('Доступно обновление');
-          alert('Доступно новое обновление! Нажмите "Обновить" для установки.');
-        } else {
-          log('Установлена последняя версия');
-          alert('У вас установлена последняя версия приложения.');
-        }
-        
-        updateButton.classList.remove('pulse');
-      }, 1500);
-    }
-    
-    // Показ информации о версии
-    function showVersionInfo() {
-      log('Показана информация о версии');
-      alert(`AI Помощник\nВерсия: ${APP_VERSION}\n© ${new Date().getFullYear()}`);
-    }
-    
-    // Переключение панели логов
-    function toggleLogPanel() {
-      const logPanel = document.getElementById('log-panel');
-      logPanel.style.display = logPanel.style.display === 'block' ? 'none' : 'block';
-      log('Переключение панели логов');
-    }
-    
-    // Показ диагностической информации
-    function showDebugInfo() {
-      log('Показана диагностическая информация');
-      
-      const debugInfo = `
-        Версия приложения: ${APP_VERSION}
-        Пользовательский агент: ${navigator.userAgent}
-        Онлайн: ${navigator.onLine ? 'Да' : 'Нет'}
-        Память: ${navigator.deviceMemory || 'неизвестно'} GB
-        Язык: ${navigator.language}
-        Платформа: ${navigator.platform}
-        Куки: ${navigator.cookieEnabled ? 'Включены' : 'Выключены'}
-        Service Worker: ${'serviceWorker' in navigator ? 'Поддерживается' : 'Не поддерживается'}
-      `;
-      
-      alert(debugInfo);
+    // Показ настроек
+    function showSettings() {
+      alert('Настройки приложения:\n\n• Уведомления: Вкл\n• Автообновление: Вкл\n• Тема: Системная');
     }
     
     // Запуск приложения после загрузки
     window.addEventListener('DOMContentLoaded', initApp);
-    
-    // Глобальный обработчик ошибок
-    window.addEventListener('error', (event) => {
-      const errorMsg = `ОШИБКА: ${event.message} в ${event.filename}:${event.lineno}`;
-      log(errorMsg);
-    });
-    
-    window.addEventListener('unhandledrejection', (event) => {
-      const reason = event.reason instanceof Error ? event.reason.message : event.reason;
-      log(`НЕОБРАБОТАННЫЙ PROMISE: ${reason}`);
-    });
   </script>
 </body>
 </html>
