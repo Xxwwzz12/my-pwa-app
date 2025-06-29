@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>AI Чат | Помощник</title>
   <style>
+    /* Все стили остаются без изменений */
     * {
       margin: 0;
       padding: 0;
@@ -555,7 +556,7 @@
     // Ваши данные OAuth
     const CLIENT_ID = "49278149176-a0vgmul2ik4oi5ui845egi4iul1scsre.apps.googleusercontent.com";
     const CLIENT_SECRET = "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";
-    const REDIRECT_URI = window.location.origin + '/oauth2callback';
+    const REDIRECT_URI = "https://skillful-ambiguous-dahlia.glitch.me/oauth2callback.html";
     const CALENDAR_SCOPES = "https://www.googleapis.com/auth/calendar.events";
     const CALENDAR_API = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
     
@@ -703,7 +704,13 @@
     
     // Авторизация через Google
     function authenticateGoogle() {
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=${encodeURIComponent(CALENDAR_SCOPES)}&prompt=consent`;
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${CLIENT_ID}&` +
+        `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
+        `response_type=token&` +
+        `scope=${encodeURIComponent(CALENDAR_SCOPES)}&` +
+        `prompt=consent`;
+      
       window.location.href = authUrl;
     }
     
