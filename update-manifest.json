@@ -1,0 +1,25 @@
+{
+  "version": "2.4",
+  "files": [
+    {
+      "url": "/index.html",
+      "hash": "sha256-abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+      "critical": true
+    },
+    {
+      "url": "/chat.html",
+      "hash": "sha256-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "critical": true
+    },
+    {
+      "url": "/styles.css",
+      "hash": "sha256-9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
+      "critical": false
+    },
+    {
+      "url": "/lazy/calendar.js",
+      "hash": "sha256-1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+      "critical": false
+    }
+  ]
+}
