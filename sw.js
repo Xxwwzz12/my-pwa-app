@@ -1,19 +1,97 @@
-// Увеличиваем версию кэша
-const CACHE_NAME = 'ai-assistant-cache-v2.4';
+// Версия кэша
+const CACHE_NAME = 'ai-assistant-cache-v2.5';
 const OFFLINE_URL = '/offline.html';
+const LOGS_DB_NAME = 'SW_Logs_DB';
+const LOGS_STORE_NAME = 'logs';
+const MAX_LOGS = 100;
 
-// Логирование в Service Worker
+// Улучшенная система логов с IndexedDB
 function log(message) {
-  console.log(`[ServiceWorker] ${message}`);
+  const timestamp = new Date().toISOString();
+  const logEntry = `[${timestamp}] ${message}`;
   
-  // Отправляем логи на клиент
+  // Сохраняем лог в IndexedDB
+  saveLogToDB(logEntry);
+  
+  console.log(logEntry);
+  
+  // Отправляем лог всем клиентам
   self.clients.matchAll().then(clients => {
     clients.forEach(client => {
       client.postMessage({
         type: 'SW_LOG',
-        message: `[SW] ${message}`
+        message: logEntry
       });
     });
+  });
+}
+
+// Инициализация IndexedDB
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(LOGS_DB_NAME, 1);
+    
+    request.onerror = (event) => {
+      console.error('IndexedDB error:', event.target.error);
+      reject(event.target.error);
+    };
+    
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(LOGS_STORE_NAME)) {
+        db.createObjectStore(LOGS_STORE_NAME, { autoIncrement: true });
+      }
+    };
+    
+    request.onsuccess = (event) => {
+      resolve(event.target.result);
+    };
+  });
+}
+
+// Сохранение лога в IndexedDB
+function saveLogToDB(logEntry) {
+  initDB().then(db => {
+    const transaction = db.transaction(LOGS_STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(LOGS_STORE_NAME);
+    
+    // Добавляем лог
+    store.add(logEntry);
+    
+    // Очищаем старые логи
+    store.getAll().onsuccess = (event) => {
+      const allLogs = event.target.result;
+      if (allLogs.length > MAX_LOGS) {
+        const keysToDelete = allLogs
+          .slice(0, allLogs.length - MAX_LOGS)
+          .map((_, index) => index + 1);
+        
+        keysToDelete.forEach(key => {
+          store.delete(key);
+        });
+      }
+    };
+  }).catch(error => {
+    console.error('Failed to save log:', error);
+  });
+}
+
+// Получение логов из IndexedDB
+function getLogsFromDB() {
+  return new Promise((resolve, reject) => {
+    initDB().then(db => {
+      const transaction = db.transaction(LOGS_STORE_NAME, 'readonly');
+      const store = transaction.objectStore(LOGS_STORE_NAME);
+      const request = store.getAll();
+      
+      request.onsuccess = (event) => {
+        resolve(event.target.result || []);
+      };
+      
+      request.onerror = (event) => {
+        reject(event.target.error);
+      };
+    }).catch(reject);
   });
 }
 
@@ -33,8 +111,12 @@ self.addEventListener('install', event => {
           '/index.html',
           '/chat.html',
           '/offline.html',
-          '/icon-192.png'
+          '/icon-192.png',
+          '/manifest.json'
         ]);
+      })
+      .catch(error => {
+        log(`Ошибка при установке: ${error.message}`);
       })
   );
 });
@@ -60,16 +142,15 @@ self.addEventListener('activate', event => {
       log('Захват контроля над клиентами');
       return self.clients.claim();
     })
-  );
-  
-  // Сообщаем клиентам о новой версии
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window' }).then(clients => {
-      clients.forEach(client => {
-        log(`Отправка NEW_VERSION_AVAILABLE клиенту: ${client.url}`);
-        client.postMessage({
-          type: 'NEW_VERSION_AVAILABLE',
-          version: CACHE_NAME.split('-').pop()
+    .then(() => {
+      // Сообщаем клиентам о новой версии
+      self.clients.matchAll({ type: 'window' }).then(clients => {
+        clients.forEach(client => {
+          log(`Отправка NEW_VERSION_AVAILABLE клиенту: ${client.url}`);
+          client.postMessage({
+            type: 'NEW_VERSION_AVAILABLE',
+            version: CACHE_NAME.split('-').pop()
+          });
         });
       });
     })
@@ -92,37 +173,10 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Отложенная установка для lazy-ресурсов
-  if (event.request.url.includes('/lazy/')) {
-    event.respondWith(
-      caches.match(event.request).then(response => {
-        if (response) {
-          log(`[Lazy Cache] Обслуживание из кэша: ${event.request.url}`);
-          return response;
-        }
-        
-        return fetch(event.request).then(networkResponse => {
-          log(`[Lazy Cache] Кэширование: ${event.request.url}`);
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseClone);
-          });
-          return networkResponse;
-        });
-      })
-    );
-    return;
-  }
-
   // Стандартная стратегия для остальных запросов
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Проверка целостности для критических ресурсов
-        if (event.request.url.includes('/critical/')) {
-          return verifyResourceIntegrity(event.request, response.clone());
-        }
-        
         // Клонируем ответ для кэширования
         const responseToCache = response.clone();
         caches.open(CACHE_NAME)
@@ -140,36 +194,6 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Проверка целостности ресурса
-async function verifyResourceIntegrity(request, response) {
-  try {
-    const fileBuffer = await response.arrayBuffer();
-    const hashBuffer = await crypto.subtle.digest('SHA-256', fileBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    
-    const expectedHash = await getExpectedHash(request.url);
-    
-    if (hashHex !== expectedHash) {
-      throw new Error(`Хэш не совпадает: ${hashHex} !== ${expectedHash}`);
-    }
-    
-    return response;
-  } catch (e) {
-    log(`Ошибка проверки целостности: ${e.message}`);
-    throw e;
-  }
-}
-
-// Получение ожидаемого хеша (заглушка для примера)
-async function getExpectedHash(url) {
-  // В реальной реализации здесь будет запрос к манифесту обновлений
-  const manifest = {
-    '/critical/main.js': 'a1b2c3d4e5f67890abcdef1234567890abcdef12'
-  };
-  return manifest[url] || '';
-}
-
 // Обработка сообщений
 self.addEventListener('message', event => {
   log(`Получено сообщение от клиента: ${JSON.stringify(event.data)}`);
@@ -183,5 +207,51 @@ self.addEventListener('message', event => {
       type: 'UPDATE_CONFIRMED',
       version: CACHE_NAME
     });
+  }
+  
+  // Запрос логов из IndexedDB
+  if (event.data && event.data.type === 'GET_LOGS') {
+    getLogsFromDB().then(logs => {
+      event.source.postMessage({
+        type: 'SW_LOGS_RESPONSE',
+        logs: logs
+      });
+    }).catch(error => {
+      log(`Ошибка получения логов: ${error.message}`);
+    });
+  }
+  
+  // Очистка логов
+  if (event.data && event.data.type === 'CLEAR_LOGS') {
+    initDB().then(db => {
+      const transaction = db.transaction(LOGS_STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(LOGS_STORE_NAME);
+      store.clear();
+      log('Логи Service Worker очищены');
+    });
+  }
+});
+
+// Периодическая синхронизация (для фоновых обновлений)
+self.addEventListener('periodicsync', event => {
+  if (event.tag === 'check-updates') {
+    log('Периодическая проверка обновлений');
+    event.waitUntil(
+      self.registration.update()
+        .then(() => log('Проверка обновлений завершена'))
+        .catch(err => log(`Ошибка проверки обновлений: ${err.message}`))
+    );
+  }
+});
+
+// Фоновая синхронизация
+self.addEventListener('sync', event => {
+  if (event.tag === 'update-sync') {
+    log('Запуск фоновой синхронизации обновлений');
+    event.waitUntil(
+      self.registration.update()
+        .then(() => log('Фоновая синхронизация завершена'))
+        .catch(err => log(`Ошибка фоновой синхронизации: ${err.message}`))
+    );
   }
 });
