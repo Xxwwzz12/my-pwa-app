@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой профиль - FamilySpace</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+        
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid white;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        
+        nav {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            transition: background 0.3s;
+        }
+        
+        nav a:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .profile-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            border-color: #4285f4;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+        }
+        
+        .email-display {
+            background: #f8f9fa;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 12px 15px;
+            font-size: 16px;
+            color: #555;
+        }
+        
+        .required-star {
+            color: #ea4335;
+            margin-left: 3px;
+        }
+        
+        .avatar-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 25px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #4285f4;
+        }
+        
+        .avatar-options {
+            flex: 1;
+        }
+        
+        .avatar-option {
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            background: linear-gradient(to right, #4285f4, #34a853);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-block {
+            width: 100%;
+            justify-content: center;
+            padding: 14px;
+            margin-top: 10px;
+        }
+        
+        .error-message {
+            color: #ea4335;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1><i class="fas fa-user-circle"></i> Личный кабинет</h1>
+            <img id="header-avatar" class="user-avatar" src="" alt="Аватар">
+        </div>
+        <nav>
+            <a href="/family.html"><i class="fas fa-home"></i> Главная</a>
+            <a href="/profile.html" class="active"><i class="fas fa-user"></i> Профиль</a>
+            <a href="/logout"><i class="fas fa-sign-out-alt"></i> Выйти</a>
+        </nav>
+    </header>
+    
+    <main>
+        <div class="profile-container">
+            <section class="avatar-section">
+                <img id="avatar-preview" class="avatar-preview" src="" alt="Ваш аватар">
+                <div class="avatar-options">
+                    <div class="avatar-option">
+                        <label for="avatar-url">Аватар (URL):</label>
+                        <input type="url" id="avatar-url" placeholder="https://example.com/avatar.jpg">
+                    </div>
+                    <div class="avatar-option">
+                        <label for="avatar-file">Или загрузите файл:</label>
+                        <input type="file" id="avatar-file" accept="image/*">
+                    </div>
+                </div>
+            </section>
+            
+            <form id="profile-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="first-name">Имя <span class="required-star">*</span></label>
+                        <input type="text" id="first-name" name="first-name" required>
+                        <div id="first-name-error" class="error-message">Пожалуйста, введите ваше имя</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="last-name">Фамилия <span class="required-star">*</span></label>
+                        <input type="text" id="last-name" name="last-name" required>
+                        <div id="last-name-error" class="error-message">Пожалуйста, введите вашу фамилию</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Ваш email</label>
+                    <div id="email-display" class="email-display"></div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="gender">Пол <span class="required-star">*</span></label>
+                        <select id="gender" name="gender" required>
+                            <option value="">Выберите пол</option>
+                            <option value="male">Мужской</option>
+                            <option value="female">Женский</option>
+                            <option value="other">Другой</option>
+                        </select>
+                        <div id="gender-error" class="error-message">Пожалуйста, выберите ваш пол</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="age">Возраст <span class="required-star">*</span></label>
+                        <input type="number" id="age" name="age" min="1" max="120" required>
+                        <div id="age-error" class="error-message">Пожалуйста, введите ваш возраст</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="role">Роль в семье <span class="required-star">*</span></label>
+                    <select id="role" name="role" required>
+                        <option value="">Выберите роль</option>
+                        <option value="senior_parent">Старший родитель</option>
+                        <option value="parent">Родитель</option>
+                        <option value="child">Ребенок</option>
+                        <option value="relative">Родственник</option>
+                    </select>
+                    <div id="role-error" class="error-message">Пожалуйста, выберите вашу роль</div>
+                </div>
+                
+                <button type="submit" class="btn btn-block">
+                    <i class="fas fa-save"></i> Сохранить изменения
+                </button>
+            </form>
+        </div>
+    </main>
+    
+    <script src="profile.js"></script>
+</body>
+</html>
