@@ -129,12 +129,35 @@ app.post('/api/register', (req, res) => {
 // ========== API для получения данных пользователя ==========
 app.get('/api/user', (req, res) => {
   if (!req.isAuthenticated()) {
-    return res.status(401).json({ error: 'Not authenticated' });
+    return res.status(401).json({ 
+      error: 'Not authenticated',
+      code: 'UNAUTHORIZED'
+    });
   }
   
+  // Если регистрация не завершена
   if (!req.user.registrationComplete) {
-    return res.status(403).json({ error: 'Registration required' });
+    return res.status(200).json({
+      id: req.user.id,
+      name: req.user.displayName,
+      email: req.user.emails?.[0]?.value,
+      registrationComplete: false
+    });
   }
+  
+  // Для зарегистрированных пользователей
+  res.json({
+    id: req.user.id,
+    name: req.user.displayName,
+    firstName: req.user.firstName,
+    lastName: req.user.lastName,
+    gender: req.user.gender,
+    age: req.user.age,
+    avatar: req.user.avatar,
+    role: req.user.role,
+    registrationComplete: true
+  });
+});
   
   res.json({
     id: req.user.id,
