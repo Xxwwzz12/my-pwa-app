@@ -4,78 +4,297 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Завершение регистрации</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; }
-        input, select { width: 100%; padding: 8px; box-sizing: border-box; }
-        button { padding: 10px 20px; background: #4285f4; color: white; border: none; cursor: pointer; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .registration-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 500px;
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 28px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            border-color: #4285f4;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+        }
+        
+        .email-display {
+            background: #f8f9fa;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 12px 15px;
+            font-size: 16px;
+            color: #555;
+        }
+        
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(to right, #4285f4, #34a853);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .required-star {
+            color: #ea4335;
+            margin-left: 3px;
+        }
+        
+        .avatar-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+            margin: 10px auto;
+            border: 3px solid #4285f4;
+        }
+        
+        .error-message {
+            color: #ea4335;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .logo i {
+            font-size: 48px;
+            color: #4285f4;
+            margin-bottom: 10px;
+        }
+        
+        @media (max-width: 600px) {
+            .registration-container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>Завершите регистрацию</h1>
-    <form id="registration-form">
-        <input type="hidden" id="google-id">
-        
-        <div class="form-group">
-            <label for="first-name">Имя*</label>
-            <input type="text" id="first-name" required>
+    <div class="registration-container">
+        <div class="logo">
+            <i class="fas fa-users"></i>
+            <h1>Завершите регистрацию</h1>
         </div>
         
-        <div class="form-group">
-            <label for="last-name">Фамилия*</label>
-            <input type="text" id="last-name" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="gender">Пол*</label>
-            <select id="gender" required>
-                <option value="">Выберите</option>
-                <option value="male">Мужской</option>
-                <option value="female">Женский</option>
-                <option value="other">Другой</option>
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label for="age">Возраст*</label>
-            <input type="number" id="age" min="1" max="120" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="avatar">Аватар (URL)</label>
-            <input type="url" id="avatar">
-        </div>
-        
-        <div class="form-group">
-            <label for="role">Роль в семье*</label>
-            <select id="role" required>
-                <option value="">Выберите роль</option>
-                <option value="senior_parent">Старший родитель</option>
-                <option value="parent">Родитель</option>
-                <option value="child">Ребенок</option>
-                <option value="relative">Родственник</option>
-            </select>
-        </div>
-        
-        <button type="submit">Завершить регистрацию</button>
-    </form>
+        <form id="registration-form">
+            <input type="hidden" id="google-id">
+            
+            <div class="form-group">
+                <label for="first-name">Имя <span class="required-star">*</span></label>
+                <input type="text" id="first-name" required>
+                <div id="first-name-error" class="error-message">Пожалуйста, введите ваше имя</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="last-name">Фамилия <span class="required-star">*</span></label>
+                <input type="text" id="last-name" required>
+                <div id="last-name-error" class="error-message">Пожалуйста, введите вашу фамилию</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Ваш email</label>
+                <div id="email-display" class="email-display"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="gender">Пол <span class="required-star">*</span></label>
+                <select id="gender" required>
+                    <option value="">Выберите пол</option>
+                    <option value="male">Мужской</option>
+                    <option value="female">Женский</option>
+                    <option value="other">Другой</option>
+                </select>
+                <div id="gender-error" class="error-message">Пожалуйста, выберите ваш пол</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="age">Возраст <span class="required-star">*</span></label>
+                <input type="number" id="age" min="1" max="120" required>
+                <div id="age-error" class="error-message">Пожалуйста, введите ваш возраст</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="avatar">Аватар (URL изображения)</label>
+                <input type="url" id="avatar" placeholder="https://example.com/avatar.jpg">
+                <img id="avatar-preview" class="avatar-preview" src="" alt="Превью аватара" style="display: none;">
+            </div>
+            
+            <div class="form-group">
+                <label for="role">Роль в семье <span class="required-star">*</span></label>
+                <select id="role" required>
+                    <option value="">Выберите роль</option>
+                    <option value="senior_parent">Старший родитель</option>
+                    <option value="parent">Родитель</option>
+                    <option value="child">Ребенок</option>
+                    <option value="relative">Родственник</option>
+                </select>
+                <div id="role-error" class="error-message">Пожалуйста, выберите вашу роль</div>
+            </div>
+            
+            <button type="submit">
+                <i class="fas fa-check-circle"></i> Завершить регистрацию
+            </button>
+        </form>
+    </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Получаем данные пользователя из сессии
-            fetch('/api/user')
-                .then(response => response.json())
-                .then(user => {
-                    document.getElementById('google-id').value = user.id;
-                    document.getElementById('first-name').value = user.name.split(' ')[0] || '';
-                    document.getElementById('last-name').value = user.name.split(' ')[1] || '';
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Получаем данные пользователя
+            let user;
+            try {
+                const response = await fetch('/api/user');
+                
+                if (response.status === 401) {
+                    window.location.href = '/';
+                    return;
+                }
+                
+                user = await response.json();
+            } catch (error) {
+                console.error('Ошибка получения данных:', error);
+                alert('Ошибка загрузки данных пользователя');
+                return;
+            }
+            
+            // Заполняем форму данными
+            document.getElementById('google-id').value = user.id;
+            
+            if (user.name) {
+                const names = user.name.split(' ');
+                document.getElementById('first-name').value = names[0] || '';
+                document.getElementById('last-name').value = names.slice(1).join(' ') || '';
+            }
+            
+            if (user.email) {
+                document.getElementById('email-display').textContent = user.email;
+            }
+            
+            // Превью аватара
+            const avatarInput = document.getElementById('avatar');
+            const avatarPreview = document.getElementById('avatar-preview');
+            
+            avatarInput.addEventListener('input', () => {
+                if (avatarInput.value) {
+                    avatarPreview.src = avatarInput.value;
+                    avatarPreview.style.display = 'block';
+                } else {
+                    avatarPreview.style.display = 'none';
+                }
+            });
+            
+            // Валидация формы
+            const form = document.getElementById('registration-form');
+            
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                let isValid = true;
+                
+                // Сбросим ошибки
+                document.querySelectorAll('.error-message').forEach(el => {
+                    el.style.display = 'none';
                 });
                 
-            // Обработка отправки формы
-            document.getElementById('registration-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
+                // Проверка обязательных полей
+                const requiredFields = [
+                    { id: 'first-name', error: 'first-name-error' },
+                    { id: 'last-name', error: 'last-name-error' },
+                    { id: 'gender', error: 'gender-error' },
+                    { id: 'age', error: 'age-error' },
+                    { id: 'role', error: 'role-error' }
+                ];
                 
+                requiredFields.forEach(field => {
+                    const input = document.getElementById(field.id);
+                    const error = document.getElementById(field.error);
+                    
+                    if (!input.value) {
+                        error.style.display = 'block';
+                        isValid = false;
+                    }
+                });
+                
+                // Проверка возраста
+                const ageInput = document.getElementById('age');
+                if (ageInput.value && (ageInput.value < 1 || ageInput.value > 120)) {
+                    document.getElementById('age-error').textContent = 'Введите корректный возраст (1-120)';
+                    document.getElementById('age-error').style.display = 'block';
+                    isValid = false;
+                }
+                
+                if (!isValid) return;
+                
+                // Отправка данных
                 const userData = {
                     googleId: document.getElementById('google-id').value,
                     firstName: document.getElementById('first-name').value,
@@ -86,16 +305,22 @@
                     role: document.getElementById('role').value
                 };
                 
-                const response = await fetch('/api/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(userData)
-                });
-                
-                if (response.ok) {
-                    window.location.href = '/family.html';
-                } else {
-                    alert('Ошибка регистрации');
+                try {
+                    const response = await fetch('/api/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(userData)
+                    });
+                    
+                    if (response.ok) {
+                        window.location.href = '/family.html';
+                    } else {
+                        const errorData = await response.json();
+                        alert(`Ошибка регистрации: ${errorData.error || 'Неизвестная ошибка'}`);
+                    }
+                } catch (error) {
+                    console.error('Ошибка при отправке формы:', error);
+                    alert('Сетевая ошибка. Пожалуйста, попробуйте снова.');
                 }
             });
         });
