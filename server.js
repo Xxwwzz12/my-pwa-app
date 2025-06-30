@@ -30,7 +30,8 @@ app.use(session({
   saveUninitialized: true,
   cookie: { 
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'lax' // Важно для OAuth в разных окружениях
   }
 }));
 
@@ -43,26 +44,32 @@ passport.use(new GoogleStrategy({
     clientID: GOOGLE_CLIENT_ID,
     clientSecret: GOOGLE_CLIENT_SECRET,
     callbackURL: CALLBACK_URL,
-    passReqToCallback: true
+    passReqToCallback: true,
+    proxy: true // Важно для работы за reverse proxy (Render.com)
   },
   (req, accessToken, refreshToken, profile, done) => {
-    // Проверяем, зарегистрирован ли пользователь
-    const existingUser = users[profile.id];
-    
-    if (existingUser && existingUser.registrationComplete) {
-      return done(null, existingUser);
+    try {
+      // Проверяем, зарегистрирован ли пользователь
+      const existingUser = users[profile.id];
+      
+      if (existingUser && existingUser.registrationComplete) {
+        return done(null, existingUser);
+      }
+      
+      // Создаем временный профиль для незарегистрированных
+      const tempUser = {
+        id: profile.id,
+        displayName: profile.displayName,
+        email: profile.emails && profile.emails[0] ? profile.emails[0].value : null,
+        registrationComplete: false
+      };
+      
+      users[profile.id] = tempUser;
+      return done(null, tempUser);
+    } catch (error) {
+      console.error('Ошибка в GoogleStrategy:', error);
+      return done(error);
     }
-    
-    // Создаем временный профиль для незарегистрированных
-    const tempUser = {
-      id: profile.id,
-      displayName: profile.displayName,
-      email: profile.emails[0].value,
-      registrationComplete: false
-    };
-    
-    users[profile.id] = tempUser;
-    return done(null, tempUser);
   }
 ));
 
@@ -86,7 +93,7 @@ app.get('/auth/google',
 );
 
 app.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/' }),
+  passport.authenticate('google', { failureRedirect: '/?auth_error=1' }),
   (req, res) => {
     if (req.user.registrationComplete) {
       res.redirect('/family.html');
@@ -97,8 +104,12 @@ app.get('/auth/google/callback',
 );
 
 app.get('/logout', (req, res) => {
-  req.logout(() => {
-    res.redirect('/');
+  req.logout((err) => {
+    if (err) console.error('Logout error:', err);
+    req.session.destroy(() => {
+      res.clearCookie('connect.sid');
+      res.redirect('/');
+    });
   });
 });
 
@@ -111,13 +122,18 @@ app.post('/api/register', (req, res) => {
   const { firstName, lastName, gender, age, avatar, role } = req.body;
   const userId = req.user.id;
   
+  // Валидация данных
+  if (!firstName || !lastName || !gender || !age || !role) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  
   // Обновляем данные пользователя
   users[userId] = {
     ...users[userId],
     firstName,
     lastName,
     gender,
-    age,
+    age: parseInt(age),
     avatar: avatar || 'default-avatar.png',
     role,
     registrationComplete: true
@@ -140,7 +156,7 @@ app.get('/api/user', (req, res) => {
     return res.status(200).json({
       id: req.user.id,
       name: req.user.displayName,
-      email: req.user.emails?.[0]?.value,
+      email: req.user.email,
       registrationComplete: false
     });
   }
@@ -158,16 +174,6 @@ app.get('/api/user', (req, res) => {
     registrationComplete: true
   });
 });
-  
-  res.json({
-    id: req.user.id,
-    name: req.user.displayName,
-    firstName: req.user.firstName,
-    lastName: req.user.lastName,
-    role: req.user.role,
-    avatar: req.user.avatar
-  });
-});
 
 // ========== Существующие маршруты ==========
 app.get('/api/check-update', (req, res) => {
@@ -180,9 +186,15 @@ app.get('/api/check-update', (req, res) => {
   }
 });
 
+app.get('/offline', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'offline.html'));
+});
+
 app.get('/', (req, res) => {
   if (req.query.connection_test) {
     res.sendStatus(204);
+  } else if (req.query.auth_error) {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
   } else {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
   }
@@ -199,4 +211,9 @@ app.listen(PORT, () => {
   console.log('Конфигурация OAuth:');
   console.log(`- Client ID: ${GOOGLE_CLIENT_ID ? 'установлен' : 'ОШИБКА! Проверьте .env'}`);
   console.log(`- Callback URL: ${CALLBACK_URL}`);
+  
+  // Дополнительная проверка окружения
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+    console.error('ВНИМАНИЕ: Google OAuth credentials не установлены!');
+  }
 });
