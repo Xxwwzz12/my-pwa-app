@@ -4,6 +4,8 @@ const session = require('express-session');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const cookieParser = require('cookie-parser');
+const multer = require('multer');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
@@ -16,9 +18,30 @@ const CALLBACK_URL = process.env.CALLBACK_URL || 'https://my-pwa-app-w519.onrend
 // ========== Временное хранилище пользователей ==========
 const users = {};
 
+// ========== Настройка Multer для загрузки аватаров ==========
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = 'uploads/';
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath);
+    }
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
+
 // ========== Middleware ==========
 app.set('trust proxy', 1); // Важно для работы за reverse proxy
 app.use(express.static('public'));
+app.use('/uploads', express.static('uploads')); // Для отдачи статических файлов аватаров
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -82,6 +105,19 @@ passport.deserializeUser((id, done) => {
   done(null, user);
 });
 
+// ========== Middleware для проверки регистрации ==========
+function checkRegistration(req, res, next) {
+  if (req.isAuthenticated() && req.user.registrationComplete) {
+    return next();
+  }
+  
+  if (req.isAuthenticated()) {
+    return res.redirect('/registration.html');
+  }
+  
+  res.redirect('/');
+}
+
 // ========== Маршруты аутентификации ==========
 app.get('/auth/google',
   passport.authenticate('google', {
@@ -130,7 +166,7 @@ app.post('/api/register', (req, res) => {
     lastName,
     gender,
     age: parseInt(age),
-    avatar: avatar || 'default-avatar.png',
+    avatarUrl: avatar || null,
     role,
     registrationComplete: true
   };
@@ -138,7 +174,7 @@ app.post('/api/register', (req, res) => {
   res.json({ success: true });
 });
 
-// ========== API для получения данных пользователя ==========
+// ========== API для работы с профилем пользователя ==========
 app.get('/api/user', (req, res) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ 
@@ -158,15 +194,60 @@ app.get('/api/user', (req, res) => {
   
   res.json({
     id: req.user.id,
-    name: req.user.displayName,
+    displayName: req.user.displayName,
+    email: req.user.email,
     firstName: req.user.firstName,
     lastName: req.user.lastName,
     gender: req.user.gender,
     age: req.user.age,
-    avatar: req.user.avatar,
+    avatarUrl: req.user.avatarUrl,
     role: req.user.role,
     registrationComplete: true
   });
+});
+
+app.put('/api/user', upload.single('avatar'), (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  
+  const userId = req.user.id;
+  const user = users[userId];
+  
+  if (!user || !user.registrationComplete) {
+    return res.status(403).json({ error: 'User not registered' });
+  }
+  
+  // Обновляем данные
+  if (req.body.firstName) user.firstName = req.body.firstName;
+  if (req.body.lastName) user.lastName = req.body.lastName;
+  if (req.body.gender) user.gender = req.body.gender;
+  if (req.body.age) user.age = parseInt(req.body.age);
+  if (req.body.role) user.role = req.body.role;
+  
+  // Обработка аватара (файл имеет приоритет над URL)
+  if (req.file) {
+    user.avatarUrl = `/uploads/${req.file.filename}`;
+  } else if (req.body.avatarUrl) {
+    user.avatarUrl = req.body.avatarUrl;
+  }
+  
+  // Обновляем данные в сессии
+  req.session.user = user;
+  
+  res.json({ 
+    status: 'success',
+    user: user
+  });
+});
+
+// ========== Защищенные маршруты ==========
+app.get('/family.html', checkRegistration, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'family.html'));
+});
+
+app.get('/profile.html', checkRegistration, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'profile.html'));
 });
 
 // ========== Существующие маршруты ==========
