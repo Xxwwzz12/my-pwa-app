@@ -39,9 +39,9 @@ const upload = multer({
 });
 
 // ========== Middleware ==========
-app.set('trust proxy', 1); // Важно для работы за reverse proxy
+app.set('trust proxy', 1);
 app.use(express.static('public'));
-app.use('/uploads', express.static('uploads')); // Для отдачи статических файлов аватаров
+app.use('/uploads', express.static('uploads'));
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -50,7 +50,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'super_secret_key',
   resave: false,
-  saveUninitialized: false, // Изменено на false для безопасности
+  saveUninitialized: false,
   cookie: { 
     secure: process.env.NODE_ENV === 'production',
     maxAge: 24 * 60 * 60 * 1000,
@@ -129,7 +129,6 @@ app.get('/auth/google',
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/?auth_error=1' }),
   (req, res) => {
-    // Добавлена проверка сессии
     if (req.user && !req.user.registrationComplete) {
       return res.redirect('/registration.html');
     }
@@ -225,14 +224,14 @@ app.put('/api/user', upload.single('avatar'), (req, res) => {
   if (req.body.age) user.age = parseInt(req.body.age);
   if (req.body.role) user.role = req.body.role;
   
-  // Обработка аватара (файл имеет приоритет над URL)
+  // Обработка аватара
   if (req.file) {
     user.avatarUrl = `/uploads/${req.file.filename}`;
   } else if (req.body.avatarUrl) {
     user.avatarUrl = req.body.avatarUrl;
   }
   
-  // Обновляем данные в сессии
+  // Обновляем сессию
   req.session.user = user;
   
   res.json({ 
@@ -250,7 +249,7 @@ app.get('/profile.html', checkRegistration, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
 });
 
-// ========== Существующие маршруты ==========
+// ========== API для проверки обновлений ==========
 app.get('/api/check-update', (req, res) => {
   try {
     const checkUpdate = require('./api/check-update');
@@ -261,6 +260,7 @@ app.get('/api/check-update', (req, res) => {
   }
 });
 
+// ========== Базовые маршруты ==========
 app.get('/offline', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'offline.html'));
 });
