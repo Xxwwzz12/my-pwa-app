@@ -482,5 +482,14 @@ document.getElementById('chat-card').addEventListener('click', () => {
     // Запуск приложения после загрузки
     window.addEventListener('DOMContentLoaded', initFamilyApp);
   </script>
+  <script>
+// Проверка статуса регистрации
+fetch('/api/user')
+  .then(response => {
+    if (response.status === 403) {
+      window.location.href = '/registration.html';
+    }
+  });
+</script>
 </body>
 </html>
