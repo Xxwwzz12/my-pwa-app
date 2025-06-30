@@ -1,11 +1,249 @@
-/* CSS files add styling rules to your content */
-
-body {
-  font-family: helvetica, arial, sans-serif;
-  margin: 2em;
+/* ===== БАЗОВЫЕ СТИЛИ ===== */
+:root {
+  --primary: #4263eb;
+  --primary-dark: #364fc7;
+  --secondary: #7950f2;
+  --danger: #ff6b6b;
+  --success: #40c057;
+  --warning: #ffd43b;
+  --text-primary: #212529;
+  --text-secondary: #495057;
+  --text-tertiary: #868e96;
+  --background: #f8f9fa;
+  --surface: #ffffff;
+  --border: #e9ecef;
+  --shadow: rgba(0, 0, 0, 0.08);
+  --online: #40c057;
+  --offline: #adb5bd;
 }
 
-h1 {
-  font-style: italic;
-  color: #373fff;
+[data-theme="dark"] {
+  --text-primary: #f8f9fa;
+  --text-secondary: #e9ecef;
+  --text-tertiary: #adb5bd;
+  --background: #121212;
+  --surface: #1e1e1e;
+  --border: #343a40;
+  --shadow: rgba(0, 0, 0, 0.4);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--background);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ===== ОБЩАЯ ШАПКА ===== */
+.family-header {
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  color: white;
+  padding: 15px 20px 5px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.family-name {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.user-avatar-container {
+  position: relative;
+}
+
+.user-avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: 2px solid white;
+  object-fit: cover;
+  cursor: pointer;
+  background-color: #5c7cfa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.family-nav {
+  display: flex;
+  justify-content: space-around;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 12px;
+}
+
+.nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+  padding: 5px 10px;
+  border-radius: 8px;
+}
+
+.nav-link.active {
+  color: white;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.nav-link i {
+  font-size: 1.2rem;
+  margin-bottom: 5px;
+}
+
+.nav-link span {
+  font-size: 0.75rem;
+}
+
+/* ===== ОСНОВНОЙ КОНТЕНТ ===== */
+.main-container {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 0 20px;
+  flex: 1;
+}
+
+.section {
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px var(--shadow);
+  padding: 25px;
+  margin-bottom: 25px;
+  border: 1px solid var(--border);
+}
+
+.section-title {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ===== КАРТОЧКИ И ЭЛЕМЕНТЫ ===== */
+.card {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.btn {
+  padding: 12px 20px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 16px;
+  background: var(--surface);
+  color: var(--text-primary);
+  transition: border-color 0.3s;
+}
+
+.form-input:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(66, 99, 235, 0.2);
+}
+
+/* ===== АДАПТИВНОСТЬ ===== */
+@media (max-width: 768px) {
+  .family-name {
+    font-size: 1.3rem;
+  }
+  
+  .user-avatar {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .section {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .family-header {
+    padding: 12px 15px 5px;
+  }
+  
+  .family-name {
+    font-size: 1.2rem;
+  }
+  
+  .nav-link span {
+    font-size: 0.7rem;
+  }
+  
+  .nav-link i {
+    font-size: 1.1rem;
+  }
+  
+  .section-title {
+    font-size: 1.3rem;
+  }
 }
