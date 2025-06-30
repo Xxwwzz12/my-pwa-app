@@ -5,7 +5,7 @@ const session = require('express-session');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const cookieParser = require('cookie-parser');
-require('dotenv').config(); // Загрузка переменных окружения из .env
+require('dotenv').config();
 
 const app = express();
 
@@ -13,6 +13,9 @@ const app = express();
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const CALLBACK_URL = process.env.CALLBACK_URL || 'https://my-pwa-app-w519.onrender.com/auth/google/callback';
+
+// ========== Временное хранилище пользователей ==========
+const users = {}; // Замените на БД в будущем
 
 // ========== Middleware ==========
 app.use(express.static('public'));
@@ -27,7 +30,7 @@ app.use(session({
   saveUninitialized: true,
   cookie: { 
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 часа
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
 
@@ -43,20 +46,35 @@ passport.use(new GoogleStrategy({
     passReqToCallback: true
   },
   (req, accessToken, refreshToken, profile, done) => {
-    // Здесь будет логика работы с профилем пользователя
-    // Пока просто возвращаем профиль
-    return done(null, profile);
+    // Проверяем, зарегистрирован ли пользователь
+    const existingUser = users[profile.id];
+    
+    if (existingUser && existingUser.registrationComplete) {
+      return done(null, existingUser);
+    }
+    
+    // Создаем временный профиль для незарегистрированных
+    const tempUser = {
+      id: profile.id,
+      displayName: profile.displayName,
+      email: profile.emails[0].value,
+      registrationComplete: false
+    };
+    
+    users[profile.id] = tempUser;
+    return done(null, tempUser);
   }
 ));
 
 // Сериализация пользователя
 passport.serializeUser((user, done) => {
-  done(null, user);
+  done(null, user.id);
 });
 
 // Десериализация пользователя
-passport.deserializeUser((obj, done) => {
-  done(null, obj);
+passport.deserializeUser((id, done) => {
+  const user = users[id] || null;
+  done(null, user);
 });
 
 // ========== Маршруты аутентификации ==========
@@ -68,10 +86,13 @@ app.get('/auth/google',
 );
 
 app.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/login' }),
+  passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
-    // Успешная аутентификация
-    res.redirect('/family.html');
+    if (req.user.registrationComplete) {
+      res.redirect('/family.html');
+    } else {
+      res.redirect('/registration.html');
+    }
   }
 );
 
@@ -81,17 +102,48 @@ app.get('/logout', (req, res) => {
   });
 });
 
-// ========== Защищённые маршруты ==========
-app.get('/api/user', (req, res) => {
-  if (req.isAuthenticated()) {
-    res.json({
-      id: req.user.id,
-      name: req.user.displayName,
-      email: req.user.emails[0].value
-    });
-  } else {
-    res.status(401).json({ error: 'Not authenticated' });
+// ========== API для регистрации ==========
+app.post('/api/register', (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: 'Not authenticated' });
   }
+  
+  const { firstName, lastName, gender, age, avatar, role } = req.body;
+  const userId = req.user.id;
+  
+  // Обновляем данные пользователя
+  users[userId] = {
+    ...users[userId],
+    firstName,
+    lastName,
+    gender,
+    age,
+    avatar: avatar || 'default-avatar.png',
+    role,
+    registrationComplete: true
+  };
+  
+  res.json({ success: true });
+});
+
+// ========== API для получения данных пользователя ==========
+app.get('/api/user', (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  
+  if (!req.user.registrationComplete) {
+    return res.status(403).json({ error: 'Registration required' });
+  }
+  
+  res.json({
+    id: req.user.id,
+    name: req.user.displayName,
+    firstName: req.user.firstName,
+    lastName: req.user.lastName,
+    role: req.user.role,
+    avatar: req.user.avatar
+  });
 });
 
 // ========== Существующие маршруты ==========
