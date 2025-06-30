@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>AI Помощник</title>
+  <title>Семейное пространство</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -58,207 +58,152 @@
       transition: background 0.3s ease;
     }
     
-    .status-bar {
-      height: 44px;
-      padding: 0 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 17px;
-      font-weight: 600;
-      background: var(--surface);
+    .header {
+      padding: 20px;
+      text-align: center;
       border-bottom: 1px solid var(--border);
     }
     
-    .time {
-      font-weight: 600;
+    .logo {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: var(--accent);
     }
     
-    .theme-toggle {
-      background: none;
-      border: none;
-      color: var(--text-primary);
-      font-size: 24px;
-      cursor: pointer;
-      padding: 5px;
+    .tagline {
+      color: var(--text-secondary);
+      font-size: 16px;
     }
     
-    .app-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 20px;
-      padding: 24px;
-      max-width: 500px;
-      margin: 0 auto;
-      flex-grow: 1;
-      align-content: flex-start;
-    }
-    
-    .app-icon {
-      width: 100%;
-      aspect-ratio: 1/1;
-      background: var(--card-bg);
-      border-radius: 18px;
+    .auth-container {
+      flex: 1;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      align-items: center;
-      box-shadow: 0 6px 16px var(--shadow);
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.3s;
-      position: relative;
-      overflow: hidden;
-      user-select: none;
+      padding: 0 30px;
+    }
+    
+    .auth-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 8px 24px var(--shadow);
       border: 1px solid var(--border);
     }
     
-    .app-icon:active {
-      transform: scale(0.95);
+    .auth-title {
+      font-size: 22px;
+      margin-bottom: 20px;
+      text-align: center;
     }
     
-    .app-icon:hover {
-      box-shadow: 0 8px 24px var(--shadow);
+    .input-group {
+      margin-bottom: 20px;
     }
     
-    .app-icon i {
-      font-size: 36px;
+    .input-label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    
+    .input-field {
+      width: 100%;
+      padding: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 16px;
+      color: var(--text-primary);
+      transition: border-color 0.3s;
+    }
+    
+    .input-field:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    
+    .auth-button {
+      width: 100%;
+      padding: 15px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-top: 10px;
+    }
+    
+    .auth-button:hover {
+      background: #364fc7;
+    }
+    
+    .auth-toggle {
+      text-align: center;
+      margin-top: 20px;
+      color: var(--text-secondary);
+    }
+    
+    .auth-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+      margin-left: 5px;
+    }
+    
+    .features {
+      padding: 30px 20px;
+      text-align: center;
+    }
+    
+    .features-title {
+      font-size: 20px;
+      margin-bottom: 25px;
+    }
+    
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 20px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    .feature-card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 20px 15px;
+      text-align: center;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 12px var(--shadow);
+    }
+    
+    .feature-icon {
+      font-size: 32px;
       margin-bottom: 12px;
       color: var(--accent);
     }
     
-    .app-name {
+    .feature-name {
       font-size: 14px;
       font-weight: 500;
-      color: var(--text-primary);
-      text-align: center;
-      max-width: 80%;
     }
     
-    .app-description {
-      font-size: 12px;
-      color: var(--text-tertiary);
-      margin-top: 6px;
-      padding: 0 10px;
-      text-align: center;
-    }
-    
-    .control-panel {
-      background: var(--surface);
-      border-radius: 24px 24px 0 0;
+    .footer {
       padding: 20px;
-      margin-top: auto;
-      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 14px;
       border-top: 1px solid var(--border);
     }
     
-    .control-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 15px;
-      gap: 10px;
-    }
-    
-    .control-button {
-      flex: 1;
-      background: var(--card-bg);
-      border-radius: 14px;
-      padding: 15px 10px;
-      text-align: center;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      border: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-    }
-    
-    .control-button:active {
-      transform: scale(0.95);
-    }
-    
-    .control-button i {
-      font-size: 24px;
-      display: block;
-      margin-bottom: 8px;
-      color: var(--accent);
-    }
-    
-    .status-indicator {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--text-secondary);
-    }
-    
-    .status-indicator.online {
-      background: var(--success);
-      box-shadow: 0 0 8px var(--success);
-    }
-    
-    .status-indicator.offline {
-      background: var(--danger);
-      box-shadow: 0 0 8px var(--danger);
-    }
-    
-    .status-indicator.recent {
-      background: var(--warning);
-      box-shadow: 0 0 8px var(--warning);
-    }
-    
-    .control-label {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-primary);
-    }
-    
     .version-info {
-      text-align: center;
-      padding: 15px;
-      font-size: 14px;
-      color: var(--text-tertiary);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    
-    .version-text {
-      margin-bottom: 8px;
-    }
-    
-    .update-button {
-      background: var(--accent);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 6px 12px;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .update-button:active {
-      transform: scale(0.95);
-    }
-    
-    .update-indicator {
-      display: none;
-      position: fixed;
-      top: 60px;
-      right: 16px;
-      background: var(--success);
-      color: white;
-      border-radius: 20px;
-      padding: 5px 15px;
-      font-size: 12px;
-      z-index: 100;
-      animation: pulse 2s infinite;
+      margin-top: 10px;
     }
     
     .home-indicator {
@@ -272,104 +217,76 @@
       transform: translateX(-50%);
       opacity: 0.3;
     }
-    
-    .app-icon::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: var(--accent);
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    
-    .app-icon:hover::after {
-      opacity: 1;
-    }
-    
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
-    
-    .connection-info {
-      position: fixed;
-      bottom: 100px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--card-bg);
-      color: var(--text-secondary);
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 12px;
-      z-index: 10;
-      border: 1px solid var(--border);
-      box-shadow: 0 4px 12px var(--shadow);
-      display: none;
-    }
   </style>
 </head>
 <body>
-  <div class="status-bar">
-    <div class="time" id="current-time">9:41</div>
-    <div>
-      <button class="theme-toggle" id="theme-toggle">🌓</button>
-    </div>
+  <div class="header">
+    <div class="logo">FamilySpace</div>
+    <div class="tagline">Ваше семейное пространство в одном приложении</div>
   </div>
   
-  <div class="update-indicator" id="update-indicator">Доступно обновление!</div>
-  
-  <div class="app-grid">
-    <div class="app-icon" id="chat-app">
-      <i>💬</i>
-      <div class="app-name">AI Чат</div>
-      <div class="app-description">Общение с ИИ-помощником</div>
-    </div>
-    
-    <div class="app-icon" id="calendar-app">
-      <i>📅</i>
-      <div class="app-name">Календарь</div>
-      <div class="app-description">Управление событиями</div>
-    </div>
-  </div>
-  
-  <div class="control-panel">
-    <div class="control-row">
-      <div class="control-button" id="refresh-button">
-        <i>🔄</i>
-        <div class="control-label">Обновить</div>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-title">Вход в систему</div>
+      
+      <div class="input-group">
+        <label class="input-label">Электронная почта</label>
+        <input type="email" class="input-field" placeholder="your@email.com">
       </div>
       
-      <div class="control-button" id="update-button">
-        <i>🔄</i>
-        <div class="control-label">Проверить обновления</div>
-        <div class="status-indicator" id="update-status"></div>
+      <div class="input-group">
+        <label class="input-label">Пароль</label>
+        <input type="password" class="input-field" placeholder="Введите пароль">
       </div>
       
-      <div class="control-button" id="connection-button">
-        <i>📶</i>
-        <div class="control-label">Соединение</div>
-        <div class="status-indicator" id="connection-status"></div>
+      <button class="auth-button">Войти</button>
+      
+      <div class="auth-toggle">
+        Нет аккаунта? <a href="#" class="auth-link">Зарегистрироваться</a>
       </div>
     </div>
   </div>
   
-  <div class="version-info">
-    <div class="version-text" id="version-display">Версия 2.6</div>
-    <div class="connection-info" id="connection-info">Последний обмен: только что</div>
+  <div class="features">
+    <div class="features-title">Возможности приложения</div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🎁</div>
+        <div class="feature-name">Вишлисты</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">👨‍👩‍👧</div>
+        <div class="feature-name">Семейное пространство</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🗓️</div>
+        <div class="feature-name">Календарь</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✅</div>
+        <div class="feature-name">Задачи</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💬</div>
+        <div class="feature-name">Семейный чат</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <div class="feature-name">ИИ-помощник</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <div>FamilySpace &copy; 2025</div>
+    <div class="version-info">Версия 3.0</div>
   </div>
   
   <div class="home-indicator"></div>
 
-<script>
+  <script>
     // Конфигурация приложения
-    const APP_VERSION = "2.6";
-    let newVersionAvailable = false;
-    let lastConnectionTime = null;
-    let connectionTimer = null;
+    const APP_VERSION = "3.0";
     
     // Инициализация приложения
     function initApp() {
@@ -377,173 +294,32 @@
       const savedTheme = localStorage.getItem('theme') || 'dark';
       document.documentElement.setAttribute('data-theme', savedTheme);
       
-      // Обновляем время
-      updateTime();
-      setInterval(updateTime, 60000);
-      
-      // Инициализация статуса соединения
-      initConnectionStatus();
-      
-      // Назначаем обработчики
-      document.getElementById('chat-app').addEventListener('click', () => {
-        window.location.href = 'chat.html';
-      });
-      
-      document.getElementById('calendar-app').addEventListener('click', () => {
-        localStorage.setItem('calendar_command', 'true');
-        window.location.href = 'chat.html';
-      });
-      
-      document.getElementById('refresh-button').addEventListener('click', () => {
-        window.location.reload();
-      });
-      
-      document.getElementById('update-button').addEventListener('click', checkForUpdates);
-      document.getElementById('connection-button').addEventListener('click', showConnectionInfo);
-      
-      document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
-      
-      // Показываем версию
-      document.getElementById('version-display').textContent = `Версия ${APP_VERSION}`;
-      
-      // Проверка обновлений при запуске
-      setTimeout(checkForUpdates, 2000);
-      
-      // Инициируем тестовый запрос для проверки соединения
-      testConnection();
-    }
-    
-    // Инициализация статуса соединения
-    function initConnectionStatus() {
-      // Загружаем последнее время соединения из localStorage
-      const savedTime = localStorage.getItem('last_connection');
-      lastConnectionTime = savedTime ? new Date(savedTime) : new Date();
-      
-      // Обновляем индикатор
-      updateConnectionIndicator();
-      
-      // Запускаем периодическую проверку
-      setInterval(updateConnectionIndicator, 60000);
-    }
-    
-    // Обновление индикатора соединения
-    function updateConnectionIndicator() {
-      const now = new Date();
-      const diff = Math.floor((now - lastConnectionTime) / 1000); // разница в секундах
-      const statusIndicator = document.getElementById('connection-status');
-      
-      // Определяем статус
-      if (diff < 60) { // менее 1 минуты
-        statusIndicator.className = 'status-indicator online';
-      } else if (diff < 300) { // 1-5 минут
-        statusIndicator.className = 'status-indicator recent';
-      } else { // более 5 минут
-        statusIndicator.className = 'status-indicator offline';
-      }
-    }
-    
-    // Показ информации о соединении
-    function showConnectionInfo() {
-      const infoElement = document.getElementById('connection-info');
-      const now = new Date();
-      const diff = Math.floor((now - lastConnectionTime) / 1000); // разница в секундах
-      
-      let timeText;
-      if (diff < 60) {
-        timeText = 'только что';
-      } else if (diff < 3600) {
-        const minutes = Math.floor(diff / 60);
-        timeText = `${minutes} мин назад`;
-      } else {
-        const hours = Math.floor(diff / 3600);
-        timeText = `${hours} ч назад`;
-      }
-      
-      infoElement.textContent = `Последний обмен: ${timeText}`;
-      infoElement.style.display = 'block';
-      
-      // Автоматическое скрытие через 3 секунды
-      clearTimeout(connectionTimer);
-      connectionTimer = setTimeout(() => {
-        infoElement.style.display = 'none';
-      }, 3000);
-    }
-    
-    // Тестовый запрос для проверки соединения
-    function testConnection() {
-      fetch('/?connection_test=1', { cache: 'no-store' })
-        .then(() => {
-          updateConnectionTime();
-        })
-        .catch(() => {
-          // В случае ошибки все равно обновляем время попытки
-          updateConnectionTime();
-        });
-    }
-    
-    // Обновление времени последнего соединения
-    function updateConnectionTime() {
-      lastConnectionTime = new Date();
-      localStorage.setItem('last_connection', lastConnectionTime.toISOString());
-      updateConnectionIndicator();
-    }
-    
-    // Функция проверки обновлений
-    async function checkForUpdates() {
-      const updateIndicator = document.getElementById('update-indicator');
-      const statusIndicator = document.getElementById('update-status');
-      
-      // Показываем статус проверки
-      statusIndicator.className = 'status-indicator recent';
-      
-      try {
-        const response = await fetch(`/api/check-update?v=${APP_VERSION}`);
-        if (!response.ok) throw new Error('Ошибка сети');
+      // Переключение между входом и регистрацией
+      const authLink = document.querySelector('.auth-link');
+      authLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        const authTitle = document.querySelector('.auth-title');
+        const authButton = document.querySelector('.auth-button');
         
-        const data = await response.json();
-        
-        if (data.update_available) {
-          newVersionAvailable = true;
-          updateIndicator.style.display = 'block';
-          updateIndicator.textContent = `Доступна версия ${data.current_version}`;
-          updateIndicator.style.background = 'var(--success)';
-          
-          // Обновляем статус
-          statusIndicator.className = 'status-indicator online';
-          
-          // Показываем список изменений
-          alert(`Доступно обновление! (v${data.current_version})\n\nИзменения:\n• ${data.changelog.join('\n• ')}`);
+        if (authTitle.textContent === 'Вход в систему') {
+          authTitle.textContent = 'Регистрация';
+          authButton.textContent = 'Зарегистрироваться';
+          authLink.previousSibling.textContent = 'Уже есть аккаунт? ';
+          authLink.textContent = 'Войти';
         } else {
-          alert('У вас установлена последняя версия приложения');
-          statusIndicator.className = 'status-indicator online';
+          authTitle.textContent = 'Вход в систему';
+          authButton.textContent = 'Войти';
+          authLink.previousSibling.textContent = 'Нет аккаунта? ';
+          authLink.textContent = 'Зарегистрироваться';
         }
-        
-        // Обновляем время соединения
-        updateConnectionTime();
-      } catch (error) {
-        console.error('Ошибка проверки обновлений:', error);
-        alert('Не удалось проверить обновления. Пожалуйста, проверьте подключение к интернету.');
-        statusIndicator.className = 'status-indicator offline';
-        
-        // Показываем информацию о соединении
-        showConnectionInfo();
-      }
-    }
-    
-    // Обновляем время в статус-баре
-    function updateTime() {
-      const now = new Date();
-      const hours = now.getHours().toString().padStart(2, '0');
-      const minutes = now.getMinutes().toString().padStart(2, '0');
-      document.getElementById('current-time').textContent = `${hours}:${minutes}`;
-    }
-    
-    // Переключение темы
-    function toggleTheme() {
-      const currentTheme = document.documentElement.getAttribute('data-theme');
-      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', newTheme);
-      localStorage.setItem('theme', newTheme);
+      });
+      
+      // Обработка формы
+      const authButton = document.querySelector('.auth-button');
+      authButton.addEventListener('click', () => {
+        // Временная заглушка для перехода
+        window.location.href = 'family.html';
+      });
     }
     
     // Запуск приложения после загрузки
@@ -581,7 +357,6 @@
           setInterval(() => {
             registration.update().then(() => {
               console.log('Фоновая проверка обновлений выполнена');
-              updateConnectionTime(); // Обновляем время соединения
             });
           }, 60 * 60 * 1000);
           
@@ -605,7 +380,7 @@
           console.log(`Версия SW (${event.data.swVersion}) не совпадает с приложением (${APP_VERSION})`);
           // Принудительно обновляем Service Worker
           navigator.serviceWorker.getRegistration().then(reg => {
-            reg?.update().then(() => updateConnectionTime());
+            reg?.update();
           });
           break;
           
