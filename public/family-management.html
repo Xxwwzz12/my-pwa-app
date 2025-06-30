@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Управление семьёй | FamilySpace</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Базовые стили */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+    }
+    
+    /* Шапка (такая же как в family.html) */
+    .family-header {
+      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      color: white;
+      padding: 15px 20px 5px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Основной контент */
+    .management-container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+    
+    .section {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      padding: 25px;
+      margin-bottom: 25px;
+    }
+    
+    .section-title {
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      color: #2d3748;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    /* Форма приглашения */
+    .invite-form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    
+    .invite-input {
+      flex: 1;
+      padding: 12px 15px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    
+    .invite-button {
+      background: #4263eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 20px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+    
+    .invite-button:hover {
+      background: #364fc7;
+    }
+    
+    /* Список членов семьи */
+    .members-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    
+    .member-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 15px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .member-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .member-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: #4263eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 18px;
+    }
+    
+    .member-info {
+      flex: 1;
+    }
+    
+    .member-name {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    
+    .member-role {
+      font-size: 0.9rem;
+      color: #718096;
+    }
+    
+    .member-status {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    
+    .online {
+      background: #40c057;
+    }
+    
+    .offline {
+      background: #868e96;
+    }
+    
+    /* Список приглашений */
+    .invitations-list {
+      list-style: none;
+      margin-top: 15px;
+    }
+    
+    .invitation-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #edf2f7;
+    }
+    
+    .invitation-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .action-button {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    
+    .accept {
+      background: #40c057;
+      color: white;
+    }
+    
+    .decline {
+      background: #fa5252;
+      color: white;
+    }
+    
+    /* Адаптивность */
+    @media (max-width: 768px) {
+      .invite-form {
+        flex-direction: column;
+      }
+      
+      .section {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Шапка (такая же как в family.html) -->
+  <header class="family-header">
+    <div class="header-top">
+      <h1 class="family-name">Управление семьёй</h1>
+      <div class="user-avatar-container">
+        <img id="header-avatar" class="user-avatar" src="" alt="Ваш аватар">
+      </div>
+    </div>
+    
+    <nav class="family-nav">
+      <a href="/family.html" class="nav-link">
+        <i class="fas fa-home"></i>
+        <span>Главная</span>
+      </a>
+      <a href="/profile.html" class="nav-link">
+        <i class="fas fa-user"></i>
+        <span>Профиль</span>
+      </a>
+      <a href="/family-management.html" class="nav-link active">
+        <i class="fas fa-users-cog"></i>
+        <span>Семья</span>
+      </a>
+      <a href="/settings.html" class="nav-link">
+        <i class="fas fa-cog"></i>
+        <span>Настройки</span>
+      </a>
+    </nav>
+  </header>
+  
+  <main class="management-container">
+    <!-- Секция приглашений -->
+    <section class="section">
+      <h2 class="section-title"><i class="fas fa-envelope"></i> Пригласить в семью</h2>
+      <form class="invite-form" id="invite-form">
+        <input 
+          type="email" 
+          class="invite-input" 
+          placeholder="Введите email для приглашения"
+          required
+        >
+        <button type="submit" class="invite-button">Отправить приглашение</button>
+      </form>
+    </section>
+    
+    <!-- Секция текущих членов семьи -->
+    <section class="section">
+      <h2 class="section-title"><i class="fas fa-users"></i> Члены семьи</h2>
+      <div class="members-grid" id="members-grid">
+        <!-- Динамически заполнится через JS -->
+      </div>
+    </section>
+    
+    <!-- Секция входящих приглашений -->
+    <section class="section">
+      <h2 class="section-title"><i class="fas fa-inbox"></i> Ваши приглашения</h2>
+      <ul class="invitations-list" id="invitations-list">
+        <!-- Динамически заполнится через JS -->
+      </ul>
+    </section>
+  </main>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Загрузка аватара пользователя
+      const loadUserAvatar = async () => {
+        try {
+          const response = await fetch('/api/user');
+          if (!response.ok) throw new Error('Ошибка загрузки данных');
+          
+          const user = await response.json();
+          const headerAvatar = document.getElementById('header-avatar');
+          
+          if (user.avatarUrl) {
+            headerAvatar.src = user.avatarUrl;
+          } else {
+            headerAvatar.textContent = (user.firstName?.[0] || 'П') + (user.lastName?.[0] || 'П');
+            headerAvatar.style.display = 'flex';
+            headerAvatar.style.alignItems = 'center';
+            headerAvatar.style.justifyContent = 'center';
+            headerAvatar.style.fontSize = '18px';
+          }
+        } catch (error) {
+          console.error('Ошибка загрузки аватара:', error);
+        }
+      };
+      
+      // Загрузка данных о семье
+      const loadFamilyData = async () => {
+        try {
+          // Заглушка - в реальности будет запрос к API
+          const members = [
+            { id: 1, firstName: "Мария", lastName: "Иванова", role: "Старший родитель", online: true },
+            { id: 2, firstName: "Петр", lastName: "Иванов", role: "Родитель", online: true },
+            { id: 3, firstName: "Анна", lastName: "Иванова", role: "Ребенок", online: false }
+          ];
+          
+          const invitations = [
+            { id: 1, email: "sergey@example.com", sender: "Мария Иванова" },
+            { id: 2, email: "olga@example.com", sender: "Петр Иванов" }
+          ];
+          
+          renderFamilyMembers(members);
+          renderInvitations(invitations);
+        } catch (error) {
+          console.error('Ошибка загрузки данных семьи:', error);
+        }
+      };
+      
+      // Отображение членов семьи
+      const renderFamilyMembers = (members) => {
+        const container = document.getElementById('members-grid');
+        container.innerHTML = '';
+        
+        members.forEach(member => {
+          const card = document.createElement('div');
+          card.className = 'member-card';
+          card.innerHTML = `
+            <div class="member-avatar">${member.firstName[0]}${member.lastName[0]}</div>
+            <div class="member-info">
+              <div class="member-name">${member.firstName} ${member.lastName}</div>
+              <div class="member-role">
+                <span class="member-status ${member.online ? 'online' : 'offline'}"></span>
+                ${member.role}
+              </div>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      };
+      
+      // Отображение приглашений
+      const renderInvitations = (invitations) => {
+        const container = document.getElementById('invitations-list');
+        container.innerHTML = '';
+        
+        if (invitations.length === 0) {
+          container.innerHTML = '<li class="invitation-item">У вас нет активных приглашений</li>';
+          return;
+        }
+        
+        invitations.forEach(invite => {
+          const item = document.createElement('li');
+          item.className = 'invitation-item';
+          item.innerHTML = `
+            <div class="invitation-details">
+              <strong>${invite.email}</strong><br>
+              Приглашение от: ${invite.sender}
+            </div>
+            <div class="invitation-actions">
+              <button class="action-button accept">Принять</button>
+              <button class="action-button decline">Отклонить</button>
+            </div>
+          `;
+          container.appendChild(item);
+        });
+      };
+      
+      // Обработка отправки приглашения
+      document.getElementById('invite-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const emailInput = document.querySelector('.invite-input');
+        const email = emailInput.value.trim();
+        
+        if (!email) return;
+        
+        try {
+          // В реальности здесь будет fetch запрос к API
+          console.log('Отправка приглашения на:', email);
+          
+          // Имитация успешной отправки
+          alert(`Приглашение отправлено на ${email}!`);
+          emailInput.value = '';
+        } catch (error) {
+          console.error('Ошибка отправки приглашения:', error);
+          alert('Не удалось отправить приглашение');
+        }
+      });
+      
+      // Инициализация
+      await loadUserAvatar();
+      await loadFamilyData();
+    });
+  </script>
+</body>
+</html>
