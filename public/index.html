@@ -47,21 +47,24 @@
     
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
-      height: 100vh;
+      min-height: 100vh; /* Изменено с height на min-height */
       background: var(--background);
       padding: 0;
-      position: relative;
-      overflow: hidden;
       display: flex;
       flex-direction: column;
       color: var(--text-primary);
       transition: background 0.3s ease;
+      overflow-x: hidden; /* Скрываем горизонтальный скролл */
     }
     
     .header {
       padding: 20px;
       text-align: center;
       border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--background);
+      z-index: 10;
     }
     
     .logo {
@@ -76,12 +79,18 @@
       font-size: 16px;
     }
     
-    .auth-container {
+    .main-content {
       flex: 1;
+      overflow-y: auto; /* Разрешаем скроллинг контента */
+      padding-bottom: 20px;
+    }
+    
+    .auth-container {
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 0 30px;
+      padding: 30px;
+      min-height: 400px; /* Минимальная высота для контента */
     }
     
     .auth-card {
@@ -90,6 +99,9 @@
       padding: 30px;
       box-shadow: 0 8px 24px var(--shadow);
       border: 1px solid var(--border);
+      max-width: 500px;
+      margin: 0 auto;
+      width: 100%;
     }
     
     .auth-title {
@@ -141,6 +153,63 @@
     
     .auth-button:hover {
       background: #364fc7;
+    }
+    
+    /* Новые стили для кнопки Google */
+    .google-login-container {
+      margin-top: 20px;
+      text-align: center;
+    }
+    
+    .divider {
+      position: relative;
+      margin: 20px 0;
+      color: var(--text-tertiary);
+      text-align: center;
+    }
+    
+    .divider::before,
+    .divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 40%;
+      height: 1px;
+      background: var(--border);
+    }
+    
+    .divider::before {
+      left: 0;
+    }
+    
+    .divider::after {
+      right: 0;
+    }
+    
+    .google-login-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    
+    .google-login-button:hover {
+      background: var(--card-bg);
+    }
+    
+    .google-login-button img {
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
     }
     
     .auth-toggle {
@@ -200,6 +269,10 @@
       color: var(--text-tertiary);
       font-size: 14px;
       border-top: 1px solid var(--border);
+      position: sticky;
+      bottom: 0;
+      background: var(--background);
+      z-index: 10;
     }
     
     .version-info {
@@ -211,11 +284,29 @@
       height: 5px;
       background: var(--text-primary);
       border-radius: 3px;
-      position: absolute;
+      position: fixed;
       bottom: 8px;
       left: 50%;
       transform: translateX(-50%);
       opacity: 0.3;
+    }
+    
+    /* Медиа-запросы для адаптивности */
+    @media (max-height: 700px) {
+      .auth-container {
+        min-height: 300px;
+        padding: 20px;
+      }
+      
+      .features {
+        padding: 20px 15px;
+      }
+    }
+    
+    @media (max-height: 600px) {
+      .features {
+        display: none;
+      }
     }
   </style>
 </head>
@@ -225,54 +316,65 @@
     <div class="tagline">Ваше семейное пространство в одном приложении</div>
   </div>
   
-  <div class="auth-container">
-    <div class="auth-card">
-      <div class="auth-title">Вход в систему</div>
-      
-      <div class="input-group">
-        <label class="input-label">Электронная почта</label>
-        <input type="email" class="input-field" placeholder="your@email.com">
-      </div>
-      
-      <div class="input-group">
-        <label class="input-label">Пароль</label>
-        <input type="password" class="input-field" placeholder="Введите пароль">
-      </div>
-      
-      <button class="auth-button">Войти</button>
-      
-      <div class="auth-toggle">
-        Нет аккаунта? <a href="#" class="auth-link">Зарегистрироваться</a>
+  <div class="main-content">
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-title">Вход в систему</div>
+        
+        <div class="input-group">
+          <label class="input-label">Электронная почта</label>
+          <input type="email" class="input-field" placeholder="your@email.com">
+        </div>
+        
+        <div class="input-group">
+          <label class="input-label">Пароль</label>
+          <input type="password" class="input-field" placeholder="Введите пароль">
+        </div>
+        
+        <button class="auth-button">Войти</button>
+        
+        <!-- Кнопка входа через Google -->
+        <div class="google-login-container">
+          <div class="divider">или</div>
+          <button id="google-login" class="google-login-button">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google">
+            Войти через Google
+          </button>
+        </div>
+        
+        <div class="auth-toggle">
+          Нет аккаунта? <a href="#" class="auth-link">Зарегистрироваться</a>
+        </div>
       </div>
     </div>
-  </div>
-  
-  <div class="features">
-    <div class="features-title">Возможности приложения</div>
-    <div class="feature-grid">
-      <div class="feature-card">
-        <div class="feature-icon">🎁</div>
-        <div class="feature-name">Вишлисты</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">👨‍👩‍👧</div>
-        <div class="feature-name">Семейное пространство</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🗓️</div>
-        <div class="feature-name">Календарь</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">✅</div>
-        <div class="feature-name">Задачи</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">💬</div>
-        <div class="feature-name">Семейный чат</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🤖</div>
-        <div class="feature-name">ИИ-помощник</div>
+    
+    <div class="features">
+      <div class="features-title">Возможности приложения</div>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🎁</div>
+          <div class="feature-name">Вишлисты</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👨‍👩‍👧</div>
+          <div class="feature-name">Семейное пространство</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🗓️</div>
+          <div class="feature-name">Календарь</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">✅</div>
+          <div class="feature-name">Задачи</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💬</div>
+          <div class="feature-name">Семейный чат</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <div class="feature-name">ИИ-помощник</div>
+        </div>
       </div>
     </div>
   </div>
@@ -314,12 +416,17 @@
         }
       });
       
-  // Обработка формы
-const authButton = document.querySelector('.auth-button');
-authButton.addEventListener('click', () => {
-  // Временная заглушка для перехода
-  window.location.href = 'family.html';
-});
+      // Обработчик для кнопки Google Login
+      const googleLoginButton = document.getElementById('google-login');
+      googleLoginButton.addEventListener('click', () => {
+        window.location.href = '/auth/google';
+      });
+      
+      // Обработка формы
+      const authButton = document.querySelector('.auth-button');
+      authButton.addEventListener('click', () => {
+        window.location.href = 'family.html';
+      });
     }
     
     // Запуск приложения после загрузки
@@ -378,7 +485,6 @@ authButton.addEventListener('click', () => {
           
         case 'VERSION_MISMATCH':
           console.log(`Версия SW (${event.data.swVersion}) не совпадает с приложением (${APP_VERSION})`);
-          // Принудительно обновляем Service Worker
           navigator.serviceWorker.getRegistration().then(reg => {
             reg?.update();
           });
