@@ -115,7 +115,9 @@ self.addEventListener('install', event => {
           '/offline.html',
           '/manifest.json',
           '/icon-192.png',
-          '/icon-512.png'
+          '/icon-512.png',
+          '/app.js',
+          '/service-worker-registration.js'
         ]);
       })
       .catch(error => {
@@ -251,7 +253,15 @@ self.addEventListener('message', event => {
     }
   }
   
-  // ... остальные обработчики сообщений ...
+  // Запрос логов
+  if (event.data && event.data.type === 'GET_LOGS') {
+    getLogsFromDB().then(logs => {
+      event.source.postMessage({
+        type: 'LOGS_DATA',
+        logs: logs
+      });
+    }).catch(error => {
+      log(`Ошибка получения логов: ${error}`);
+    });
+  }
 });
-
-// ... остальной код без изменений ...
