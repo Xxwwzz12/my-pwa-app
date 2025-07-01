@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
-const MongoStore = require('connect-mongo'); // Убрали .default
+const MongoStore = require('connect-mongo');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const mongoose = require('mongoose');
@@ -14,19 +14,7 @@ require('dotenv').config();
 const User = require('./models/User');
 
 const app = express();
-// Добавьте в начало файла (после импортов)
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://my-pwa-app-w519.onrender.com');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  
-  next();
-});
+
 // ========== Подключение к MongoDB ==========
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
@@ -70,12 +58,14 @@ app.set('trust proxy', 1);
 app.use(express.static('public'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cookieParser());
-// ========== CORS Middleware ==========
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ========== CORS Middleware (исправлено) ==========
 app.use((req, res, next) => {
   const allowedOrigins = [
     'https://my-pwa-app-w519.onrender.com',
-    'http://localhost:3000',
-    'https://your-local-https-server.com' // добавьте свой локальный URL при необходимости
+    'http://localhost:3000'
   ];
   
   const origin = req.headers.origin;
@@ -93,12 +83,6 @@ app.use((req, res, next) => {
   
   next();
 });
-app.use(cors({
-  origin: 'https://my-pwa-app-w519.onrender.com',
-  credentials: true
-}));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // ========== Конфигурация сессий с MongoDB Store ==========
 app.use(session({
@@ -116,8 +100,6 @@ app.use(session({
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
 }));
-
-// ... ОСТАЛЬНАЯ ЧАСТЬ ФАЙЛА БЕЗ ИЗМЕНЕНИЙ ...
 
 // Инициализация Passport
 app.use(passport.initialize());
@@ -327,9 +309,11 @@ app.get('/profile.html', checkRegistration, (req, res) => {
 app.get('/registration.html', checkRegistration, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'registration.html'));
 });
+
 // ========== Подключение API уведомлений ==========
 const notificationsRouter = require('./api/notifications');
 app.use('/api/notifications', notificationsRouter);
+
 // ========== API для проверки обновлений ==========
 app.get('/api/check-update', (req, res) => {
   try {
