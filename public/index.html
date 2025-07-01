@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#4263eb">
+  <meta name="theme-color" content="#121826">
   <title>Семейное пространство | FamilySpace</title>
   
   <!-- Предзагрузка критических ресурсов -->
@@ -11,29 +11,36 @@
   <link rel="preload" href="/images/logo.webp" as="image">
   <link rel="preload" href="/images/default.webp" as="image">
   
-  <!-- Предварительное подключение к CDN Google -->
-  <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link rel="preconnect" href="https://upload.wikimedia.org">
-  
+  <!-- Основные стили -->
   <link rel="stylesheet" href="/styles.css">
   <link rel="manifest" href="/manifest.json">
   
   <style>
-    /* Обновлённые стили с улучшенной анимацией */
+    /* Переменные для стеклянного эффекта (синхронизированы с style.css) */
     :root {
-      --fallback-gradient: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
       --glass-bg: rgba(255, 255, 255, 0.1);
-      --glass-radius: 24px;
-      --glass-blur: 12px;
       --glass-border: rgba(255, 255, 255, 0.15);
       --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --glass-blur: 12px;
+      --glass-radius: 24px;
+      --primary: #4263eb;
+      --primary-dark: #364fc7;
       --text-primary: rgba(255, 255, 255, 0.95);
       --text-secondary: rgba(255, 255, 255, 0.7);
       --text-tertiary: rgba(255, 255, 255, 0.5);
-      --primary: #4263eb;
-      --primary-dark: #364fc7;
+      --fallback-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     }
     
+    [data-theme="light"] {
+      --glass-bg: rgba(255, 255, 255, 0.25);
+      --glass-border: rgba(0, 0, 0, 0.1);
+      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+      --text-primary: #212529;
+      --text-secondary: #495057;
+      --text-tertiary: #868e96;
+      --fallback-gradient: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+    }
+
     /* Анимации */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
@@ -46,6 +53,7 @@
       100% { transform: scale(1); }
     }
     
+    /* Основные стили страницы входа */
     .login-container {
       display: flex;
       flex-direction: column;
@@ -54,19 +62,8 @@
       position: relative;
       overflow: hidden;
       animation: fadeIn 0.8s ease-out;
-    }
-    
-    .login-container::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: inherit;
-      filter: blur(20px);
-      z-index: -1;
-      opacity: 0.7;
+      background: var(--fallback-gradient);
+      color: var(--text-primary);
     }
     
     .login-header {
@@ -81,11 +78,11 @@
       border-radius: 20px;
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
       transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-    }
-    
-    .login-logo-img:hover {
-      transform: translateY(-5px) rotate(-2deg);
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      padding: 10px;
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
     }
     
     .login-tagline {
@@ -110,19 +107,6 @@
       position: relative;
       overflow: hidden;
       animation: fadeIn 0.7s 0.4s both;
-    }
-    
-    .login-card::before {
-      content: '';
-      position: absolute;
-      top: -10px;
-      left: -10px;
-      right: -10px;
-      bottom: -10px;
-      background: inherit;
-      filter: blur(20px);
-      z-index: -1;
-      opacity: 0.5;
     }
     
     .auth-title {
@@ -317,19 +301,6 @@
       overflow: hidden;
     }
     
-    .feature-card::before {
-      content: '';
-      position: absolute;
-      top: -10px;
-      left: -10px;
-      right: -10px;
-      bottom: -10px;
-      background: inherit;
-      filter: blur(20px);
-      z-index: -1;
-      opacity: 0.5;
-    }
-    
     .feature-card:hover {
       transform: translateY(-8px);
       box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
@@ -408,6 +379,11 @@
       .auth-title {
         font-size: 1.6rem;
       }
+      
+      /* Уменьшаем размытие для мобильных устройств */
+      :root {
+        --glass-blur: 8px;
+      }
     }
     
     @media (max-width: 480px) {
@@ -434,6 +410,30 @@
       
       .auth-button {
         padding: 14px;
+      }
+      
+      /* Еще меньше размытия для маленьких экранов */
+      :root {
+        --glass-blur: 6px;
+      }
+    }
+    
+    /* Fallback для браузеров без поддержки backdrop-filter */
+    @supports not (backdrop-filter: blur(12px)) {
+      .login-logo-img,
+      .login-card,
+      .feature-card,
+      .google-login-button,
+      .auth-button {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: rgba(30, 30, 30, 0.7) !important;
+      }
+      
+      [data-theme="light"] .login-logo-img,
+      [data-theme="light"] .login-card,
+      [data-theme="light"] .feature-card {
+        background: rgba(255, 255, 255, 0.8) !important;
       }
     }
   </style>
@@ -536,7 +536,6 @@
       // Обработка основной кнопки входа
       const authButton = document.querySelector('.auth-button');
       authButton.addEventListener('click', () => {
-        // Временная заглушка - в реальном приложении здесь будет аутентификация
         window.location.href = 'family.html';
       });
       
@@ -544,13 +543,18 @@
       document.querySelectorAll('img').forEach(img => {
         img.onerror = function() {
           this.onerror = null;
-          // Для логотипа используем default.webp
           if (this.classList.contains('login-logo-img')) {
             this.src = '/images/default.webp';
           }
           this.classList.add('broken-image-fallback');
         };
       });
+      
+      // Принудительное обновление темы при загрузке
+      document.documentElement.style.visibility = 'hidden';
+      setTimeout(() => {
+        document.documentElement.style.visibility = 'visible';
+      }, 100);
     }
     
     // Запуск приложения после загрузки
@@ -584,13 +588,6 @@
             version: APP_VERSION
           });
           
-          // Периодическая проверка обновлений (каждый час)
-          setInterval(() => {
-            registration.update().then(() => {
-              console.log('Фоновая проверка обновлений выполнена');
-            });
-          }, 60 * 60 * 1000);
-          
         } catch (error) {
           console.error('Ошибка регистрации Service Worker: ', error);
         }
@@ -613,10 +610,6 @@
             reg?.update();
           });
           break;
-          
-        case 'SW_LOG':
-          console.log('[SW]', event.data.message);
-          break;
       }
     });
     
@@ -628,7 +621,6 @@
       setTimeout(() => {
         document.querySelectorAll('img').forEach(img => {
           if (!img.complete || img.naturalHeight === 0) {
-            console.warn(`Ошибка загрузки: ${img.src}`);
             if (img.classList.contains('login-logo-img')) {
               img.src = fallbackImage;
             }
