@@ -1,16 +1,38 @@
 // Версия кэша
-const CACHE_VERSION = 'v3.2';
-const CACHE_NAME = `ai-assistant-cache-${CACHE_VERSION}`;
-const API_CACHE_NAME = 'api-cache-v1';
+const CACHE_VERSION = 'v4.0';
+const CACHE_NAME = `familyspace-cache-${CACHE_VERSION}`;
+const API_CACHE_NAME = 'familyspace-api-cache-v1';
 const OFFLINE_URL = '/offline.html';
-const LOGS_DB_NAME = 'SW_Logs_DB';
+const LOGS_DB_NAME = 'FamilySpace_Logs_DB';
 const LOGS_STORE_NAME = 'logs';
 const MAX_LOGS = 100;
+
+// Список ресурсов для предварительного кэширования
+const PRECACHE_RESOURCES = [
+  '/',
+  '/index.html',
+  '/family.html',
+  '/profile.html',
+  '/registration.html',
+  '/family-chat.html',
+  '/calendar.html',
+  '/tasks.html',
+  '/wishlist.html',
+  '/offline.html',
+  '/styles.css',
+  '/manifest.json',
+  '/icons/icon_1.png',
+  '/icons/icon-chat.png',
+  '/icons/icon-calendar.png',
+  '/icons/icon-profile.png',
+  '/app.js',
+  '/service-worker-registration.js'
+];
 
 // Улучшенная система логов с IndexedDB
 function log(message) {
   const timestamp = new Date().toISOString();
-  const logEntry = `[${timestamp}] ${message}`;
+  const logEntry = `[${timestamp}] FamilySpace SW: ${message}`;
   
   // Сохраняем лог в IndexedDB
   saveLogToDB(logEntry);
@@ -108,17 +130,11 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => {
         log('Кэширование основных ресурсов');
-        return cache.addAll([
-          '/',
-          '/index.html?v=3.2',
-          '/chat.html?v=3.2',
-          '/offline.html',
-          '/manifest.json',
-          '/icon-192.png',
-          '/icon-512.png',
-          '/app.js',
-          '/service-worker-registration.js'
-        ]);
+        return cache.addAll(PRECACHE_RESOURCES);
+      })
+      .then(() => {
+        log('Все ресурсы успешно кэшированы');
+        return self.skipWaiting();
       })
       .catch(error => {
         log(`Ошибка при установке: ${error.message}`);
@@ -130,13 +146,14 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   log('Активация Service Worker');
   
-  const cacheWhitelist = [CACHE_NAME];
+  const cacheWhitelist = [CACHE_NAME, API_CACHE_NAME];
+  
   event.waitUntil(
     caches.keys().then(cacheNames => {
       log(`Найдено кэшей: ${cacheNames.length}`);
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+          if (!cacheWhitelist.includes(cacheName)) {
             log(`Удаление старого кэша: ${cacheName}`);
             return caches.delete(cacheName);
           }
@@ -164,18 +181,14 @@ self.addEventListener('activate', event => {
 
 // Обработка запросов
 self.addEventListener('fetch', event => {
-  log(`Запрос: ${event.request.url}`);
+  const requestUrl = new URL(event.request.url);
+  const isApiRequest = requestUrl.pathname.startsWith('/api/');
+  const isStaticResource = /\.(css|js|png|jpg|jpeg|gif|svg|ico|json)$/.test(requestUrl.pathname);
   
-  // Для тестовых запросов соединения
-  if (event.request.url.includes('connection_test')) {
-    event.respondWith(
-      new Response(null, { status: 204 }) // Пустой ответ
-    );
-    return;
-  }
+  log(`Запрос: ${requestUrl.pathname} [${isApiRequest ? 'API' : isStaticResource ? 'Static' : 'Navigation'}]`);
   
-  // Для API запросов используем Network-First стратегию
-  if (event.request.url.includes('/api/check-update')) {
+  // Стратегия для API запросов: Network First
+  if (isApiRequest) {
     event.respondWith(
       fetch(event.request)
         .then(networkResponse => {
@@ -187,40 +200,44 @@ self.addEventListener('fetch', event => {
         })
         .catch(() => {
           // При ошибке сети - возвращаем из кэша
-          return caches.match(event.request);
+          return caches.match(event.request)
+            .then(cachedResponse => cachedResponse || Response.error());
         })
     );
     return;
   }
 
-  // Для навигационных запросов используем другую стратегию
-  if (event.request.mode === 'navigate') {
+  // Стратегия для статических ресурсов: Cache First
+  if (isStaticResource) {
     event.respondWith(
-      fetch(event.request)
-        .catch(() => {
-          log('Оффлайн режим, показ offline.html');
-          return caches.match(OFFLINE_URL);
+      caches.match(event.request)
+        .then(cachedResponse => {
+          // Всегда обновляем кэш в фоне
+          const fetchPromise = fetch(event.request).then(networkResponse => {
+            // Обновляем кэш
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, networkResponse.clone());
+            });
+            return networkResponse;
+          }).catch(() => {}); // Игнорируем ошибки сетевого запроса
+          
+          // Возвращаем кэшированный ответ или пробуем сеть
+          return cachedResponse || fetchPromise;
         })
     );
     return;
   }
 
-  // Стандартная стратегия для остальных запросов
+  // Стратегия для навигационных запросов: Network First с fallback
   event.respondWith(
     fetch(event.request)
-      .then(response => {
-        // Клонируем ответ для кэширования
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME)
-          .then(cache => {
-            log(`Кэширование: ${event.request.url}`);
-            cache.put(event.request, responseToCache);
-          });
-        return response;
-      })
       .catch(() => {
-        // При ошибке сети - возвращаем из кэша
-        log(`Ошибка сети, поиск в кэше: ${event.request.url}`);
+        // Для навигационных запросов возвращаем offline.html
+        if (event.request.mode === 'navigate') {
+          return caches.match(OFFLINE_URL);
+        }
+        
+        // Для других запросов пробуем кэш
         return caches.match(event.request);
       })
   );
@@ -264,4 +281,64 @@ self.addEventListener('message', event => {
       log(`Ошибка получения логов: ${error}`);
     });
   }
+  
+  // Очистка кэша по запросу
+  if (event.data && event.data.type === 'CLEAR_CACHE') {
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== LOGS_DB_NAME) {
+            log(`Очистка кэша: ${cacheName}`);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => {
+      event.source.postMessage({
+        type: 'CACHE_CLEARED'
+      });
+    });
+  }
+});
+
+// Периодическая синхронизация
+self.addEventListener('periodicsync', event => {
+  if (event.tag === 'update-check') {
+    log('Фоновая проверка обновлений');
+    event.waitUntil(
+      caches.open(CACHE_NAME).then(cache => {
+        return cache.addAll(PRECACHE_RESOURCES.map(url => {
+          return new Request(url, { cache: 'reload' });
+        }));
+      })
+      .then(() => log('Фоновая синхронизация завершена'))
+      .catch(err => log(`Ошибка фоновой синхронизации: ${err}`))
+    );
+  }
+});
+
+// Обработка фоновых push-уведомлений
+self.addEventListener('push', event => {
+  const data = event.data.json();
+  log(`Получено push-уведомление: ${data.title}`);
+  
+  const options = {
+    body: data.body,
+    icon: '/icons/icon_1.png',
+    badge: '/icons/icon_1.png',
+    data: {
+      url: data.url || '/'
+    }
+  };
+  
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    clients.openWindow(event.notification.data.url)
+  );
 });
