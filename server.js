@@ -70,7 +70,29 @@ app.set('trust proxy', 1);
 app.use(express.static('public'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cookieParser());
-// Добавьте после app.use(cookieParser());
+// ========== CORS Middleware ==========
+app.use((req, res, next) => {
+  const allowedOrigins = [
+    'https://my-pwa-app-w519.onrender.com',
+    'http://localhost:3000',
+    'https://your-local-https-server.com' // добавьте свой локальный URL при необходимости
+  ];
+  
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
 app.use(cors({
   origin: 'https://my-pwa-app-w519.onrender.com',
   credentials: true
