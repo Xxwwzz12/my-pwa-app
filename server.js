@@ -288,7 +288,9 @@ app.get('/profile.html', checkRegistration, (req, res) => {
 app.get('/registration.html', checkRegistration, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'registration.html'));
 });
-
+// ========== Подключение API уведомлений ==========
+const notificationsRouter = require('./api/notifications');
+app.use('/api/notifications', notificationsRouter);
 // ========== API для проверки обновлений ==========
 app.get('/api/check-update', (req, res) => {
   try {
