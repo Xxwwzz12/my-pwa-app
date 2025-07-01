@@ -6,8 +6,7 @@
     "start": "node server.js"
   },
   "dependencies": {
-  "cors": "^2.8.5",
-  // остальные зависимости
+    "cors": "^2.8.5",
     "connect-mongo": "^5.0.0",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.3.1",
