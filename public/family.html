@@ -9,619 +9,327 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    /* Обновленные стили для страницы семьи */
-    .family-container {
-      padding: 20px;
-      max-width: 1200px;
-      margin: 0 auto;
-      width: 100%;
-    }
-    
-    .family-page-header {
+    /* Обновленные стили для плиточного интерфейса */
+    .status-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 10px 15px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 30px;
-      padding: 20px;
-      background: var(--glass-bg);
-      border-radius: var(--glass-radius);
-      border: 1px solid var(--glass-border);
-      box-shadow: var(--glass-shadow);
-      backdrop-filter: blur(var(--glass-blur));
-      -webkit-backdrop-filter: blur(var(--glass-blur));
+      background: rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 100;
+      border-bottom: 1px solid var(--glass-border);
     }
     
-    .members-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 25px;
-      margin-bottom: 40px;
-    }
-    
-    .family-member {
-      background: var(--glass-bg);
-      border-radius: var(--glass-radius);
-      padding: 25px;
-      display: flex;
-      border: 1px solid var(--glass-border);
-      box-shadow: var(--glass-shadow);
-      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .family-member::before {
-      content: '';
-      position: absolute;
-      top: -10px;
-      left: -10px;
-      right: -10px;
-      bottom: -10px;
-      background: inherit;
-      filter: blur(20px);
-      z-index: -1;
-      opacity: 0.5;
-    }
-    
-    .family-member:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-    }
-    
-    .member-avatar {
-      position: relative;
-      margin-right: 20px;
-    }
-    
-    .member-avatar img {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 3px solid rgba(66, 99, 235, 0.5);
-      background: rgba(255, 255, 255, 0.1);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    
-    .status-indicator {
-      position: absolute;
-      bottom: 5px;
-      right: 5px;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      border: 2px solid var(--glass-bg);
-      box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
-    }
-    
-    .status-indicator.online {
-      background: var(--success);
-    }
-    
-    .status-indicator.away {
-      background: var(--warning);
-    }
-    
-    .status-indicator.offline {
-      background: var(--text-tertiary);
-    }
-    
-    .member-info {
-      flex: 1;
-    }
-    
-    .member-info h3 {
-      font-size: 1.2rem;
-      margin-bottom: 8px;
-      color: var(--text-primary);
-      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
-    }
-    
-    .member-info p {
-      color: var(--text-secondary);
-      font-size: 1rem;
-      margin-bottom: 10px;
-      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
-    }
-    
-    .member-meta {
-      font-size: 0.85rem;
-      color: var(--text-tertiary);
-      display: flex;
-      flex-direction: column;
-      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
-    }
-    
-    .member-actions {
+    .status-left, .status-right {
       display: flex;
       align-items: center;
+      gap: 15px;
+      font-size: 14px;
     }
     
-    .icon-btn {
-      background: none;
-      border: none;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
+    .battery {
       display: flex;
       align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      color: var(--text-secondary);
-      transition: all 0.3s;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid var(--glass-border);
+      gap: 5px;
     }
     
-    .icon-btn:hover {
-      background: rgba(66, 99, 235, 0.2);
-      color: var(--primary);
-      transform: translateY(-2px);
-    }
-    
-    .family-events {
-      background: var(--glass-bg);
-      border-radius: var(--glass-radius);
-      padding: 25px;
-      border: 1px solid var(--glass-border);
-      box-shadow: var(--glass-shadow);
-      backdrop-filter: blur(var(--glass-blur));
-      -webkit-backdrop-filter: blur(var(--glass-blur));
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .family-events::before {
-      content: '';
-      position: absolute;
-      top: -10px;
-      left: -10px;
-      right: -10px;
-      bottom: -10px;
-      background: inherit;
-      filter: blur(20px);
-      z-index: -1;
-      opacity: 0.5;
-    }
-    
-    .family-events h2 {
-      margin-bottom: 20px;
-      font-size: 1.5rem;
-      color: var(--text-primary);
-      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
-    }
-    
-    .events-list {
+    .home-screen {
+      padding: 80px 15px 30px;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      grid-template-columns: repeat(4, 1fr);
       gap: 20px;
     }
     
-    .event-card {
-      display: flex;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      overflow: hidden;
+    .app-tile {
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
       border: 1px solid var(--glass-border);
-      transition: all 0.3s;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-    }
-    
-    .event-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-    }
-    
-    .event-date {
-      min-width: 80px;
-      background: rgba(66, 99, 235, 0.7);
-      color: white;
+      border-radius: 18px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       padding: 15px 10px;
-      text-shadow: 0 1px 1px rgba(0,0,0,0.1);
-    }
-    
-    .event-date .day {
-      font-size: 2rem;
-      font-weight: 600;
-      line-height: 1;
-    }
-    
-    .event-date .month {
-      font-size: 1rem;
-      text-transform: uppercase;
-    }
-    
-    .event-details {
-      padding: 20px;
-      flex: 1;
-    }
-    
-    .event-details h3 {
-      font-size: 1.2rem;
-      margin-bottom: 8px;
-      color: var(--text-primary);
-      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
-    }
-    
-    .event-details p {
-      color: var(--text-secondary);
-      font-size: 1rem;
-      margin-bottom: 12px;
-      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
-    }
-    
-    .event-meta {
-      display: flex;
-      gap: 15px;
-      font-size: 0.9rem;
-      color: var(--text-tertiary);
-      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
-    }
-    
-    .family-member.pending .member-avatar img {
-      border-color: var(--warning);
-    }
-    
-    .family-member.pending .member-info p {
-      color: var(--warning);
-    }
-    
-    .btn-primary {
-      padding: 14px 24px;
-      background: rgba(66, 99, 235, 0.7);
-      color: white;
-      border: none;
-      border-radius: 50px;
-      font-size: 1rem;
-      font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-      text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
       position: relative;
-      overflow: hidden;
+      box-shadow: var(--glass-shadow);
+      aspect-ratio: 1/1;
     }
     
-    .btn-primary::before {
-      content: '';
+    .app-tile:hover {
+      transform: translateY(-5px) scale(1.05);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+    }
+    
+    .app-tile:active {
+      transform: translateY(0) scale(0.98);
+    }
+    
+    .app-icon {
+      width: 50px;
+      height: 50px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      color: var(--primary);
+      border: 1px solid var(--glass-border);
+    }
+    
+    .app-name {
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+      color: var(--text-primary);
+    }
+    
+    .notification-badge {
       position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-      transition: 0.5s;
+      top: -5px;
+      right: -5px;
+      background: var(--danger);
+      color: white;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
     
-    .btn-primary:hover {
-      background: rgba(66, 99, 235, 0.85);
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15), 
-                  inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    /* Анимации */
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
     }
     
-    .btn-primary:hover::before {
-      left: 100%;
+    .app-tile.new-notification {
+      animation: pulse 1s ease infinite;
     }
     
+    /* Адаптивность */
     @media (max-width: 768px) {
-      .members-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .family-page-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 20px;
-      }
-      
-      .event-card {
-        flex-direction: column;
-      }
-      
-      .event-date {
-        flex-direction: row;
-        justify-content: flex-start;
-        gap: 20px;
-        min-height: auto;
-        padding: 15px;
-      }
-      
-      .member-avatar img {
-        width: 70px;
-        height: 70px;
+      .home-screen {
+        grid-template-columns: repeat(3, 1fr);
       }
     }
     
     @media (max-width: 480px) {
-      .family-container {
-        padding: 15px;
-      }
-      
-      .family-page-header {
-        padding: 15px;
-      }
-      
-      .family-member {
-        padding: 20px;
-      }
-      
-      .events-list {
-        grid-template-columns: 1fr;
+      .home-screen {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
       }
     }
     
     /* Fallback для браузеров без поддержки backdrop-filter */
     @supports not (backdrop-filter: blur(12px)) {
-      .family-page-header,
-      .family-member,
-      .family-events,
-      .event-card,
-      .icon-btn,
-      .btn-primary {
+      .app-tile, .status-bar {
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
         background: var(--surface) !important;
-      }
-      
-      .btn-primary {
-        background: var(--primary) !important;
-      }
-      
-      .event-date {
-        background: var(--primary) !important;
       }
     }
   </style>
 </head>
 <body>
-  <!-- Общая шапка приложения -->
-  <header class="family-header">
-    <div class="header-top">
-      <div class="family-name">FamilySpace</div>
-      <div class="user-avatar-container">
-        <div class="user-avatar">
-          <img id="current-user-avatar" src="/icons/default-avatar.svg" alt="Ваш аватар">
-        </div>
+  <!-- Статус бар -->
+  <div class="status-bar">
+    <div class="status-left">
+      <span id="current-time">12:30</span>
+    </div>
+    <div class="status-right">
+      <div class="network">
+        <i class="fas fa-wifi"></i>
+      </div>
+      <div class="battery">
+        <i class="fas fa-battery-full"></i>
+        <span>92%</span>
       </div>
     </div>
-    
-    <nav class="family-nav">
-      <a href="/family.html" class="nav-link active">
-        <i class="fas fa-home"></i>
-        <span>Семья</span>
-      </a>
-      <a href="/calendar.html" class="nav-link">
-        <i class="fas fa-calendar"></i>
-        <span>Календарь</span>
-      </a>
-      <a href="/tasks.html" class="nav-link">
-        <i class="fas fa-tasks"></i>
-        <span>Задачи</span>
-      </a>
-      <a href="/wishlist.html" class="nav-link">
-        <i class="fas fa-gift"></i>
-        <span>Вишлист</span>
-      </a>
-      <a href="/family-chat.html" class="nav-link">
-        <i class="fas fa-comments"></i>
-        <span>Чат</span>
-      </a>
-      <a href="/profile.html" class="nav-link">
-        <i class="fas fa-user"></i>
-        <span>Профиль</span>
-      </a>
-    </nav>
-  </header>
-
-  <!-- Основное содержимое страницы -->
-  <main class="family-container">
-    <section class="family-page-header">
-      <h1>Наша семья</h1>
-      <button id="invite-member-btn" class="btn-primary">
-        <i class="fas fa-user-plus"></i>
-        Пригласить участника
-      </button>
-    </section>
-
-    <div class="members-grid" id="members-grid">
-      <!-- Члены семьи будут загружаться динамически -->
-    </div>
-
-    <section class="family-events">
-      <h2>Ближайшие семейные события</h2>
-      <div class="events-list" id="events-list">
-        <!-- События будут загружаться динамически -->
-      </div>
-    </section>
-  </main>
-
-  <!-- Общий футер -->
-  <footer class="login-footer">
-    <div>FamilySpace &copy; 2025</div>
-    <div class="version-info">Версия 3.0</div>
-  </footer>
+  </div>
+  
+  <!-- Плитки приложений -->
+  <div class="home-screen" id="app-grid">
+    <!-- Приложения будут добавляться динамически -->
+  </div>
 
   <script>
-    // Установка темы из localStorage
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    
-    // Загрузка данных пользователя и семьи
-    document.addEventListener('DOMContentLoaded', async () => {
-      try {
-        // Загрузка данных пользователя
-        const userResponse = await fetch('/api/user');
-        if (!userResponse.ok) throw new Error('Ошибка загрузки данных пользователя');
-        const userData = await userResponse.json();
-        
-        // Обновление аватара в шапке
-        const userAvatar = document.getElementById('current-user-avatar');
-        if (userData.avatar) {
-          userAvatar.src = userData.avatar.startsWith('http') ? 
-            userData.avatar : 
-            `/uploads/${userData.avatar}`;
-        }
-        
-        // Загрузка данных семьи
-        const familyResponse = await fetch('/api/family');
-        if (!familyResponse.ok) throw new Error('Ошибка загрузки данных семьи');
-        const familyData = await familyResponse.json();
-        
-        // Рендеринг членов семьи
-        renderFamilyMembers(familyData.members);
-        
-        // Рендеринг событий
-        renderFamilyEvents(familyData.events);
-        
-        // Обработчик кнопки приглашения
-        document.getElementById('invite-member-btn').addEventListener('click', () => {
-          alert('Функция приглашения скоро будет доступна');
-        });
-        
-      } catch (error) {
-        console.error('Ошибка загрузки данных:', error);
-        showErrorNotification('Не удалось загрузить данные семьи');
-      }
-    });
-
-    // Функция рендеринга членов семьи
-    function renderFamilyMembers(members) {
-      const membersGrid = document.getElementById('members-grid');
-      if (!membersGrid) return;
+    // Инициализация домашнего экрана
+    function initHomeScreen() {
+      // Установка темы
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
       
-      membersGrid.innerHTML = '';
-      
-      members.forEach(member => {
-        const memberElement = document.createElement('div');
-        memberElement.className = `family-member ${member.status === 'pending' ? 'pending' : ''}`;
-        
-        memberElement.innerHTML = `
-          <div class="member-avatar">
-            <img src="${getAvatarUrl(member.avatar)}" alt="${member.name}">
-            <div class="status-indicator ${getStatusClass(member.status)}"></div>
-          </div>
-          <div class="member-info">
-            <h3>${member.name}</h3>
-            <p>${member.role}</p>
-            <div class="member-meta">
-              <span>${getStatusText(member.status)}</span>
-              ${member.lastActive ? `<span>Активен ${member.lastActive}</span>` : ''}
-            </div>
-          </div>
-          <div class="member-actions">
-            <button class="icon-btn" title="Написать сообщение">
-              <i class="fas fa-comment"></i>
-            </button>
-          </div>
-        `;
-        
-        // Обработчик кнопки сообщения
-        memberElement.querySelector('.icon-btn').addEventListener('click', (e) => {
-          e.stopPropagation();
-          window.location.href = `/family-chat.html?user=${member.id}`;
-        });
-        
-        membersGrid.appendChild(memberElement);
-      });
-    }
-
-    // Функция рендеринга событий
-    function renderFamilyEvents(events) {
-      const eventsList = document.getElementById('events-list');
-      if (!eventsList) return;
-      
-      eventsList.innerHTML = '';
-      
-      events.forEach(event => {
-        const eventDate = new Date(event.date);
+      // Обновление времени
+      function updateTime() {
         const now = new Date();
-        const daysLeft = Math.ceil((eventDate - now) / (1000 * 60 * 60 * 24));
-        
-        const eventElement = document.createElement('div');
-        eventElement.className = 'event-card';
-        
-        eventElement.innerHTML = `
-          <div class="event-date">
-            <span class="day">${eventDate.getDate()}</span>
-            <span class="month">${getMonthName(eventDate.getMonth())}</span>
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        document.getElementById('current-time').textContent = `${hours}:${minutes}`;
+      }
+      
+      setInterval(updateTime, 60000);
+      updateTime();
+      
+      // Список приложений
+      const apps = [
+        { 
+          id: 'family-chat', 
+          name: 'Чат', 
+          icon: 'fas fa-comments', 
+          badge: 3,
+          url: 'family-chat.html'
+        },
+        { 
+          id: 'calendar', 
+          name: 'Календарь', 
+          icon: 'fas fa-calendar', 
+          badge: 2,
+          url: 'calendar.html'
+        },
+        { 
+          id: 'wishlist', 
+          name: 'Вишлист', 
+          icon: 'fas fa-gift', 
+          badge: 1,
+          url: 'wishlist.html'
+        },
+        { 
+          id: 'tasks', 
+          name: 'Задачи', 
+          icon: 'fas fa-tasks', 
+          badge: 0,
+          url: 'tasks.html'
+        },
+        { 
+          id: 'family-management', 
+          name: 'Семья', 
+          icon: 'fas fa-users', 
+          badge: 0,
+          url: 'family-management.html'
+        },
+        { 
+          id: 'menu', 
+          name: 'Меню', 
+          icon: 'fas fa-utensils', 
+          badge: 0,
+          url: 'menu.html'
+        },
+        { 
+          id: 'pets', 
+          name: 'Питомцы', 
+          icon: 'fas fa-paw', 
+          badge: 0,
+          url: 'pets.html'
+        },
+        { 
+          id: 'profile', 
+          name: 'Профиль', 
+          icon: 'fas fa-user', 
+          badge: 0,
+          url: 'profile.html'
+        },
+        { 
+          id: 'settings', 
+          name: 'Настройки', 
+          icon: 'fas fa-cog', 
+          badge: 0,
+          url: 'settings.html'
+        },
+        { 
+          id: 'ai-chat', 
+          name: 'ИИ Помощник', 
+          icon: 'fas fa-robot', 
+          badge: 0,
+          url: 'ai-chat.html'
+        }
+      ];
+      
+      const appGrid = document.getElementById('app-grid');
+      
+      // Создание плиток приложений
+      apps.forEach(app => {
+        const appElement = document.createElement('div');
+        appElement.className = 'app-tile';
+        appElement.id = `app-${app.id}`;
+        appElement.innerHTML = `
+          <div class="app-icon">
+            <i class="${app.icon}"></i>
           </div>
-          <div class="event-details">
-            <h3>${event.title}</h3>
-            <p>Осталось ${daysLeft} ${getDayText(daysLeft)}</p>
-            <div class="event-meta">
-              <span>Участники: ${event.participants}</span>
-              ${event.gifts ? `<span>Подарки: ${event.gifts}</span>` : ''}
-            </div>
-          </div>
+          <div class="app-name">${app.name}</div>
+          ${app.badge > 0 ? `<div class="notification-badge">${app.badge}</div>` : ''}
         `;
         
-        eventsList.appendChild(eventElement);
+        // Обработчик клика
+        appElement.addEventListener('click', () => {
+          // Анимация нажатия
+          appElement.classList.add('active');
+          setTimeout(() => appElement.classList.remove('active'), 200);
+          
+          // Переход на страницу приложения
+          if (app.url) {
+            window.location.href = app.url;
+          } else {
+            alert(`Раздел "${app.name}" в разработке`);
+          }
+        });
+        
+        appGrid.appendChild(appElement);
       });
-    }
-
-    // Вспомогательные функции
-    function getAvatarUrl(avatar) {
-      if (!avatar) return '/icons/default-avatar.svg';
-      return avatar.startsWith('http') ? avatar : `/uploads/${avatar}`;
-    }
-    
-    function getStatusClass(status) {
-      switch(status) {
-        case 'online': return 'online';
-        case 'away': return 'away';
-        case 'offline': return 'offline';
-        case 'pending': return 'offline';
-        default: return 'offline';
-      }
-    }
-    
-    function getStatusText(status) {
-      switch(status) {
-        case 'online': return 'В сети';
-        case 'away': return 'Не активен';
-        case 'offline': return 'Не в сети';
-        case 'pending': return 'Ожидает подтверждения';
-        default: return '';
-      }
-    }
-    
-    function getMonthName(monthIndex) {
-      const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
-      return months[monthIndex];
-    }
-    
-    function getDayText(days) {
-      if (days % 10 === 1 && days % 100 !== 11) return 'день';
-      if ([2, 3, 4].includes(days % 10) && ![12, 13, 14].includes(days % 100)) return 'дня';
-      return 'дней';
-    }
-    
-    function showErrorNotification(message) {
-      const notification = document.createElement('div');
-      notification.className = 'notification error';
-      notification.textContent = message;
-      document.body.appendChild(notification);
       
-      setTimeout(() => {
-        notification.remove();
-      }, 5000);
+      // Загрузка реальных уведомлений
+      async function loadNotifications() {
+        try {
+          const response = await fetch('/api/notifications');
+          if (!response.ok) throw new Error('Ошибка загрузки уведомлений');
+          const notifications = await response.json();
+          
+          notifications.forEach(notif => {
+            const appElement = document.getElementById(`app-${notif.appId}`);
+            if (appElement) {
+              const badge = appElement.querySelector('.notification-badge');
+              
+              if (badge) {
+                const count = parseInt(badge.textContent) + notif.count;
+                badge.textContent = count > 9 ? '9+' : count;
+              } else {
+                const badgeElement = document.createElement('div');
+                badgeElement.className = 'notification-badge';
+                badgeElement.textContent = notif.count > 9 ? '9+' : notif.count;
+                appElement.appendChild(badgeElement);
+              }
+              
+              // Анимация пульсации
+              appElement.classList.add('new-notification');
+              setTimeout(() => appElement.classList.remove('new-notification'), 3000);
+            }
+          });
+        } catch (error) {
+          console.error('Ошибка загрузки уведомлений:', error);
+        }
+      }
+      
+      // Загрузка уведомлений
+      loadNotifications();
     }
+    
+    // Запуск после загрузки
+    window.addEventListener('DOMContentLoaded', initHomeScreen);
   </script>
 </body>
 </html>
