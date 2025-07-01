@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
+const MongoStore = require('connect-mongo').default; // Импорт с .default
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const mongoose = require('mongoose');
@@ -60,14 +61,19 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Конфигурация сессий
+// ========== Конфигурация сессий с MongoDB Store ==========
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'super_secret_key',
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGO_URI,
+    collectionName: 'sessions',
+    ttl: 14 * 24 * 60 * 60 // 14 дней в секундах
+  }),
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { 
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge: 14 * 24 * 60 * 60 * 1000, // 14 дней
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
 }));
@@ -328,6 +334,7 @@ app.listen(PORT, () => {
   console.log(`- Client ID: ${GOOGLE_CLIENT_ID ? 'установлен' : 'ОШИБКА! Проверьте .env'}`);
   console.log(`- Callback URL: ${CALLBACK_URL}`);
   console.log(`- MongoDB URI: ${process.env.MONGO_URI ? 'установлен' : 'ОШИБКА! Проверьте .env'}`);
+  console.log('Хранилище сессий: MongoDB');
   
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
     console.error('ВНИМАНИЕ: Google OAuth credentials не установлены!');
