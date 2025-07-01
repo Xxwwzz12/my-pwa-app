@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Тестирование API Уведомлений</title>
+    <script>
+        async function testNotifications() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Выполняю запрос...';
+            
+            try {
+                // Ваша сессионная кука (URL-декодированная)
+                const sessionCookie = 's:_X5evIKgtBbN-VlzUvRVpxqr8u8Q4Rpq.VRmJQd4j3YolCcczBmOGuZTCxWh4ceZaGAgTMSqUa9A';
+                
+                // Выполнение запроса к API
+                const response = await fetch('https://my-pwa-app-w519.onrender.com/api/notifications', {
+                    headers: {
+                        'Cookie': `connect.sid=${sessionCookie}`
+                    },
+                    credentials: 'include',
+                    mode: 'cors' // Явно указываем режим CORS
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <h3>Успешный ответ от API:</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                        <p>Статус: ${response.status}</p>
+                    `;
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.innerHTML = `
+                        <h3>Ошибка API:</h3>
+                        <p>Статус: ${response.status}</p>
+                        <pre>${errorText}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h3>Сетевая ошибка:</h3>
+                    <pre>${error.message}</pre>
+                    <p>Попробуйте открыть эту страницу через HTTPS: 
+                    <a href="https://your-domain.com/test-notifications.html" target="_blank">Открыть через HTTPS</a></p>
+                `;
+            }
+        }
+        
+        // Запускаем тест при загрузке страницы
+        window.onload = testNotifications;
+    </script>
+</head>
+<body>
+    <h1>Тестирование API Уведомлений</h1>
+    <div id="result">Инициализация теста...</div>
+    
+    <h3>Если тест не сработает:</h3>
+    <ol>
+        <li>Убедитесь, что открываете HTML-файл через HTTPS-сервер</li>
+        <li>Попробуйте разместить файл на Render.com в папке public</li>
+        <li>Проверьте логи на Render.com на наличие ошибок</li>
+    </ol>
+</body>
+</html>
