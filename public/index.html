@@ -1,112 +1,55 @@
 <!DOCTYPE html>
 <html lang="ru" data-theme="dark">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Семейное пространство</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#4f46e5">
+  <title>Семейное пространство | FamilySpace</title>
+  <link rel="stylesheet" href="/styles.css">
   <link rel="manifest" href="/manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-    
-    :root {
-      --primary: #ffffff;
-      --primary-dark: #1a1a1a;
-      --accent: #4263eb;
-      --danger: #ff6b6b;
-      --success: #40c057;
-      --warning: #ffd43b;
-      --background: #0a0a0a;
-      --surface: #121212;
-      --card-bg: #1e1e1e;
-      --text-primary: #ffffff;
-      --text-secondary: #b0b0b0;
-      --text-tertiary: #8a8a8a;
-      --border: #2a2a2a;
-      --shadow: rgba(0, 0, 0, 0.4);
-    }
-    
-    [data-theme="light"] {
-      --primary: #000000;
-      --primary-dark: #f0f0f0;
-      --background: #f5f5f5;
-      --surface: #ffffff;
-      --card-bg: #ffffff;
-      --text-primary: #121212;
-      --text-secondary: #5a5a5a;
-      --text-tertiary: #8a8a8a;
-      --border: #e0e0e0;
-      --shadow: rgba(0, 0, 0, 0.08);
-    }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
-      min-height: 100vh; /* Изменено с height на min-height */
-      background: var(--background);
-      padding: 0;
+    /* Специфичные стили для страницы входа */
+    .login-container {
       display: flex;
       flex-direction: column;
-      color: var(--text-primary);
-      transition: background 0.3s ease;
-      overflow-x: hidden; /* Скрываем горизонтальный скролл */
-    }
-    
-    .header {
+      min-height: 100vh;
+      background: var(--background-gradient);
       padding: 20px;
+    }
+    
+    .login-header {
       text-align: center;
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      background: var(--background);
-      z-index: 10;
+      padding: 30px 0 20px;
     }
     
-    .logo {
-      font-size: 28px;
+    .login-logo {
+      font-size: 2.5rem;
       font-weight: bold;
-      margin-bottom: 10px;
       color: var(--accent);
+      margin-bottom: 10px;
     }
     
-    .tagline {
+    .login-tagline {
       color: var(--text-secondary);
-      font-size: 16px;
+      font-size: 1.1rem;
+      max-width: 500px;
+      margin: 0 auto;
     }
     
-    .main-content {
-      flex: 1;
-      overflow-y: auto; /* Разрешаем скроллинг контента */
-      padding-bottom: 20px;
-    }
-    
-    .auth-container {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 30px;
-      min-height: 400px; /* Минимальная высота для контента */
-    }
-    
-    .auth-card {
+    .login-card {
       background: var(--card-bg);
       border-radius: 16px;
       padding: 30px;
       box-shadow: 0 8px 24px var(--shadow);
       border: 1px solid var(--border);
       max-width: 500px;
-      margin: 0 auto;
+      margin: 20px auto 40px;
       width: 100%;
     }
     
     .auth-title {
-      font-size: 22px;
-      margin-bottom: 20px;
+      font-size: 1.8rem;
+      margin-bottom: 25px;
       text-align: center;
     }
     
@@ -127,7 +70,7 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 10px;
-      font-size: 16px;
+      font-size: 1rem;
       color: var(--text-primary);
       transition: border-color 0.3s;
     }
@@ -144,7 +87,7 @@
       color: white;
       border: none;
       border-radius: 10px;
-      font-size: 16px;
+      font-size: 1rem;
       font-weight: 500;
       cursor: pointer;
       transition: background 0.3s;
@@ -152,18 +95,17 @@
     }
     
     .auth-button:hover {
-      background: #364fc7;
+      background: var(--accent-dark);
     }
     
-    /* Новые стили для кнопки Google */
     .google-login-container {
-      margin-top: 20px;
+      margin-top: 25px;
       text-align: center;
     }
     
     .divider {
       position: relative;
-      margin: 20px 0;
+      margin: 25px 0;
       color: var(--text-tertiary);
       text-align: center;
     }
@@ -195,7 +137,7 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 10px;
-      font-size: 15px;
+      font-size: 1rem;
       font-weight: 500;
       color: var(--text-primary);
       cursor: pointer;
@@ -206,16 +148,17 @@
       background: var(--card-bg);
     }
     
-    .google-login-button img {
+    .google-logo {
       width: 20px;
       height: 20px;
-      margin-right: 10px;
+      margin-right: 12px;
     }
     
     .auth-toggle {
       text-align: center;
-      margin-top: 20px;
+      margin-top: 25px;
       color: var(--text-secondary);
+      font-size: 0.95rem;
     }
     
     .auth-link {
@@ -225,100 +168,106 @@
       margin-left: 5px;
     }
     
-    .features {
+    .features-section {
       padding: 30px 20px;
       text-align: center;
+      max-width: 1200px;
+      margin: 0 auto;
     }
     
     .features-title {
-      font-size: 20px;
-      margin-bottom: 25px;
+      font-size: 1.8rem;
+      margin-bottom: 35px;
+      color: var(--text-primary);
     }
     
-    .feature-grid {
+    .features-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 20px;
-      max-width: 500px;
-      margin: 0 auto;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 25px;
     }
     
     .feature-card {
       background: var(--card-bg);
       border-radius: 14px;
-      padding: 20px 15px;
+      padding: 25px 20px;
       text-align: center;
       border: 1px solid var(--border);
       box-shadow: 0 4px 12px var(--shadow);
+      transition: transform 0.3s;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-5px);
     }
     
     .feature-icon {
-      font-size: 32px;
-      margin-bottom: 12px;
+      font-size: 2.5rem;
+      margin-bottom: 15px;
       color: var(--accent);
     }
     
     .feature-name {
-      font-size: 14px;
+      font-size: 1.1rem;
       font-weight: 500;
     }
     
-    .footer {
+    .login-footer {
       padding: 20px;
       text-align: center;
       color: var(--text-tertiary);
-      font-size: 14px;
-      border-top: 1px solid var(--border);
-      position: sticky;
-      bottom: 0;
-      background: var(--background);
-      z-index: 10;
+      font-size: 0.9rem;
+      margin-top: auto;
     }
     
     .version-info {
       margin-top: 10px;
     }
     
-    .home-indicator {
-      width: 140px;
-      height: 5px;
-      background: var(--text-primary);
-      border-radius: 3px;
-      position: fixed;
-      bottom: 8px;
-      left: 50%;
-      transform: translateX(-50%);
-      opacity: 0.3;
-    }
-    
-    /* Медиа-запросы для адаптивности */
-    @media (max-height: 700px) {
-      .auth-container {
-        min-height: 300px;
-        padding: 20px;
+    @media (max-width: 768px) {
+      .login-card {
+        padding: 25px 20px;
       }
       
-      .features {
-        padding: 20px 15px;
+      .features-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 15px;
+      }
+      
+      .feature-icon {
+        font-size: 2rem;
+      }
+      
+      .auth-title {
+        font-size: 1.5rem;
       }
     }
     
-    @media (max-height: 600px) {
-      .features {
-        display: none;
+    @media (max-width: 480px) {
+      .login-logo {
+        font-size: 2rem;
+      }
+      
+      .feature-card {
+        padding: 20px 15px;
+      }
+      
+      .feature-name {
+        font-size: 1rem;
       }
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="logo">FamilySpace</div>
-    <div class="tagline">Ваше семейное пространство в одном приложении</div>
-  </div>
-  
-  <div class="main-content">
-    <div class="auth-container">
-      <div class="auth-card">
+  <!-- Специальная шапка для страницы входа -->
+  <div class="login-container">
+    <header class="login-header">
+      <div class="login-logo">FamilySpace</div>
+      <div class="login-tagline">Ваше семейное пространство в одном приложении</div>
+    </header>
+    
+    <main>
+      <div class="login-card">
         <div class="auth-title">Вход в систему</div>
         
         <div class="input-group">
@@ -337,54 +286,53 @@
         <div class="google-login-container">
           <div class="divider">или</div>
           <button id="google-login" class="google-login-button">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" 
+                 alt="Google" class="google-logo">
             Войти через Google
           </button>
         </div>
         
         <div class="auth-toggle">
-          Нет аккаунта? <a href="#" class="auth-link">Зарегистрироваться</a>
+          Нет аккаунта? <a href="/registration.html" class="auth-link">Зарегистрироваться</a>
         </div>
       </div>
-    </div>
+      
+      <div class="features-section">
+        <div class="features-title">Возможности приложения</div>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🎁</div>
+            <div class="feature-name">Вишлисты</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">👨‍👩‍👧</div>
+            <div class="feature-name">Семейное пространство</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🗓️</div>
+            <div class="feature-name">Календарь</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">✅</div>
+            <div class="feature-name">Задачи</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">💬</div>
+            <div class="feature-name">Семейный чат</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🤖</div>
+            <div class="feature-name">ИИ-помощник</div>
+          </div>
+        </div>
+      </div>
+    </main>
     
-    <div class="features">
-      <div class="features-title">Возможности приложения</div>
-      <div class="feature-grid">
-        <div class="feature-card">
-          <div class="feature-icon">🎁</div>
-          <div class="feature-name">Вишлисты</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">👨‍👩‍👧</div>
-          <div class="feature-name">Семейное пространство</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🗓️</div>
-          <div class="feature-name">Календарь</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">✅</div>
-          <div class="feature-name">Задачи</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">💬</div>
-          <div class="feature-name">Семейный чат</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🤖</div>
-          <div class="feature-name">ИИ-помощник</div>
-        </div>
-      </div>
-    </div>
+    <footer class="login-footer">
+      <div>FamilySpace &copy; 2025</div>
+      <div class="version-info">Версия 3.0</div>
+    </footer>
   </div>
-  
-  <div class="footer">
-    <div>FamilySpace &copy; 2025</div>
-    <div class="version-info">Версия 3.0</div>
-  </div>
-  
-  <div class="home-indicator"></div>
 
   <script>
     // Конфигурация приложения
@@ -396,35 +344,17 @@
       const savedTheme = localStorage.getItem('theme') || 'dark';
       document.documentElement.setAttribute('data-theme', savedTheme);
       
-      // Переключение между входом и регистрацией
-      const authLink = document.querySelector('.auth-link');
-      authLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        const authTitle = document.querySelector('.auth-title');
-        const authButton = document.querySelector('.auth-button');
-        
-        if (authTitle.textContent === 'Вход в систему') {
-          authTitle.textContent = 'Регистрация';
-          authButton.textContent = 'Зарегистрироваться';
-          authLink.previousSibling.textContent = 'Уже есть аккаунт? ';
-          authLink.textContent = 'Войти';
-        } else {
-          authTitle.textContent = 'Вход в систему';
-          authButton.textContent = 'Войти';
-          authLink.previousSibling.textContent = 'Нет аккаунта? ';
-          authLink.textContent = 'Зарегистрироваться';
-        }
-      });
-      
       // Обработчик для кнопки Google Login
       const googleLoginButton = document.getElementById('google-login');
       googleLoginButton.addEventListener('click', () => {
         window.location.href = '/auth/google';
       });
       
-      // Обработка формы
+      // Обработка основной кнопки входа
       const authButton = document.querySelector('.auth-button');
       authButton.addEventListener('click', () => {
+        // Здесь должна быть логика проверки данных
+        // Пока просто переходим на страницу семьи
         window.location.href = 'family.html';
       });
     }
