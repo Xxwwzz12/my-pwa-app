@@ -1,4 +1,5 @@
 // api/notifications.js
+console.log("API Notifications endpoint initialized");
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
@@ -10,7 +11,7 @@ const authenticate = async (req, res, next) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: 'Требуется аутентификация' });
     }
-    
+    console.log("Auth middleware: isAuthenticated?", req.isAuthenticated());
     // Получаем текущего пользователя из сессии
     const user = await User.findById(req.user.id);
     if (!user) {
@@ -28,6 +29,7 @@ const authenticate = async (req, res, next) => {
 // Эндпоинт для получения уведомлений
 router.get('/', authenticate, async (req, res) => {
   try {
+    console.log("Processing notifications request for user:", req.user?.email);
     // Временные mock-данные - позже заменим реальной логикой
     const notifications = {
       unreadMessages: Math.floor(Math.random() * 10),
