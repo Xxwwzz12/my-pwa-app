@@ -15,7 +15,18 @@ const User = require('./models/User');
 
 const app = express();
 // Добавьте в начало файла (после импортов)
-const cors = require('cors');
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://my-pwa-app-w519.onrender.com');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
 // ========== Подключение к MongoDB ==========
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
