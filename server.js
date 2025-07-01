@@ -14,7 +14,8 @@ require('dotenv').config();
 const User = require('./models/User');
 
 const app = express();
-
+// Добавьте в начало файла (после импортов)
+const cors = require('cors');
 // ========== Подключение к MongoDB ==========
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
@@ -58,6 +59,11 @@ app.set('trust proxy', 1);
 app.use(express.static('public'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cookieParser());
+// Добавьте после app.use(cookieParser());
+app.use(cors({
+  origin: 'https://my-pwa-app-w519.onrender.com',
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
