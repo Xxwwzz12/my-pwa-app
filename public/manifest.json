@@ -1,78 +1,82 @@
 {
-  "name": "AI Помощник",
-  "short_name": "AI Assistant",
-  "version": "2.6",
-  "description": "Ваш персональный помощник с искусственным интеллектом и интеграцией с календарем",
+  "name": "FamilySpace",
+  "short_name": "FamilySpace",
+  "version": "3.0",
+  "description": "Централизованная платформа для семейной организации",
   "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
-  "theme_color": "#121212",
+  "theme_color": "#4f46e5",
   "background_color": "#0a0a0a",
   "id": "/",
-  "categories": ["productivity", "utilities"],
+  "categories": ["social", "productivity", "lifestyle"],
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/icons/icon_1.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icons/icon_1.png",
+      "type": "image/png",
+      "sizes": "256x256"
+    },
+    {
+      "src": "/icons/icon_1.png",
+      "type": "image/png",
+      "sizes": "384x384"
+    },
+    {
+      "src": "/icons/icon_1.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-512-maskable.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "maskable"
     }
   ],
   "screenshots": [],
   "features": [
-    "Чат с ИИ на базе Gemini",
-    "Создание событий в календаре",
-    "Работа в оффлайн-режиме",
-    "Автоматические обновления",
-    "Темная/светлая темы",
-    "Мониторинг соединения"
+    "Семейный календарь",
+    "Групповой чат",
+    "Управление задачами",
+    "Вишлисты",
+    "ИИ-помощник",
+    "Оффлайн-работа"
   ],
   "shortcuts": [
     {
-      "name": "Новый чат",
+      "name": "Семейный чат",
       "short_name": "Чат",
-      "description": "Начать новый разговор с ИИ",
-      "url": "/chat.html",
+      "description": "Открыть семейный чат",
+      "url": "/family-chat.html",
       "icons": [
         {
-          "src": "/icon-chat.png",
+          "src": "/icons/icon-chat.png",
           "sizes": "96x96"
         }
       ]
     },
     {
-      "name": "Создать событие",
+      "name": "Добавить событие",
       "short_name": "Событие",
-      "description": "Добавить новое событие в календарь",
-      "url": "/chat.html?command=calendar",
+      "description": "Создать новое событие",
+      "url": "/calendar.html?action=create",
       "icons": [
         {
-          "src": "/icon-calendar.png",
+          "src": "/icons/icon-calendar.png",
           "sizes": "96x96"
         }
       ]
     },
     {
-      "name": "Проверить обновления",
-      "short_name": "Обновления",
-      "description": "Проверить наличие новых версий",
-      "url": "/index.html?action=check-update",
+      "name": "Мой профиль",
+      "short_name": "Профиль",
+      "description": "Перейти в личный кабинет",
+      "url": "/profile.html",
       "icons": [
         {
-          "src": "/icon-update.png",
+          "src": "/icons/icon-profile.png",
           "sizes": "96x96"
         }
       ]
@@ -89,11 +93,19 @@
   },
   "protocol_handlers": [
     {
-      "protocol": "web+aiassistant",
+      "protocol": "web+familyspace",
       "url": "/index.html?action=%s"
     }
   ],
-  "file_handlers": [],
+  "file_handlers": [
+    {
+      "action": "/upload",
+      "accept": {
+        "image/*": [".png", ".jpg", ".jpeg"],
+        "video/*": [".mp4", ".mov"]
+      }
+    }
+  ],
   "related_applications": [],
   "prefer_related_applications": false
 }
