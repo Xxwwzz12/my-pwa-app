@@ -4,19 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#121826">
-  <title>Семейное пространство | FamilySpace</title>
+  <title>FamilySpace - Организуйте свою семью</title>
   
   <!-- Предзагрузка критических ресурсов -->
   <link rel="preload" href="/styles.css" as="style">
   <link rel="preload" href="/images/logo.webp" as="image">
   <link rel="preload" href="/images/default.webp" as="image">
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style">
   
   <!-- Основные стили -->
   <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="manifest" href="/manifest.json">
   
   <style>
-    /* Переменные для стеклянного эффекта (синхронизированы с style.css) */
+    /* Переменные для стеклянного эффекта */
     :root {
       --glass-bg: rgba(255, 255, 255, 0.1);
       --glass-border: rgba(255, 255, 255, 0.15);
@@ -25,10 +27,14 @@
       --glass-radius: 24px;
       --primary: #4263eb;
       --primary-dark: #364fc7;
+      --accent: #ff6b6b;
       --text-primary: rgba(255, 255, 255, 0.95);
       --text-secondary: rgba(255, 255, 255, 0.7);
       --text-tertiary: rgba(255, 255, 255, 0.5);
       --fallback-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      --success: #51cf66;
+      --warning: #fcc419;
+      --danger: #ff6b6b;
     }
     
     [data-theme="light"] {
@@ -53,252 +59,166 @@
       100% { transform: scale(1); }
     }
     
-    /* Основные стили страницы входа */
-    .login-container {
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+    
+    /* Основные стили страницы */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--fallback-gradient);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+    
+    #particles-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+    
+    .main-container {
       display: flex;
       flex-direction: column;
       min-height: 100vh;
       padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
       position: relative;
-      overflow: hidden;
-      animation: fadeIn 0.8s ease-out;
-      background: var(--fallback-gradient);
-      color: var(--text-primary);
     }
     
-    .login-header {
-      text-align: center;
-      padding: 40px 0 30px;
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 0;
       animation: fadeIn 0.6s 0.2s both;
     }
     
-    .login-logo-img {
-      height: 100px;
-      margin-bottom: 15px;
-      border-radius: 20px;
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .logo-img {
+      height: 60px;
+      border-radius: 16px;
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
       background: var(--glass-bg);
       border: 1px solid var(--glass-border);
-      padding: 10px;
+      padding: 8px;
       backdrop-filter: blur(var(--glass-blur));
       -webkit-backdrop-filter: blur(var(--glass-blur));
     }
     
-    .login-tagline {
-      color: var(--text-secondary);
-      font-size: 1.2rem;
-      max-width: 600px;
-      margin: 0 auto;
+    .app-info {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .app-name {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-primary);
       text-shadow: 0 1px 1px rgba(0,0,0,0.1);
     }
     
-    .login-card {
+    .app-version {
+      font-size: 0.9rem;
+      color: var(--text-tertiary);
+      margin-top: 3px;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 15px;
+    }
+    
+    .icon-btn {
       background: var(--glass-bg);
-      border-radius: var(--glass-radius);
-      padding: 40px;
-      box-shadow: var(--glass-shadow);
       border: 1px solid var(--glass-border);
-      max-width: 500px;
-      margin: 20px auto 50px;
-      width: 100%;
+      border-radius: 50%;
+      width: 45px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
       backdrop-filter: blur(var(--glass-blur));
       -webkit-backdrop-filter: blur(var(--glass-blur));
-      position: relative;
-      overflow: hidden;
+      box-shadow: var(--glass-shadow);
+      color: var(--text-primary);
+    }
+    
+    .icon-btn:hover {
+      transform: translateY(-3px);
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 40px 0;
+      gap: 40px;
+    }
+    
+    .greeting-section {
+      text-align: center;
       animation: fadeIn 0.7s 0.4s both;
     }
     
-    .auth-title {
-      font-size: 1.8rem;
-      margin-bottom: 30px;
-      text-align: center;
-      color: var(--text-primary);
-      text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    .greeting {
+      font-size: 2.5rem;
+      margin: 0 0 20px;
+      font-weight: 700;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
     
-    .input-group {
-      margin-bottom: 25px;
-      animation: fadeIn 0.5s 0.6s both;
-    }
-    
-    .input-label {
-      display: block;
-      margin-bottom: 10px;
-      font-weight: 600;
+    .tagline {
+      font-size: 1.4rem;
       color: var(--text-secondary);
-      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
-    }
-    
-    .input-field {
-      width: 100%;
-      padding: 16px 20px;
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid var(--glass-border);
-      border-radius: 14px;
-      font-size: 1rem;
-      color: var(--text-primary);
-      transition: all 0.3s;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-    }
-    
-    .input-field:focus {
-      border-color: var(--primary);
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(66, 99, 235, 0.2);
-      background: rgba(255, 255, 255, 0.25);
-    }
-    
-    .auth-button {
-      width: 100%;
-      padding: 16px;
-      background: rgba(66, 99, 235, 0.7);
-      color: white;
-      border: none;
-      border-radius: 50px;
-      font-size: 1.1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      margin-top: 15px;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-      text-shadow: 0 1px 1px rgba(0,0,0,0.1);
-      position: relative;
-      overflow: hidden;
-      animation: pulse 2s infinite 1s;
-    }
-    
-    .auth-button:hover {
-      animation: none;
-      background: rgba(66, 99, 235, 0.85);
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15), 
-                  inset 0 1px 0 rgba(255, 255, 255, 0.3);
-    }
-    
-    .google-login-container {
-      margin-top: 30px;
-      text-align: center;
-      animation: fadeIn 0.5s 0.8s both;
-    }
-    
-    .divider {
-      position: relative;
-      margin: 30px 0;
-      color: var(--text-tertiary);
-      text-align: center;
-      font-size: 1rem;
-    }
-    
-    .divider::before,
-    .divider::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      width: 40%;
-      height: 1px;
-      background: var(--glass-border);
-    }
-    
-    .divider::before {
-      left: 0;
-    }
-    
-    .divider::after {
-      right: 0;
-    }
-    
-    .google-login-button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      padding: 14px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid var(--glass-border);
-      border-radius: 50px;
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      cursor: pointer;
-      transition: all 0.3s;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-    }
-    
-    .google-login-button:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: translateY(-2px);
-      border-color: rgba(255, 255, 255, 0.4);
-    }
-    
-    .google-logo {
-      width: 24px;
-      height: 24px;
-      margin-right: 12px;
-      filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1));
-    }
-    
-    .auth-toggle {
-      text-align: center;
-      margin-top: 30px;
-      color: var(--text-secondary);
-      font-size: 1rem;
-      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
-      animation: fadeIn 0.5s 1s both;
-    }
-    
-    .auth-link {
-      color: var(--primary);
-      text-decoration: none;
-      font-weight: 600;
-      margin-left: 5px;
-      transition: all 0.3s;
-      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
-    }
-    
-    .auth-link:hover {
-      text-decoration: underline;
-      color: var(--primary-dark);
-    }
-    
-    .features-section {
-      padding: 40px 20px;
-      text-align: center;
-      max-width: 1200px;
+      max-width: 700px;
       margin: 0 auto;
-      animation: fadeIn 0.6s 1.2s both;
-    }
-    
-    .features-title {
-      font-size: 2rem;
-      margin-bottom: 40px;
-      color: var(--text-primary);
-      text-shadow: 0 2px 2px rgba(0,0,0,0.1);
+      line-height: 1.5;
     }
     
     .features-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 30px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 25px;
+      animation: fadeIn 0.8s 0.6s both;
     }
     
     .feature-card {
       background: var(--glass-bg);
       border-radius: var(--glass-radius);
-      padding: 30px 25px;
-      text-align: center;
-      border: 1px solid var(--glass-border);
+      padding: 30px;
       box-shadow: var(--glass-shadow);
-      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
       position: relative;
       overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+      display: flex;
+      flex-direction: column;
     }
     
     .feature-card:hover {
@@ -306,35 +226,327 @@
       box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
     }
     
-    .feature-icon {
-      font-size: 3rem;
+    .feature-header {
+      display: flex;
+      align-items: center;
       margin-bottom: 20px;
-      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      gap: 15px;
     }
     
-    .feature-name {
-      font-size: 1.2rem;
-      font-weight: 600;
+    .feature-icon {
+      font-size: 2.5rem;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--primary);
+      flex-shrink: 0;
+    }
+    
+    .feature-title {
+      font-size: 1.5rem;
+      margin: 0;
       color: var(--text-primary);
-      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
     }
     
-    .login-footer {
-      padding: 30px 20px;
+    .feature-description {
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 20px;
+      flex-grow: 1;
+    }
+    
+    .feature-badge {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      background: var(--danger);
+      color: white;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      animation: pulse 2s infinite;
+    }
+    
+    .feature-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: auto;
+    }
+    
+    .btn {
+      padding: 12px 20px;
+      border-radius: 50px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-grow: 1;
+      text-align: center;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: var(--glass-shadow);
+    }
+    
+    .btn-primary {
+      background: rgba(66, 99, 235, 0.7);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: rgba(66, 99, 235, 0.85);
+      transform: translateY(-3px);
+    }
+    
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.15);
+      color: var(--text-primary);
+    }
+    
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-3px);
+    }
+    
+    .activity-section {
+      background: var(--glass-bg);
+      border-radius: var(--glass-radius);
+      padding: 30px;
+      box-shadow: var(--glass-shadow);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      animation: fadeIn 0.9s 0.8s both;
+    }
+    
+    .section-title {
+      font-size: 1.8rem;
+      margin: 0 0 25px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .activity-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .activity-item {
+      display: flex;
+      gap: 15px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--glass-border);
+    }
+    
+    .activity-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    
+    .activity-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(66, 99, 235, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--primary);
+    }
+    
+    .activity-content {
+      flex-grow: 1;
+    }
+    
+    .activity-user {
+      font-weight: 600;
+      margin-right: 8px;
+      color: var(--text-primary);
+    }
+    
+    .activity-action {
+      color: var(--text-secondary);
+    }
+    
+    .activity-details {
+      color: var(--primary);
+      font-weight: 500;
+    }
+    
+    .activity-time {
+      font-size: 0.9rem;
+      color: var(--text-tertiary);
+      margin-top: 5px;
+      display: block;
+    }
+    
+    .footer-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      animation: fadeIn 1s 1s both;
+    }
+    
+    .action-btn {
+      padding: 18px 25px;
+      border-radius: 18px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      text-align: center;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: var(--glass-shadow);
+      background: var(--glass-bg);
+      color: var(--text-primary);
+    }
+    
+    .action-btn:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+    
+    .action-btn.primary {
+      background: rgba(66, 99, 235, 0.7);
+      color: white;
+      animation: pulse 2s infinite;
+    }
+    
+    .action-btn.accent {
+      background: rgba(255, 107, 107, 0.7);
+      color: white;
+    }
+    
+    .footer {
+      padding: 30px 0;
       text-align: center;
       color: var(--text-tertiary);
       font-size: 0.95rem;
-      margin-top: auto;
-      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
-      animation: fadeIn 0.5s 1.4s both;
+      animation: fadeIn 1.1s 1.1s both;
     }
     
-    .version-info {
-      margin-top: 10px;
-      font-size: 0.85rem;
+    /* Модальное окно обновлений */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+    
+    .modal.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .modal-content {
+      background: var(--glass-bg);
+      border-radius: var(--glass-radius);
+      padding: 40px;
+      box-shadow: var(--glass-shadow);
+      border: 1px solid var(--glass-border);
+      max-width: 600px;
+      width: 90%;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      transform: translateY(30px);
+      transition: transform 0.4s;
+      position: relative;
+    }
+    
+    .modal.active .modal-content {
+      transform: translateY(0);
+    }
+    
+    .modal-header {
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .modal-icon {
+      font-size: 2.5rem;
+      color: var(--warning);
+    }
+    
+    .modal-title {
+      font-size: 1.8rem;
+      margin: 0;
+      color: var(--text-primary);
+    }
+    
+    .changelog {
+      max-height: 300px;
+      overflow-y: auto;
+      padding-right: 15px;
+      margin-bottom: 30px;
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 20px;
+    }
+    
+    .changelog-title {
+      font-size: 1.2rem;
+      margin: 0 0 15px;
+      color: var(--text-primary);
+    }
+    
+    .changelog-list {
+      padding-left: 20px;
+      margin: 0;
+    }
+    
+    .changelog-item {
+      margin-bottom: 10px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    
+    .changelog-item::marker {
+      color: var(--primary);
+    }
+    
+    .modal-actions {
+      display: flex;
+      gap: 15px;
     }
     
     /* Стили для обработки ошибок изображений */
@@ -357,27 +569,41 @@
       font-size: 16px;
     }
     
+    /* Адаптация для мобильных */
     @media (max-width: 768px) {
-      .login-card {
-        padding: 30px 25px;
-        border-radius: 20px;
+      .app-name {
+        font-size: 1.5rem;
       }
       
-      .login-logo-img {
-        height: 80px;
+      .greeting {
+        font-size: 2rem;
       }
       
-      .features-grid {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 20px;
+      .tagline {
+        font-size: 1.2rem;
+      }
+      
+      .feature-card {
+        padding: 25px;
       }
       
       .feature-icon {
-        font-size: 2.5rem;
+        font-size: 2rem;
+        width: 50px;
+        height: 50px;
       }
       
-      .auth-title {
-        font-size: 1.6rem;
+      .feature-title {
+        font-size: 1.3rem;
+      }
+      
+      .section-title {
+        font-size: 1.5rem;
+      }
+      
+      .action-btn {
+        padding: 16px 20px;
+        font-size: 1rem;
       }
       
       /* Уменьшаем размытие для мобильных устройств */
@@ -387,29 +613,49 @@
     }
     
     @media (max-width: 480px) {
-      .login-logo-img {
-        height: 70px;
+      .header {
+        flex-direction: column;
+        gap: 20px;
       }
       
-      .login-tagline {
-        font-size: 1rem;
+      .logo-container {
+        flex-direction: column;
+        text-align: center;
       }
       
-      .feature-card {
-        padding: 25px 20px;
-        border-radius: 20px;
+      .greeting {
+        font-size: 1.8rem;
       }
       
-      .feature-name {
+      .tagline {
         font-size: 1.1rem;
       }
       
-      .input-field {
-        padding: 14px 16px;
+      .feature-card {
+        padding: 20px;
+        border-radius: 20px;
       }
       
-      .auth-button {
-        padding: 14px;
+      .feature-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+      }
+      
+      .feature-actions {
+        flex-direction: column;
+      }
+      
+      .footer-actions {
+        grid-template-columns: 1fr;
+      }
+      
+      .modal-content {
+        padding: 25px;
+      }
+      
+      .modal-actions {
+        flex-direction: column;
       }
       
       /* Еще меньше размытия для маленьких экранов */
@@ -420,101 +666,206 @@
     
     /* Fallback для браузеров без поддержки backdrop-filter */
     @supports not (backdrop-filter: blur(12px)) {
-      .login-logo-img,
-      .login-card,
+      .logo-img,
       .feature-card,
-      .google-login-button,
-      .auth-button {
+      .activity-section,
+      .action-btn,
+      .icon-btn,
+      .btn,
+      .modal-content {
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
         background: rgba(30, 30, 30, 0.7) !important;
       }
       
-      [data-theme="light"] .login-logo-img,
-      [data-theme="light"] .login-card,
-      [data-theme="light"] .feature-card {
+      [data-theme="light"] .logo-img,
+      [data-theme="light"] .feature-card,
+      [data-theme="light"] .activity-section {
         background: rgba(255, 255, 255, 0.8) !important;
       }
     }
   </style>
 </head>
 <body>
-  <!-- Контейнер входа с эффектом стекла -->
-  <div class="login-container">
-    <header class="login-header">
-      <!-- Логотип с обработкой ошибок -->
-      <img src="/images/logo.webp" alt="FamilySpace" class="login-logo-img"
-           onerror="this.classList.add('broken-image-fallback'); this.alt='Ошибка загрузки логотипа';">
-      <div class="login-tagline">Ваше семейное пространство в одном приложении</div>
-    </header>
-    
-    <main>
-      <div class="login-card">
-        <div class="auth-title">Вход в систему</div>
-        
-        <div class="input-group">
-          <label class="input-label">Электронная почта</label>
-          <input type="email" class="input-field" placeholder="your@email.com">
-        </div>
-        
-        <div class="input-group">
-          <label class="input-label">Пароль</label>
-          <input type="password" class="input-field" placeholder="Введите пароль">
-        </div>
-        
-        <button class="auth-button">Войти</button>
-        
-        <!-- Кнопка входа через Google -->
-        <div class="google-login-container">
-          <div class="divider">или</div>
-          <button id="google-login" class="google-login-button">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" 
-                 alt="Google" class="google-logo"
-                 onerror="this.onerror=null; this.src='/images/default.webp'; this.classList.add('broken-image-fallback')">
-            Войти через Google
-          </button>
-        </div>
-        
-        <div class="auth-toggle">
-          Нет аккаунта? <a href="/registration.html" class="auth-link">Зарегистрироваться</a>
+  <!-- Canvas для анимации частиц -->
+  <canvas id="particles-background"></canvas>
+  
+  <!-- Основной контейнер -->
+  <div class="main-container">
+    <!-- Шапка -->
+    <header class="header">
+      <div class="logo-container">
+        <img src="/images/logo.webp" alt="FamilySpace" class="logo-img"
+             onerror="this.classList.add('broken-image-fallback'); this.alt='Ошибка загрузки логотипа';">
+        <div class="app-info">
+          <h1 class="app-name">FamilySpace</h1>
+          <div class="app-version">Версия 3.0</div>
         </div>
       </div>
       
-      <div class="features-section">
-        <div class="features-title">Возможности приложения</div>
-        <div class="features-grid">
-          <div class="feature-card">
-            <div class="feature-icon">🎁</div>
-            <div class="feature-name">Вишлисты</div>
+      <div class="header-actions">
+        <button class="icon-btn" id="notifications-btn">
+          <i class="fas fa-bell"></i>
+        </button>
+        <button class="icon-btn" id="theme-btn">
+          <i class="fas fa-cog"></i>
+        </button>
+      </div>
+    </header>
+    
+    <!-- Основной контент -->
+    <main class="content">
+      <!-- Приветствие -->
+      <section class="greeting-section">
+        <h2 class="greeting" id="greeting-text">Добро пожаловать в FamilySpace!</h2>
+        <p class="tagline">Ваше семейное пространство в одном приложении</p>
+      </section>
+      
+      <!-- Карточки функций -->
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-badge" id="family-badge">3</div>
+          <div class="feature-header">
+            <div class="feature-icon">
+              <i class="fas fa-home"></i>
+            </div>
+            <h3 class="feature-title">Семейное пространство</h3>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">👨‍👩‍👧</div>
-            <div class="feature-name">Семейное пространство</div>
+          <p class="feature-description">Общий центр для вашей семьи с доступом ко всем функциям приложения</p>
+          <div class="feature-actions">
+            <button class="btn btn-primary" id="family-space-btn">
+              <i class="fas fa-arrow-right"></i> Открыть
+            </button>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">🗓️</div>
-            <div class="feature-name">Календарь</div>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-header">
+            <div class="feature-icon">
+              <i class="fas fa-gift"></i>
+            </div>
+            <h3 class="feature-title">Вишлисты</h3>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">✅</div>
-            <div class="feature-name">Задачи</div>
+          <p class="feature-description">Создавайте и делитесь списками желаний для семейных праздников</p>
+          <div class="feature-actions">
+            <button class="btn btn-secondary">
+              <i class="fas fa-plus"></i> Создать
+            </button>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">💬</div>
-            <div class="feature-name">Семейный чат</div>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-header">
+            <div class="feature-icon">
+              <i class="fas fa-calendar-alt"></i>
+            </div>
+            <h3 class="feature-title">Календарь</h3>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">🤖</div>
-            <div class="feature-name">ИИ-помощник</div>
+          <p class="feature-description">Совместное планирование семейных событий и мероприятий</p>
+          <div class="feature-actions">
+            <button class="btn btn-secondary">
+              <i class="fas fa-plus"></i> Добавить событие
+            </button>
           </div>
         </div>
       </div>
+      
+      <!-- Последняя активность -->
+      <section class="activity-section">
+        <h3 class="section-title">
+          <i class="fas fa-history"></i> Последняя активность
+        </h3>
+        
+        <ul class="activity-list" id="activity-list">
+          <li class="activity-item">
+            <div class="activity-icon">
+              <i class="fas fa-calendar-plus"></i>
+            </div>
+            <div class="activity-content">
+              <span class="activity-user">Мария</span>
+              <span class="activity-action">добавила событие</span>
+              <span class="activity-details">"Ужин" на завтра</span>
+              <span class="activity-time">15 минут назад</span>
+            </div>
+          </li>
+          <li class="activity-item">
+            <div class="activity-icon">
+              <i class="fas fa-image"></i>
+            </div>
+            <div class="activity-content">
+              <span class="activity-user">Петр</span>
+              <span class="activity-action">отправил фото</span>
+              <span class="activity-details">в семейный чат</span>
+              <span class="activity-time">2 часа назад</span>
+            </div>
+          </li>
+          <li class="activity-item">
+            <div class="activity-icon">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="activity-content">
+              <span class="activity-user">Анна</span>
+              <span class="activity-action">завершила задачу</span>
+              <span class="activity-details">"Купить продукты"</span>
+              <span class="activity-time">вчера</span>
+            </div>
+          </li>
+        </ul>
+      </section>
+      
+      <!-- Кнопки действий -->
+      <div class="footer-actions">
+        <button class="action-btn" id="share-btn">
+          <i class="fas fa-share-alt"></i> Поделиться
+        </button>
+        <button class="action-btn primary" id="install-btn">
+          <i class="fas fa-home"></i> Добавить на экран
+        </button>
+        <button class="action-btn" id="update-btn">
+          <i class="fas fa-sync-alt"></i> Проверить обновления
+        </button>
+        <a href="/registration.html" class="action-btn accent" id="start-btn">
+          <i class="fas fa-rocket"></i> Начать использовать
+        </a>
+      </div>
     </main>
     
-    <footer class="login-footer">
-      <div>FamilySpace &copy; 2025</div>
-      <div class="version-info">Версия 3.0</div>
+    <!-- Футер -->
+    <footer class="footer">
+      <div>FamilySpace &copy; 2025 | Ваше семейное пространство</div>
     </footer>
+  </div>
+  
+  <!-- Модальное окно обновлений -->
+  <div class="modal" id="update-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-icon">
+          <i class="fas fa-sync-alt"></i>
+        </div>
+        <h3 class="modal-title">Доступно обновление!</h3>
+      </div>
+      
+      <div class="changelog">
+        <h4 class="changelog-title">Что нового в версии 3.1:</h4>
+        <ul class="changelog-list">
+          <li class="changelog-item">Новый стеклянный дизайн для всех страниц</li>
+          <li class="changelog-item">Улучшена производительность на мобильных устройствах</li>
+          <li class="changelog-item">Добавлен раздел "Последняя активность"</li>
+          <li class="changelog-item">Исправлены ошибки с загрузкой изображений</li>
+          <li class="changelog-item">Оптимизирована работа в офлайн-режиме</li>
+        </ul>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="confirm-update">
+          <i class="fas fa-download"></i> Обновить сейчас
+        </button>
+        <button class="btn btn-secondary" id="cancel-update">
+          <i class="fas fa-times"></i> Напомнить позже
+        </button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -527,34 +878,287 @@
       const savedTheme = localStorage.getItem('theme') || 'dark';
       document.documentElement.setAttribute('data-theme', savedTheme);
       
-      // Обработчик для кнопки Google Login
-      const googleLoginButton = document.getElementById('google-login');
-      googleLoginButton.addEventListener('click', () => {
-        window.location.href = '/auth/google';
-      });
+      // Персонализация приветствия
+      const userName = localStorage.getItem('userName') || '';
+      document.getElementById('greeting-text').textContent = 
+        userName ? `Привет, ${userName}!` : 'Добро пожаловать в FamilySpace!';
       
-      // Обработка основной кнопки входа
-      const authButton = document.querySelector('.auth-button');
-      authButton.addEventListener('click', () => {
+      // Инициализация анимации частиц
+      initParticles();
+      
+      // Настройка кнопки установки PWA
+      setupPWAInstall();
+      
+      // Загрузка данных активности
+      loadRecentActivity();
+      
+      // Обработчики кнопок
+      document.getElementById('share-btn').addEventListener('click', handleShare);
+      document.getElementById('update-btn').addEventListener('click', checkForUpdates);
+      document.getElementById('theme-btn').addEventListener('click', toggleTheme);
+      document.getElementById('family-space-btn').addEventListener('click', () => {
         window.location.href = 'family.html';
       });
+      
+      // Обработчики модального окна
+      document.getElementById('confirm-update').addEventListener('click', confirmUpdate);
+      document.getElementById('cancel-update').addEventListener('click', () => {
+        document.getElementById('update-modal').classList.remove('active');
+      });
+      
+      // Автоматическая проверка обновлений при загрузке
+      setTimeout(checkForUpdates, 3000);
       
       // Автоматическое восстановление изображений
       document.querySelectorAll('img').forEach(img => {
         img.onerror = function() {
           this.onerror = null;
-          if (this.classList.contains('login-logo-img')) {
-            this.src = '/images/default.webp';
-          }
+          this.src = '/images/default.webp';
           this.classList.add('broken-image-fallback');
         };
       });
+    }
+    
+    // Анимация частиц
+    function initParticles() {
+      const canvas = document.getElementById('particles-background');
+      if (!canvas) return;
       
-      // Принудительное обновление темы при загрузке
-      document.documentElement.style.visibility = 'hidden';
-      setTimeout(() => {
-        document.documentElement.style.visibility = 'visible';
-      }, 100);
+      const ctx = canvas.getContext('2d');
+      const particles = [];
+      const particleCount = window.innerWidth < 768 ? 60 : 100;
+      
+      // Размеры canvas
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      
+      // Создание частиц
+      function createParticles() {
+        particles.length = 0;
+        const theme = document.documentElement.dataset.theme;
+        const colors = theme === 'dark' ? 
+          ['rgba(173, 216, 230, 0.5)', 'rgba(147, 112, 219, 0.5)', 'rgba(255, 182, 193, 0.5)'] : 
+          ['rgba(100, 149, 237, 0.5)', 'rgba(152, 251, 152, 0.5)', 'rgba(255, 215, 0, 0.5)'];
+        
+        for (let i = 0; i < particleCount; i++) {
+          particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 4 + 1,
+            speedX: (Math.random() - 0.5) * 0.8,
+            speedY: (Math.random() - 0.5) * 0.8,
+            color: colors[Math.floor(Math.random() * colors.length)]
+          });
+        }
+      }
+      
+      // Анимационный цикл
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach(p => {
+          p.x += p.speedX;
+          p.y += p.speedY;
+          
+          // Переход через границы
+          if (p.x > canvas.width) p.x = 0;
+          if (p.x < 0) p.x = canvas.width;
+          if (p.y > canvas.height) p.y = 0;
+          if (p.y < 0) p.y = canvas.height;
+          
+          // Рисование частицы
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.fill();
+        });
+        
+        requestAnimationFrame(animate);
+      }
+      
+      // Обработка движения мыши
+      canvas.addEventListener('mousemove', e => {
+        particles.forEach(p => {
+          const dx = e.clientX - p.x;
+          const dy = e.clientY - p.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance < 100) {
+            p.speedX = dx * 0.02;
+            p.speedY = dy * 0.02;
+          }
+        });
+      });
+      
+      resizeCanvas();
+      createParticles();
+      animate();
+      window.addEventListener('resize', resizeCanvas);
+    }
+    
+    // Загрузка последней активности
+    async function loadRecentActivity() {
+      try {
+        // В реальном приложении здесь будет запрос к API
+        // const response = await fetch('/api/recent-activity?limit=3');
+        // const activities = await response.json();
+        
+        // Заглушка для демонстрации
+        const activities = [
+          { user: "Мария", action: "добавила событие", details: "Ужин", time: "15 минут назад", icon: "calendar-plus" },
+          { user: "Петр", action: "отправил фото", details: "в семейный чат", time: "2 часа назад", icon: "image" },
+          { user: "Анна", action: "завершила задачу", details: "Купить продукты", time: "вчера", icon: "check-circle" }
+        ];
+        
+        const list = document.getElementById('activity-list');
+        list.innerHTML = activities.map(activity => `
+          <li class="activity-item">
+            <div class="activity-icon">
+              <i class="fas fa-${activity.icon}"></i>
+            </div>
+            <div class="activity-content">
+              <span class="activity-user">${activity.user}</span>
+              <span class="activity-action">${activity.action}</span>
+              <span class="activity-details">"${activity.details}"</span>
+              <span class="activity-time">${activity.time}</span>
+            </div>
+          </li>
+        `).join('');
+      } catch (error) {
+        console.error('Ошибка загрузки активности:', error);
+      }
+    }
+    
+    // Настройка PWA-установки
+    function setupPWAInstall() {
+      let deferredPrompt;
+      const installBtn = document.getElementById('install-btn');
+      
+      // Скрыть кнопку, если приложение уже установлено
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        installBtn.style.display = 'none';
+      }
+      
+      // Событие перед установкой
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBtn.style.display = 'flex';
+      });
+      
+      // Обработчик кнопки установки
+      installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        if (outcome === 'accepted') {
+          console.log('Пользователь принял установку');
+          installBtn.style.display = 'none';
+        }
+        
+        deferredPrompt = null;
+      });
+      
+      // Событие после установки
+      window.addEventListener('appinstalled', () => {
+        console.log('Приложение установлено');
+        installBtn.style.display = 'none';
+      });
+    }
+    
+    // Проверка обновлений
+    async function checkForUpdates() {
+      try {
+        // В реальном приложении здесь будет запрос к API
+        // const response = await fetch('/api/check-update');
+        // const updateInfo = await response.json();
+        
+        // Заглушка для демонстрации
+        const updateInfo = {
+          newVersionAvailable: true,
+          version: "3.1",
+          changelog: [
+            "Новый стеклянный дизайн для всех страниц",
+            "Улучшена производительность на мобильных устройствах",
+            "Добавлен раздел 'Последняя активность'",
+            "Исправлены ошибки с загрузкой изображений",
+            "Оптимизирована работа в офлайн-режиме"
+          ]
+        };
+        
+        if (updateInfo.newVersionAvailable) {
+          showUpdateModal(updateInfo);
+        } else {
+          alert('У вас установлена последняя версия приложения!');
+        }
+      } catch (error) {
+        console.error('Ошибка проверки обновлений:', error);
+        alert('Не удалось проверить обновления. Попробуйте позже.');
+      }
+    }
+    
+    // Показ модального окна обновления
+    function showUpdateModal(updateInfo) {
+      const modal = document.getElementById('update-modal');
+      const changelog = modal.querySelector('.changelog-list');
+      
+      // Заполнение списка изменений
+      changelog.innerHTML = updateInfo.changelog.map(item => 
+        `<li class="changelog-item">${item}</li>`
+      ).join('');
+      
+      // Обновление заголовка версии
+      modal.querySelector('.modal-title').textContent = 
+        `Доступно обновление ${updateInfo.version}!`;
+      
+      // Показ модального окна
+      modal.classList.add('active');
+    }
+    
+    // Подтверждение обновления
+    function confirmUpdate() {
+      // Обновление Service Worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(reg => {
+          reg.update().then(() => {
+            window.location.reload();
+          });
+        });
+      } else {
+        window.location.reload();
+      }
+    }
+    
+    // Переключение темы
+    function toggleTheme() {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      
+      // Перезапуск анимации частиц для обновления цветов
+      initParticles();
+    }
+    
+    // Поделиться приложением
+    function handleShare() {
+      if (navigator.share) {
+        navigator.share({
+          title: 'FamilySpace',
+          text: 'Приложение для организации семейной жизни',
+          url: 'https://familyspace.app'
+        }).catch(console.error);
+      } else {
+        // Fallback для браузеров без поддержки Web Share API
+        navigator.clipboard.writeText('https://familyspace.app').then(() => {
+          alert('Ссылка скопирована в буфер обмена!');
+        });
+      }
     }
     
     // Запуск приложения после загрузки
@@ -568,67 +1172,23 @@
       window.addEventListener('load', async () => {
         try {
           const registration = await navigator.serviceWorker.register('/sw.js');
-          
           console.log('ServiceWorker зарегистрирован с областью видимости: ', registration.scope);
           
-          // Принудительное обновление при изменении версии
+          // Проверка обновлений при изменении Service Worker
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('Новая версия обнаружена! Принудительное обновление...');
-                newWorker.postMessage({type: 'SKIP_WAITING'});
+                console.log('Обнаружена новая версия приложения!');
+                checkForUpdates();
               }
             });
           });
-          
-          // Проверка версии при загрузке
-          navigator.serviceWorker.controller?.postMessage({
-            type: 'CHECK_VERSION',
-            version: APP_VERSION
-          });
-          
         } catch (error) {
           console.error('Ошибка регистрации Service Worker: ', error);
         }
       });
     }
-    
-    // Обработка сообщений от Service Worker
-    navigator.serviceWorker.addEventListener('message', event => {
-      switch (event.data.type) {
-        case 'RELOAD_REQUIRED':
-          console.log('Требуется перезагрузка для применения обновления');
-          if (confirm('Доступно обновление приложения. Перезагрузить сейчас?')) {
-            window.location.reload();
-          }
-          break;
-          
-        case 'VERSION_MISMATCH':
-          console.log(`Версия SW (${event.data.swVersion}) не совпадает с приложением (${APP_VERSION})`);
-          navigator.serviceWorker.getRegistration().then(reg => {
-            reg?.update();
-          });
-          break;
-      }
-    });
-    
-    // Глобальный обработчик ошибок изображений
-    document.addEventListener('DOMContentLoaded', () => {
-      const fallbackImage = '/images/default.webp';
-      
-      // Проверка всех изображений при загрузке
-      setTimeout(() => {
-        document.querySelectorAll('img').forEach(img => {
-          if (!img.complete || img.naturalHeight === 0) {
-            if (img.classList.contains('login-logo-img')) {
-              img.src = fallbackImage;
-            }
-            img.classList.add('broken-image-fallback');
-          }
-        });
-      }, 1000);
-    });
   </script>
 </body>
 </html>
