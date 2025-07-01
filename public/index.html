@@ -3,111 +3,180 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#4f46e5">
+  <meta name="theme-color" content="#4263eb">
   <title>Семейное пространство | FamilySpace</title>
   <link rel="stylesheet" href="/styles.css">
   <link rel="manifest" href="/manifest.json">
   <style>
-    /* Специфичные стили для страницы входа */
+    /* Обновленные стили с эффектом стекла */
     .login-container {
       display: flex;
       flex-direction: column;
       min-height: 100vh;
-      background: var(--background-gradient);
       padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Фоновый слой с размытием */
+    .login-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: inherit;
+      filter: blur(20px);
+      z-index: -1;
+      opacity: 0.7;
     }
     
     .login-header {
       text-align: center;
-      padding: 30px 0 20px;
+      padding: 40px 0 30px;
     }
     
     .login-logo {
-      font-size: 2.5rem;
+      font-size: 3rem;
       font-weight: bold;
-      color: var(--accent);
-      margin-bottom: 10px;
+      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 15px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     
     .login-tagline {
       color: var(--text-secondary);
-      font-size: 1.1rem;
-      max-width: 500px;
+      font-size: 1.2rem;
+      max-width: 600px;
       margin: 0 auto;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.1);
     }
     
     .login-card {
-      background: var(--card-bg);
-      border-radius: 16px;
-      padding: 30px;
-      box-shadow: 0 8px 24px var(--shadow);
-      border: 1px solid var(--border);
+      background: var(--glass-bg);
+      border-radius: var(--glass-radius);
+      padding: 40px;
+      box-shadow: var(--glass-shadow);
+      border: 1px solid var(--glass-border);
       max-width: 500px;
-      margin: 20px auto 40px;
+      margin: 20px auto 50px;
       width: 100%;
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      right: -10px;
+      bottom: -10px;
+      background: inherit;
+      filter: blur(20px);
+      z-index: -1;
+      opacity: 0.5;
     }
     
     .auth-title {
       font-size: 1.8rem;
-      margin-bottom: 25px;
+      margin-bottom: 30px;
       text-align: center;
+      color: var(--text-primary);
+      text-shadow: 0 1px 1px rgba(0,0,0,0.1);
     }
     
     .input-group {
-      margin-bottom: 20px;
+      margin-bottom: 25px;
     }
     
     .input-label {
       display: block;
-      margin-bottom: 8px;
-      font-weight: 500;
-      color: var(--text-primary);
+      margin-bottom: 10px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
     }
     
     .input-field {
       width: 100%;
-      padding: 14px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
+      padding: 16px 20px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
       font-size: 1rem;
       color: var(--text-primary);
-      transition: border-color 0.3s;
+      transition: all 0.3s;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
     }
     
     .input-field:focus {
+      border-color: var(--primary);
       outline: none;
-      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(66, 99, 235, 0.2);
+      background: rgba(255, 255, 255, 0.25);
     }
     
     .auth-button {
       width: 100%;
-      padding: 15px;
-      background: var(--accent);
+      padding: 16px;
+      background: rgba(66, 99, 235, 0.7);
       color: white;
       border: none;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 500;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      font-weight: 600;
       cursor: pointer;
-      transition: background 0.3s;
-      margin-top: 10px;
+      transition: all 0.3s;
+      margin-top: 15px;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .auth-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: 0.5s;
     }
     
     .auth-button:hover {
-      background: var(--accent-dark);
+      background: rgba(66, 99, 235, 0.85);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15), 
+                  inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+    
+    .auth-button:hover::before {
+      left: 100%;
     }
     
     .google-login-container {
-      margin-top: 25px;
+      margin-top: 30px;
       text-align: center;
     }
     
     .divider {
       position: relative;
-      margin: 25px 0;
+      margin: 30px 0;
       color: var(--text-tertiary);
       text-align: center;
+      font-size: 1rem;
     }
     
     .divider::before,
@@ -117,7 +186,7 @@
       top: 50%;
       width: 40%;
       height: 1px;
-      background: var(--border);
+      background: var(--glass-border);
     }
     
     .divider::before {
@@ -133,133 +202,190 @@
       align-items: center;
       justify-content: center;
       width: 100%;
-      padding: 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--glass-border);
+      border-radius: 50px;
       font-size: 1rem;
-      font-weight: 500;
+      font-weight: 600;
       color: var(--text-primary);
       cursor: pointer;
-      transition: background 0.3s;
+      transition: all 0.3s;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
     }
     
     .google-login-button:hover {
-      background: var(--card-bg);
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.4);
     }
     
     .google-logo {
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
       margin-right: 12px;
+      filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1));
     }
     
     .auth-toggle {
       text-align: center;
-      margin-top: 25px;
+      margin-top: 30px;
       color: var(--text-secondary);
-      font-size: 0.95rem;
+      font-size: 1rem;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
     }
     
     .auth-link {
-      color: var(--accent);
+      color: var(--primary);
       text-decoration: none;
-      font-weight: 500;
+      font-weight: 600;
       margin-left: 5px;
+      transition: all 0.3s;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
+    }
+    
+    .auth-link:hover {
+      text-decoration: underline;
+      color: var(--primary-dark);
     }
     
     .features-section {
-      padding: 30px 20px;
+      padding: 40px 20px;
       text-align: center;
       max-width: 1200px;
       margin: 0 auto;
     }
     
     .features-title {
-      font-size: 1.8rem;
-      margin-bottom: 35px;
+      font-size: 2rem;
+      margin-bottom: 40px;
       color: var(--text-primary);
+      text-shadow: 0 2px 2px rgba(0,0,0,0.1);
     }
     
     .features-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 25px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 30px;
     }
     
     .feature-card {
-      background: var(--card-bg);
-      border-radius: 14px;
-      padding: 25px 20px;
+      background: var(--glass-bg);
+      border-radius: var(--glass-radius);
+      padding: 30px 25px;
       text-align: center;
-      border: 1px solid var(--border);
-      box-shadow: 0 4px 12px var(--shadow);
-      transition: transform 0.3s;
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      right: -10px;
+      bottom: -10px;
+      background: inherit;
+      filter: blur(20px);
+      z-index: -1;
+      opacity: 0.5;
     }
     
     .feature-card:hover {
-      transform: translateY(-5px);
+      transform: translateY(-8px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
     }
     
     .feature-icon {
-      font-size: 2.5rem;
-      margin-bottom: 15px;
-      color: var(--accent);
+      font-size: 3rem;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     
     .feature-name {
-      font-size: 1.1rem;
-      font-weight: 500;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
     }
     
     .login-footer {
-      padding: 20px;
+      padding: 30px 20px;
       text-align: center;
       color: var(--text-tertiary);
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       margin-top: auto;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.05);
     }
     
     .version-info {
       margin-top: 10px;
+      font-size: 0.85rem;
     }
     
     @media (max-width: 768px) {
       .login-card {
-        padding: 25px 20px;
+        padding: 30px 25px;
+        border-radius: 20px;
       }
       
       .features-grid {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 15px;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
       }
       
       .feature-icon {
-        font-size: 2rem;
+        font-size: 2.5rem;
       }
       
       .auth-title {
-        font-size: 1.5rem;
+        font-size: 1.6rem;
+      }
+      
+      .login-logo {
+        font-size: 2.5rem;
       }
     }
     
     @media (max-width: 480px) {
       .login-logo {
-        font-size: 2rem;
+        font-size: 2.2rem;
+      }
+      
+      .login-tagline {
+        font-size: 1rem;
       }
       
       .feature-card {
-        padding: 20px 15px;
+        padding: 25px 20px;
+        border-radius: 20px;
       }
       
       .feature-name {
-        font-size: 1rem;
+        font-size: 1.1rem;
+      }
+      
+      .input-field {
+        padding: 14px 16px;
+      }
+      
+      .auth-button {
+        padding: 14px;
       }
     }
   </style>
 </head>
 <body>
-  <!-- Специальная шапка для страницы входа -->
+  <!-- Контейнер входа с эффектом стекла -->
   <div class="login-container">
     <header class="login-header">
       <div class="login-logo">FamilySpace</div>
