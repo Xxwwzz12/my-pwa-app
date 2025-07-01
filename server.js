@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
-const MongoStore = require('connect-mongo').default; // Импорт с .default
+const MongoStore = require('connect-mongo'); // Убрали .default
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const mongoose = require('mongoose');
@@ -77,6 +77,8 @@ app.use(session({
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
 }));
+
+// ... ОСТАЛЬНАЯ ЧАСТЬ ФАЙЛА БЕЗ ИЗМЕНЕНИЙ ...
 
 // Инициализация Passport
 app.use(passport.initialize());
