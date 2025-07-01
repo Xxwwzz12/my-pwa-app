@@ -3,6 +3,7 @@ const path = require('path');
 const session = require('express-session');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const multer = require('multer');
 const fs = require('fs');
@@ -10,13 +11,37 @@ require('dotenv').config();
 
 const app = express();
 
+// ========== Подключение к MongoDB ==========
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('MongoDB connected'))
+.catch(err => console.error('MongoDB connection error:', err));
+
+// ========== Модель пользователя ==========
+const userSchema = new mongoose.Schema({
+  googleId: { type: String, unique: true },
+  email: { type: String, required: true, unique: true },
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  gender: { type: String, enum: ['male', 'female', 'other'], required: true },
+  age: { type: Number, min: 1, max: 120, required: true },
+  role: { 
+    type: String, 
+    enum: ['senior_parent', 'parent', 'child', 'relative', 'grandparent'], 
+    required: true 
+  },
+  avatar: { type: String },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const User = mongoose.model('User', userSchema);
+
 // ========== Конфигурация Google OAuth ==========
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const CALLBACK_URL = process.env.CALLBACK_URL || 'https://my-pwa-app-w519.onrender.com/auth/google/callback';
-
-// ========== Временное хранилище пользователей ==========
-const users = {};
 
 // ========== Настройка Multer для загрузки аватаров ==========
 const storage = multer.diskStorage({
@@ -35,7 +60,15 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Неподдерживаемый тип файла'), false);
+    }
+  }
 });
 
 // ========== Middleware ==========
@@ -70,23 +103,28 @@ passport.use(new GoogleStrategy({
     passReqToCallback: true,
     proxy: true
   },
-  (req, accessToken, refreshToken, profile, done) => {
+  async (req, accessToken, refreshToken, profile, done) => {
     try {
-      const existingUser = users[profile.id];
+      // Поиск существующего пользователя
+      let user = await User.findOne({ googleId: profile.id });
       
-      if (existingUser && existingUser.registrationComplete) {
-        return done(null, existingUser);
+      if (user) {
+        return done(null, user);
       }
       
-      // Создаем временный профиль
-      users[profile.id] = {
-        id: profile.id,
-        displayName: profile.displayName,
+      // Создание нового пользователя
+      user = new User({
+        googleId: profile.id,
         email: profile.emails?.[0]?.value || '',
-        registrationComplete: false
-      };
+        firstName: profile.name?.givenName || '',
+        lastName: profile.name?.familyName || '',
+        gender: 'other',
+        age: 25,
+        role: 'parent'
+      });
       
-      return done(null, users[profile.id]);
+      await user.save();
+      return done(null, user);
     } catch (error) {
       console.error('GoogleStrategy error:', error);
       return done(error);
@@ -100,21 +138,20 @@ passport.serializeUser((user, done) => {
 });
 
 // Десериализация пользователя
-passport.deserializeUser((id, done) => {
-  const user = users[id] || null;
-  done(null, user);
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (error) {
+    done(error);
+  }
 });
 
 // ========== Middleware для проверки регистрации ==========
 function checkRegistration(req, res, next) {
-  if (req.isAuthenticated() && req.user.registrationComplete) {
+  if (req.isAuthenticated()) {
     return next();
   }
-  
-  if (req.isAuthenticated()) {
-    return res.redirect('/registration.html');
-  }
-  
   res.redirect('/');
 }
 
@@ -129,9 +166,6 @@ app.get('/auth/google',
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/?auth_error=1' }),
   (req, res) => {
-    if (req.user && !req.user.registrationComplete) {
-      return res.redirect('/registration.html');
-    }
     res.redirect('/family.html');
   }
 );
@@ -146,99 +180,112 @@ app.get('/logout', (req, res) => {
   });
 });
 
-// ========== API для регистрации ==========
-app.post('/api/register', (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ error: 'Not authenticated' });
+// ========== API для работы с пользователем ==========
+
+// Получение данных пользователя
+app.get('/api/user', async (req, res) => {
+  try {
+    // Проверка аутентификации
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: 'Не авторизован' });
+    }
+
+    const user = await User.findById(req.user.id).select('-__v');
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    // Формирование ответа
+    res.json({
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      gender: user.gender,
+      age: user.age,
+      role: user.role,
+      avatar: user.avatar || null,
+      createdAt: user.createdAt
+    });
+  } catch (error) {
+    console.error('Ошибка получения данных пользователя:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
   }
-  
-  const { firstName, lastName, gender, age, avatar, role } = req.body;
-  const userId = req.user.id;
-  
-  if (!firstName || !lastName || !gender || !age || !role) {
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
-  
-  users[userId] = {
-    ...users[userId],
-    firstName,
-    lastName,
-    gender,
-    age: parseInt(age),
-    avatarUrl: avatar || null,
-    role,
-    registrationComplete: true
-  };
-  
-  res.json({ success: true });
 });
 
-// ========== API для работы с профилем пользователя ==========
-app.get('/api/user', (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ 
-      error: 'Not authenticated',
-      code: 'UNAUTHORIZED'
-    });
-  }
-  
-  if (!req.user.registrationComplete) {
-    return res.json({
-      id: req.user.id,
-      name: req.user.displayName,
-      email: req.user.email,
-      registrationComplete: false
-    });
-  }
-  
-  res.json({
-    id: req.user.id,
-    displayName: req.user.displayName,
-    email: req.user.email,
-    firstName: req.user.firstName,
-    lastName: req.user.lastName,
-    gender: req.user.gender,
-    age: req.user.age,
-    avatarUrl: req.user.avatarUrl,
-    role: req.user.role,
-    registrationComplete: true
-  });
-});
+// Загрузка аватара
+app.post('/api/upload-avatar', 
+  passport.authenticate('session'), 
+  upload.single('avatar'), 
+  async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: 'Не авторизован' });
+      }
+      
+      if (!req.file) {
+        return res.status(400).json({ error: 'Файл не загружен' });
+      }
 
-app.put('/api/user', upload.single('avatar'), (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ error: 'Not authenticated' });
+      // Обновление аватара пользователя в БД
+      const user = await User.findByIdAndUpdate(req.user.id, {
+        avatar: req.file.filename
+      }, { new: true });
+
+      res.json({ 
+        success: true,
+        fileName: req.file.filename,
+        avatarUrl: `/uploads/${req.file.filename}`
+      });
+    } catch (error) {
+      console.error('Ошибка загрузки аватара:', error);
+      res.status(500).json({ error: 'Ошибка сервера' });
+    }
   }
-  
-  const userId = req.user.id;
-  const user = users[userId];
-  
-  if (!user || !user.registrationComplete) {
-    return res.status(403).json({ error: 'User not registered' });
+);
+
+// Сохранение профиля
+app.post('/api/save-profile', 
+  express.json(),
+  passport.authenticate('session'),
+  async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: 'Не авторизован' });
+      }
+      
+      const { firstName, lastName, gender, age, role, avatarUrl } = req.body;
+      
+      // Базовая валидация
+      if (!firstName || !lastName || !gender || !age || !role) {
+        return res.status(400).json({ error: 'Заполните все обязательные поля' });
+      }
+
+      // Обновление данных пользователя
+      const updatedUser = await User.findByIdAndUpdate(
+        req.user.id,
+        {
+          firstName,
+          lastName,
+          gender,
+          age: parseInt(age),
+          role,
+          avatar: avatarUrl || null
+        },
+        { new: true }
+      );
+
+      res.json({
+        success: true,
+        user: updatedUser
+      });
+    } catch (error) {
+      console.error('Ошибка сохранения профиля:', error);
+      res.status(500).json({ error: 'Ошибка сервера' });
+    }
   }
-  
-  // Обновляем данные
-  if (req.body.firstName) user.firstName = req.body.firstName;
-  if (req.body.lastName) user.lastName = req.body.lastName;
-  if (req.body.gender) user.gender = req.body.gender;
-  if (req.body.age) user.age = parseInt(req.body.age);
-  if (req.body.role) user.role = req.body.role;
-  
-  // Обработка аватара
-  if (req.file) {
-    user.avatarUrl = `/uploads/${req.file.filename}`;
-  } else if (req.body.avatarUrl) {
-    user.avatarUrl = req.body.avatarUrl;
-  }
-  
-  // Обновляем сессию
-  req.session.user = user;
-  
-  res.json({ 
-    status: 'success',
-    user: user
-  });
-});
+);
 
 // ========== Защищенные маршруты ==========
 app.get('/family.html', checkRegistration, (req, res) => {
@@ -247,6 +294,10 @@ app.get('/family.html', checkRegistration, (req, res) => {
 
 app.get('/profile.html', checkRegistration, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
+});
+
+app.get('/registration.html', checkRegistration, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'registration.html'));
 });
 
 // ========== API для проверки обновлений ==========
@@ -277,6 +328,17 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Обработчик ошибок Multer
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ error: 'Ошибка загрузки файла: ' + err.message });
+  } else if (err) {
+    console.error('Server error:', err);
+    return res.status(500).json({ error: 'Ошибка сервера' });
+  }
+  next();
+});
+
 // ========== Запуск сервера ==========
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
@@ -284,8 +346,13 @@ app.listen(PORT, () => {
   console.log('Конфигурация OAuth:');
   console.log(`- Client ID: ${GOOGLE_CLIENT_ID ? 'установлен' : 'ОШИБКА! Проверьте .env'}`);
   console.log(`- Callback URL: ${CALLBACK_URL}`);
+  console.log(`- MongoDB URI: ${process.env.MONGO_URI ? 'установлен' : 'ОШИБКА! Проверьте .env'}`);
   
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
     console.error('ВНИМАНИЕ: Google OAuth credentials не установлены!');
+  }
+  
+  if (!process.env.MONGO_URI) {
+    console.error('ВНИМАНИЕ: MongoDB URI не установлен!');
   }
 });
