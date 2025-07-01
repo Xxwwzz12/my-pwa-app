@@ -1,7 +1,7 @@
 // Версия кэша
-const CACHE_VERSION = 'v4.0';
+const CACHE_VERSION = 'v5.0';
 const CACHE_NAME = `familyspace-cache-${CACHE_VERSION}`;
-const API_CACHE_NAME = 'familyspace-api-cache-v1';
+const API_CACHE_NAME = 'familyspace-api-cache-v2';
 const OFFLINE_URL = '/offline.html';
 const LOGS_DB_NAME = 'FamilySpace_Logs_DB';
 const LOGS_STORE_NAME = 'logs';
@@ -21,12 +21,20 @@ const PRECACHE_RESOURCES = [
   '/offline.html',
   '/styles.css',
   '/manifest.json',
-  '/icons/icon_1.png',
-  '/icons/icon-chat.png',
-  '/icons/icon-calendar.png',
-  '/icons/icon-profile.png',
-  '/app.js',
-  '/service-worker-registration.js'
+  '/images/logo.webp',
+  '/images/default.webp',
+  '/images/vista-bg.webp',
+  '/js/api.js',
+  '/js/auth.js',
+  '/js/index.js'
+];
+
+// Критические API эндпоинты для кэширования
+const CRITICAL_API_ENDPOINTS = [
+  '/api/notifications',
+  '/api/recent-activity',
+  '/api/check-update',
+  '/api/user-info'
 ];
 
 // Улучшенная система логов с IndexedDB
@@ -183,25 +191,47 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const requestUrl = new URL(event.request.url);
   const isApiRequest = requestUrl.pathname.startsWith('/api/');
-  const isStaticResource = /\.(css|js|png|jpg|jpeg|gif|svg|ico|json)$/.test(requestUrl.pathname);
+  const isStaticResource = /\.(css|js|png|jpg|jpeg|gif|svg|ico|json|webp)$/.test(requestUrl.pathname);
   
   log(`Запрос: ${requestUrl.pathname} [${isApiRequest ? 'API' : isStaticResource ? 'Static' : 'Navigation'}]`);
   
-  // Стратегия для API запросов: Network First
-  if (isApiRequest) {
+  // Стратегия для критических API запросов: Network First с кэшированием
+  if (isApiRequest && CRITICAL_API_ENDPOINTS.some(endpoint => requestUrl.pathname.startsWith(endpoint))) {
     event.respondWith(
       fetch(event.request)
         .then(networkResponse => {
-          // Кэшируем свежий ответ
-          const responseClone = networkResponse.clone();
-          caches.open(API_CACHE_NAME)
-            .then(cache => cache.put(event.request, responseClone));
+          // Кэшируем только GET запросы и успешные ответы
+          if (event.request.method === 'GET' && networkResponse.ok) {
+            const responseClone = networkResponse.clone();
+            caches.open(API_CACHE_NAME)
+              .then(cache => cache.put(event.request, responseClone))
+              .catch(err => log(`Ошибка кэширования API: ${err}`));
+          }
           return networkResponse;
         })
         .catch(() => {
           // При ошибке сети - возвращаем из кэша
           return caches.match(event.request)
-            .then(cachedResponse => cachedResponse || Response.error());
+            .then(cachedResponse => {
+              if (cachedResponse) {
+                log(`Используем кэшированный ответ для: ${requestUrl.pathname}`);
+                return cachedResponse;
+              }
+              
+              // Для API уведомлений возвращаем fallback
+              if (requestUrl.pathname === '/api/notifications') {
+                return new Response(JSON.stringify({
+                  unreadMessages: 0,
+                  upcomingEvents: 0,
+                  overdueTasks: 0,
+                  total: 0
+                }), {
+                  headers: { 'Content-Type': 'application/json' }
+                });
+              }
+              
+              return Response.error();
+            });
         })
     );
     return;
@@ -212,17 +242,32 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       caches.match(event.request)
         .then(cachedResponse => {
-          // Всегда обновляем кэш в фоне
-          const fetchPromise = fetch(event.request).then(networkResponse => {
-            // Обновляем кэш
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(event.request, networkResponse.clone());
-            });
-            return networkResponse;
-          }).catch(() => {}); // Игнорируем ошибки сетевого запроса
+          // Возвращаем кэшированный ответ если он есть
+          if (cachedResponse) {
+            log(`Обслуживаем из кэша: ${requestUrl.pathname}`);
+            return cachedResponse;
+          }
           
-          // Возвращаем кэшированный ответ или пробуем сеть
-          return cachedResponse || fetchPromise;
+          // Иначе загружаем из сети и кэшируем
+          return fetch(event.request)
+            .then(networkResponse => {
+              // Клонируем ответ для кэширования
+              const responseClone = networkResponse.clone();
+              caches.open(CACHE_NAME)
+                .then(cache => cache.put(event.request, responseClone))
+                .catch(err => log(`Ошибка кэширования: ${err}`));
+              return networkResponse;
+            })
+            .catch(error => {
+              log(`Ошибка загрузки ресурса: ${requestUrl.pathname} - ${error}`);
+              
+              // Fallback для изображений
+              if (/\.(png|jpg|jpeg|gif|svg|webp)$/.test(requestUrl.pathname)) {
+                return caches.match('/images/default.webp');
+              }
+              
+              return Response.error();
+            });
         })
     );
     return;
@@ -231,10 +276,19 @@ self.addEventListener('fetch', event => {
   // Стратегия для навигационных запросов: Network First с fallback
   event.respondWith(
     fetch(event.request)
+      .then(networkResponse => {
+        // Обновляем кэш для HTML страниц
+        if (networkResponse.ok && event.request.method === 'GET') {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME)
+            .then(cache => cache.put(event.request, responseClone));
+        }
+        return networkResponse;
+      })
       .catch(() => {
-        // Для навигационных запросов возвращаем offline.html
+        // Для навигационных запросов возвращаем кэшированную версию
         if (event.request.mode === 'navigate') {
-          return caches.match(OFFLINE_URL);
+          return caches.match('/index.html') || caches.match(OFFLINE_URL);
         }
         
         // Для других запросов пробуем кэш
@@ -299,23 +353,88 @@ self.addEventListener('message', event => {
       });
     });
   }
+  
+  // Регистрация для push-уведомлений
+  if (event.data && event.data.type === 'REGISTER_PUSH') {
+    const subscription = event.data.subscription;
+    log(`Регистрация для push-уведомлений`);
+    
+    // Сохраняем подписку в IndexedDB
+    savePushSubscription(subscription)
+      .then(() => {
+        event.source.postMessage({
+          type: 'PUSH_REGISTERED'
+        });
+      })
+      .catch(error => {
+        log(`Ошибка регистрации push: ${error}`);
+        event.source.postMessage({
+          type: 'PUSH_REGISTRATION_FAILED',
+          error: error.message
+        });
+      });
+  }
 });
+
+// Сохранение push-подписки
+function savePushSubscription(subscription) {
+  return new Promise((resolve, reject) => {
+    initDB().then(db => {
+      const transaction = db.transaction('push_subscriptions', 'readwrite');
+      const store = transaction.objectStore('push_subscriptions');
+      store.put(subscription, 'current');
+      resolve();
+    }).catch(reject);
+  });
+}
 
 // Периодическая синхронизация
 self.addEventListener('periodicsync', event => {
   if (event.tag === 'update-check') {
     log('Фоновая проверка обновлений');
     event.waitUntil(
-      caches.open(CACHE_NAME).then(cache => {
-        return cache.addAll(PRECACHE_RESOURCES.map(url => {
-          return new Request(url, { cache: 'reload' });
-        }));
-      })
-      .then(() => log('Фоновая синхронизация завершена'))
-      .catch(err => log(`Ошибка фоновой синхронизации: ${err}`))
+      checkForUpdates()
+        .then(() => log('Фоновая синхронизация завершена'))
+        .catch(err => log(`Ошибка фоновой синхронизации: ${err}`))
+    );
+  }
+  
+  if (event.tag === 'notifications-sync') {
+    log('Фоновая синхронизация уведомлений');
+    event.waitUntil(
+      fetch('/api/notifications')
+        .then(response => response.json())
+        .then(data => {
+          if (data.total > 0) {
+            self.registration.showNotification('Новые уведомления', {
+              body: `У вас ${data.total} новых уведомлений`,
+              icon: '/images/logo.webp',
+              badge: '/images/badge.webp',
+              data: { url: '/family.html' }
+            });
+          }
+        })
     );
   }
 });
+
+// Проверка обновлений в фоне
+function checkForUpdates() {
+  return caches.open(CACHE_NAME).then(cache => {
+    return Promise.all(
+      PRECACHE_RESOURCES.map(url => {
+        return fetch(url, { cache: 'reload' })
+          .then(response => {
+            if (response.ok) {
+              return cache.put(url, response);
+            }
+            return Promise.resolve();
+          })
+          .catch(() => Promise.resolve());
+      })
+    );
+  });
+}
 
 // Обработка фоновых push-уведомлений
 self.addEventListener('push', event => {
@@ -324,8 +443,8 @@ self.addEventListener('push', event => {
   
   const options = {
     body: data.body,
-    icon: '/icons/icon_1.png',
-    badge: '/icons/icon_1.png',
+    icon: '/images/logo.webp',
+    badge: '/images/badge.webp',
     data: {
       url: data.url || '/'
     }
@@ -338,7 +457,37 @@ self.addEventListener('push', event => {
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
+  
+  // Открываем соответствующую страницу
   event.waitUntil(
     clients.openWindow(event.notification.data.url)
   );
 });
+
+// Фоновая синхронизация данных
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-activity') {
+    log('Запуск фоновой синхронизации данных');
+    event.waitUntil(
+      syncRecentActivity()
+    );
+  }
+});
+
+// Синхронизация последней активности
+function syncRecentActivity() {
+  return fetch('/api/recent-activity')
+    .then(response => response.json())
+    .then(data => {
+      // Обновляем кэш
+      return caches.open(API_CACHE_NAME)
+        .then(cache => {
+          const request = new Request('/api/recent-activity');
+          const response = new Response(JSON.stringify(data), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+          return cache.put(request, response);
+        });
+    })
+    .catch(error => log(`Ошибка синхронизации: ${error}`));
+}
