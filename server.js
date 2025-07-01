@@ -9,34 +9,15 @@ const multer = require('multer');
 const fs = require('fs');
 require('dotenv').config();
 
+// Импорт модели пользователя
+const User = require('./models/User');
+
 const app = express();
 
 // ========== Подключение к MongoDB ==========
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('MongoDB connected'))
-.catch(err => console.error('MongoDB connection error:', err));
-
-// ========== Модель пользователя ==========
-const userSchema = new mongoose.Schema({
-  googleId: { type: String, unique: true },
-  email: { type: String, required: true, unique: true },
-  firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
-  gender: { type: String, enum: ['male', 'female', 'other'], required: true },
-  age: { type: Number, min: 1, max: 120, required: true },
-  role: { 
-    type: String, 
-    enum: ['senior_parent', 'parent', 'child', 'relative', 'grandparent'], 
-    required: true 
-  },
-  avatar: { type: String },
-  createdAt: { type: Date, default: Date.now }
-});
-
-const User = mongoose.model('User', userSchema);
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 // ========== Конфигурация Google OAuth ==========
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
