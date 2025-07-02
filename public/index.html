@@ -16,7 +16,7 @@
   <!-- Основные стили -->
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="/manifest.json" type="application/manifest+json">
   
   <style>
     /* Переменные для стеклянного эффекта */
@@ -471,7 +471,7 @@
       backdrop-filter: blur(5px);
     }
     
-    /* Модальное окно обновлений */
+    /* Модальные окна */
     .modal {
       position: fixed;
       top: 0;
@@ -585,6 +585,38 @@
     .broken-image-fallback::before {
       content: "⚠️ Изображение не загружено";
       font-size: 16px;
+    }
+    
+    /* Стили для модального окна регистрации */
+    .registration-content {
+      padding: 20px 0;
+      text-align: center;
+    }
+    
+    .registration-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 25px;
+    }
+    
+    #google-auth-btn {
+      background: #4285F4;
+      color: white;
+      font-weight: bold;
+      padding: 15px;
+      font-size: 1.1rem;
+      border-radius: 50px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    
+    #google-auth-btn:hover {
+      background: #3367d6;
+      transform: translateY(-3px);
     }
     
     /* Адаптация для мобильных */
@@ -844,9 +876,9 @@
         <button class="action-btn" id="update-btn">
           <i class="fas fa-sync-alt"></i> Проверить обновления
         </button>
-        <a href="/registration.html" class="action-btn accent" id="start-btn">
+        <button class="action-btn accent" id="start-btn">
           <i class="fas fa-rocket"></i> Начать использовать
-        </a>
+        </button>
       </div>
     </main>
     
@@ -854,6 +886,30 @@
     <footer class="footer">
       <div>FamilySpace &copy; 2025 | Ваше семейное пространство</div>
     </footer>
+  </div>
+  
+  <!-- Модальное окно регистрации -->
+  <div class="modal" id="registration-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-icon">
+          <i class="fas fa-user-plus"></i>
+        </div>
+        <h3 class="modal-title">Регистрация в FamilySpace</h3>
+      </div>
+      
+      <div class="registration-content">
+        <p>Для использования FamilySpace необходимо войти через Google</p>
+        <div class="registration-actions">
+          <a href="/auth/google" class="btn btn-primary" id="google-auth-btn">
+            <i class="fab fa-google"></i> Войти через Google
+          </a>
+          <button class="btn btn-secondary" id="cancel-registration">
+            <i class="fas fa-times"></i> Отмена
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
   
   <!-- Модальное окно обновлений -->
@@ -916,11 +972,18 @@
       document.getElementById('family-space-btn').addEventListener('click', () => {
         window.location.href = 'family.html';
       });
+      document.getElementById('start-btn').addEventListener('click', showRegistrationModal);
       
-      // Обработчики модального окна
+      // Обработчики модальных окон
       document.getElementById('confirm-update').addEventListener('click', confirmUpdate);
       document.getElementById('cancel-update').addEventListener('click', () => {
         document.getElementById('update-modal').classList.remove('active');
+      });
+      document.getElementById('cancel-registration').addEventListener('click', () => {
+        document.getElementById('registration-modal').classList.remove('active');
+      });
+      document.getElementById('google-auth-btn').addEventListener('click', () => {
+        localStorage.setItem('registrationStarted', 'true');
       });
       
       // Автоматическое восстановление изображений
@@ -931,6 +994,14 @@
           this.classList.add('broken-image-fallback');
         };
       });
+      
+      // Проверяем, была ли начата регистрация
+      if (localStorage.getItem('registrationStarted') === 'true') {
+        // Если регистрация была начата, но не завершена, показываем модалку
+        setTimeout(() => {
+          document.getElementById('registration-modal').classList.add('active');
+        }, 1000);
+      }
       
       // Убедимся, что текст видим сразу
       document.documentElement.style.visibility = 'visible';
@@ -1060,6 +1131,11 @@
       modal.classList.add('active');
     }
     
+    // Показ модального окна регистрации
+    function showRegistrationModal() {
+      document.getElementById('registration-modal').classList.add('active');
+    }
+    
     // Подтверждение обновления
     function confirmUpdate() {
       // Обновление Service Worker
@@ -1111,6 +1187,19 @@
         try {
           const registration = await navigator.serviceWorker.register('/sw.js');
           console.log('ServiceWorker зарегистрирован с областью видимости: ', registration.scope);
+          
+          // Проверка обновлений Service Worker
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed') {
+                if (navigator.serviceWorker.controller) {
+                  console.log('Доступна новая версия приложения');
+                  // Здесь можно показать уведомление об обновлении
+                }
+              }
+            });
+          });
         } catch (error) {
           console.error('Ошибка регистрации Service Worker: ', error);
         }
