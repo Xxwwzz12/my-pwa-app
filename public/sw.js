@@ -7,6 +7,9 @@ const LOGS_DB_NAME = 'FamilySpace_Logs_DB';
 const LOGS_STORE_NAME = 'logs';
 const MAX_LOGS = 100;
 
+// VAPID Public Key
+const VAPID_PUBLIC_KEY = 'BHlRR33D_L19ZAfcmTqJz9boQacOqRAVBwx4beTj7UgKWBX9ZkYbW0oOfZAtbdCT9jaCJWQ3ng5VaaUrWU8KJLo';
+
 // Список ресурсов для предварительного кэширования
 const PRECACHE_RESOURCES = [
   '/',
@@ -24,6 +27,7 @@ const PRECACHE_RESOURCES = [
   '/images/logo.webp',
   '/images/default.webp',
   '/images/vista-bg.webp',
+  '/images/badge.webp',
   '/js/api.js',
   '/js/auth.js',
   '/js/index.js'
@@ -72,6 +76,10 @@ function initDB() {
       const db = event.target.result;
       if (!db.objectStoreNames.contains(LOGS_STORE_NAME)) {
         db.createObjectStore(LOGS_STORE_NAME, { autoIncrement: true });
+      }
+      // Создаем хранилище для подписок
+      if (!db.objectStoreNames.contains('push_subscriptions')) {
+        db.createObjectStore('push_subscriptions');
       }
     };
     
@@ -198,7 +206,7 @@ self.addEventListener('fetch', event => {
   // Стратегия для критических API запросов: Network First с кэшированием
   if (isApiRequest && CRITICAL_API_ENDPOINTS.some(endpoint => requestUrl.pathname.startsWith(endpoint))) {
     event.respondWith(
-      fetch(event.request)
+      fetch(event.request))
         .then(networkResponse => {
           // Кэшируем только GET запросы и успешные ответы
           if (event.request.method === 'GET' && networkResponse.ok) {
@@ -211,7 +219,7 @@ self.addEventListener('fetch', event => {
         })
         .catch(() => {
           // При ошибке сети - возвращаем из кэша
-          return caches.match(event.request)
+          return caches.match(event.request))
             .then(cachedResponse => {
               if (cachedResponse) {
                 log(`Используем кэшированный ответ для: ${requestUrl.pathname}`);
@@ -240,7 +248,7 @@ self.addEventListener('fetch', event => {
   // Стратегия для статических ресурсов: Cache First
   if (isStaticResource) {
     event.respondWith(
-      caches.match(event.request)
+      caches.match(event.request))
         .then(cachedResponse => {
           // Возвращаем кэшированный ответ если он есть
           if (cachedResponse) {
@@ -249,11 +257,11 @@ self.addEventListener('fetch', event => {
           }
           
           // Иначе загружаем из сети и кэшируем
-          return fetch(event.request)
+          return fetch(event.request))
             .then(networkResponse => {
               // Клонируем ответ для кэширования
               const responseClone = networkResponse.clone();
-              caches.open(CACHE_NAME)
+              caches.open(CACHE_NAME))
                 .then(cache => cache.put(event.request, responseClone))
                 .catch(err => log(`Ошибка кэширования: ${err}`));
               return networkResponse;
@@ -275,12 +283,12 @@ self.addEventListener('fetch', event => {
 
   // Стратегия для навигационных запросов: Network First с fallback
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request))
       .then(networkResponse => {
         // Обновляем кэш для HTML страниц
         if (networkResponse.ok && event.request.method === 'GET') {
           const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME)
+          caches.open(CACHE_NAME))
             .then(cache => cache.put(event.request, responseClone));
         }
         return networkResponse;
@@ -374,6 +382,14 @@ self.addEventListener('message', event => {
         });
       });
   }
+  
+  // Запрос VAPID-ключа
+  if (event.data && event.data.type === 'GET_VAPID_KEY') {
+    event.source.postMessage({
+      type: 'VAPID_KEY',
+      key: VAPID_PUBLIC_KEY
+    });
+  }
 });
 
 // Сохранение push-подписки
@@ -382,8 +398,27 @@ function savePushSubscription(subscription) {
     initDB().then(db => {
       const transaction = db.transaction('push_subscriptions', 'readwrite');
       const store = transaction.objectStore('push_subscriptions');
-      store.put(subscription, 'current');
-      resolve();
+      
+      // Проверяем существующую подписку
+      const request = store.get('current');
+      request.onsuccess = (e) => {
+        const existing = e.target.result;
+        if (existing && JSON.stringify(existing) === JSON.stringify(subscription)) {
+          log('Push-подписка уже сохранена');
+          resolve();
+          return;
+        }
+        
+        store.put(subscription, 'current');
+        log('Push-подписка сохранена');
+        resolve();
+      };
+      
+      request.onerror = (e) => {
+        log(`Ошибка при проверке подписки: ${e.target.error}`);
+        store.put(subscription, 'current');
+        resolve();
+      };
     }).catch(reject);
   });
 }
@@ -393,7 +428,7 @@ self.addEventListener('periodicsync', event => {
   if (event.tag === 'update-check') {
     log('Фоновая проверка обновлений');
     event.waitUntil(
-      checkForUpdates()
+      checkForUpdates())
         .then(() => log('Фоновая синхронизация завершена'))
         .catch(err => log(`Ошибка фоновой синхронизации: ${err}`))
     );
@@ -402,7 +437,7 @@ self.addEventListener('periodicsync', event => {
   if (event.tag === 'notifications-sync') {
     log('Фоновая синхронизация уведомлений');
     event.waitUntil(
-      fetch('/api/notifications')
+      fetch('/api/notifications'))
         .then(response => response.json())
         .then(data => {
           if (data.total > 0) {
@@ -469,18 +504,18 @@ self.addEventListener('sync', event => {
   if (event.tag === 'sync-activity') {
     log('Запуск фоновой синхронизации данных');
     event.waitUntil(
-      syncRecentActivity()
+      syncRecentActivity())
     );
   }
 });
 
 // Синхронизация последней активности
 function syncRecentActivity() {
-  return fetch('/api/recent-activity')
+  return fetch('/api/recent-activity'))
     .then(response => response.json())
     .then(data => {
       // Обновляем кэш
-      return caches.open(API_CACHE_NAME)
+      return caches.open(API_CACHE_NAME))
         .then(cache => {
           const request = new Request('/api/recent-activity');
           const response = new Response(JSON.stringify(data), {
