@@ -6,92 +6,133 @@
   <meta name="theme-color" content="#4263eb">
   <title>Моя семья | FamilySpace</title>
   <link rel="stylesheet" href="/styles.css">
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="/manifest.json" type="application/manifest+json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    /* Обновленные стили для плиточного интерфейса */
-    .status-bar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      padding: 10px 15px;
+    /* Обновленные стили в стиле index.html */
+    :root {
+      --glass-bg: rgba(255, 255, 255, 0.1);
+      --glass-border: rgba(255, 255, 255, 0.15);
+      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --glass-blur: 12px;
+      --glass-radius: 24px;
+      --primary: #4263eb;
+      --primary-dark: #364fc7;
+      --accent: #ff6b6b;
+      --text-primary: rgba(255, 255, 255, 0.95);
+      --text-secondary: rgba(255, 255, 255, 0.7);
+      --text-tertiary: rgba(255, 255, 255, 0.5);
+      --fallback-bg: #0f172a;
+      --success: #51cf66;
+      --warning: #fcc419;
+      --danger: #ff6b6b;
+    }
+    
+    [data-theme="light"] {
+      --glass-bg: rgba(255, 255, 255, 0.25);
+      --glass-border: rgba(0, 0, 0, 0.1);
+      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+      --text-primary: #212529;
+      --text-secondary: #495057;
+      --text-tertiary: #868e96;
+      --fallback-bg: #f5f7fa;
+    }
+
+    /* Основные стили страницы */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--fallback-bg) url('/images/vista-bg.webp') no-repeat center center fixed;
+      background-size: cover;
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+    
+    .main-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+    }
+    
+    .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(0, 0, 0, 0.2);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      z-index: 100;
-      border-bottom: 1px solid var(--glass-border);
+      padding: 15px 0;
+      animation: fadeIn 0.6s 0.2s both;
     }
     
-    .status-left, .status-right {
+    .logo-container {
       display: flex;
       align-items: center;
       gap: 15px;
-      font-size: 14px;
     }
     
-    .battery {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    
-    .home-screen {
-      padding: 80px 15px 30px;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-    }
-    
-    .app-tile {
+    .logo-img {
+      height: 50px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
       background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      padding: 8px;
       backdrop-filter: blur(var(--glass-blur));
       -webkit-backdrop-filter: blur(var(--glass-blur));
-      border: 1px solid var(--glass-border);
-      border-radius: 18px;
+    }
+    
+    .app-info {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 15px 10px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      position: relative;
-      box-shadow: var(--glass-shadow);
-      aspect-ratio: 1/1;
-    }
-    
-    .app-tile:hover {
-      transform: translateY(-5px) scale(1.05);
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
-    }
-    
-    .app-tile:active {
-      transform: translateY(0) scale(0.98);
-    }
-    
-    .app-icon {
-      width: 50px;
-      height: 50px;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 14px;
-      color: var(--primary);
-      border: 1px solid var(--glass-border);
     }
     
     .app-name {
-      font-size: 12px;
-      font-weight: 500;
-      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0;
       color: var(--text-primary);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    
+    .app-version {
+      font-size: 0.9rem;
+      color: var(--text-tertiary);
+      margin-top: 3px;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 15px;
+      position: relative;
+    }
+    
+    .icon-btn {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 50%;
+      width: 45px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      box-shadow: var(--glass-shadow);
+      color: var(--text-primary);
+    }
+    
+    .icon-btn:hover {
+      transform: translateY(-3px);
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
     }
     
     .notification-badge {
@@ -101,17 +142,113 @@
       background: var(--danger);
       color: white;
       border-radius: 50%;
-      width: 22px;
-      height: 22px;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 0.8rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      animation: pulse 2s infinite;
+      z-index: 10;
+    }
+    
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 30px 0;
+      gap: 30px;
+    }
+    
+    .section-title {
+      font-size: 1.8rem;
+      margin: 0 0 25px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    }
+    
+    /* Стили для плиток приложений */
+    .apps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 25px;
+      animation: fadeIn 0.8s 0.6s both;
+    }
+    
+    .app-tile {
+      background: var(--glass-bg);
+      border-radius: var(--glass-radius);
+      padding: 25px 15px;
+      box-shadow: var(--glass-shadow);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      aspect-ratio: 1/1;
+    }
+    
+    .app-tile:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+    
+    .app-icon {
+      width: 60px;
+      height: 60px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--primary);
+      font-size: 28px;
+      margin-bottom: 15px;
+    }
+    
+    .app-name {
+      font-size: 1.1rem;
       font-weight: 600;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      color: var(--text-primary);
+      text-align: center;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    }
+    
+    .tile-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--danger);
+      color: white;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 0.9rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      z-index: 5;
     }
     
     /* Анимации */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
     @keyframes pulse {
       0% { transform: scale(1); }
       50% { transform: scale(1.1); }
@@ -119,72 +256,116 @@
     }
     
     .app-tile.new-notification {
-      animation: pulse 1s ease infinite;
+      animation: pulse 1s ease;
     }
     
     /* Адаптивность */
     @media (max-width: 768px) {
-      .home-screen {
+      .apps-grid {
         grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      
+      .app-tile {
+        padding: 20px 10px;
+      }
+      
+      .app-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+      }
+      
+      .app-name {
+        font-size: 1rem;
       }
     }
     
     @media (max-width: 480px) {
-      .home-screen {
+      .apps-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 15px;
+      }
+      
+      .app-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 22px;
+      }
+      
+      .app-name {
+        font-size: 0.95rem;
+      }
+      
+      :root {
+        --glass-blur: 8px;
       }
     }
     
     /* Fallback для браузеров без поддержки backdrop-filter */
     @supports not (backdrop-filter: blur(12px)) {
-      .app-tile, .status-bar {
+      .app-tile, .logo-img, .icon-btn {
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
-        background: var(--surface) !important;
+        background: rgba(30, 30, 30, 0.7) !important;
+      }
+      
+      [data-theme="light"] .app-tile, 
+      [data-theme="light"] .logo-img, 
+      [data-theme="light"] .icon-btn {
+        background: rgba(255, 255, 255, 0.8) !important;
       }
     }
   </style>
 </head>
 <body>
-  <!-- Статус бар -->
-  <div class="status-bar">
-    <div class="status-left">
-      <span id="current-time">12:30</span>
-    </div>
-    <div class="status-right">
-      <div class="network">
-        <i class="fas fa-wifi"></i>
+  <!-- Основной контейнер -->
+  <div class="main-container">
+    <!-- Шапка -->
+    <header class="header">
+      <div class="logo-container">
+        <img src="/images/logo.webp" alt="FamilySpace" class="logo-img"
+             onerror="this.classList.add('broken-image-fallback'); this.alt='Ошибка загрузки логотипа';">
+        <div class="app-info">
+          <h1 class="app-name">Моя семья</h1>
+          <div class="app-version">FamilySpace</div>
+        </div>
       </div>
-      <div class="battery">
-        <i class="fas fa-battery-full"></i>
-        <span>92%</span>
+      
+      <div class="header-actions">
+        <button class="icon-btn" id="notifications-btn">
+          <i class="fas fa-bell"></i>
+          <div class="notification-badge" id="notification-badge">0</div>
+        </button>
+        <button class="icon-btn" id="theme-btn">
+          <i class="fas fa-cog"></i>
+        </button>
       </div>
-    </div>
-  </div>
-  
-  <!-- Плитки приложений -->
-  <div class="home-screen" id="app-grid">
-    <!-- Приложения будут добавляться динамически -->
+    </header>
+    
+    <!-- Основной контент -->
+    <main class="content">
+      <!-- Заголовок раздела -->
+      <h3 class="section-title">
+        <i class="fas fa-grid"></i> Семейные приложения
+      </h3>
+      
+      <!-- Плитки приложений -->
+      <div class="apps-grid" id="app-grid">
+        <!-- Приложения будут добавляться динамически -->
+      </div>
+    </main>
   </div>
 
   <script>
     // Инициализация домашнего экрана
     function initHomeScreen() {
-      // Установка темы
+      // Установка темы из localStorage
       const savedTheme = localStorage.getItem('theme') || 'dark';
       document.documentElement.setAttribute('data-theme', savedTheme);
       
-      // Обновление времени
-      function updateTime() {
-        const now = new Date();
-        const hours = now.getHours().toString().padStart(2, '0');
-        const minutes = now.getMinutes().toString().padStart(2, '0');
-        document.getElementById('current-time').textContent = `${hours}:${minutes}`;
-      }
-      
-      setInterval(updateTime, 60000);
-      updateTime();
+      // Обработчик кнопки темы
+      document.getElementById('theme-btn').addEventListener('click', toggleTheme);
       
       // Список приложений
       const apps = [
@@ -192,71 +373,81 @@
           id: 'family-chat', 
           name: 'Чат', 
           icon: 'fas fa-comments', 
-          badge: 3,
-          url: 'family-chat.html'
+          badge: 0,
+          url: 'family-chat.html',
+          color: '#4263eb'
         },
         { 
           id: 'calendar', 
           name: 'Календарь', 
-          icon: 'fas fa-calendar', 
-          badge: 2,
-          url: 'calendar.html'
+          icon: 'fas fa-calendar-alt', 
+          badge: 0,
+          url: 'calendar.html',
+          color: '#51cf66'
         },
         { 
           id: 'wishlist', 
           name: 'Вишлист', 
           icon: 'fas fa-gift', 
-          badge: 1,
-          url: 'wishlist.html'
+          badge: 0,
+          url: 'wishlist.html',
+          color: '#ff6b6b'
         },
         { 
           id: 'tasks', 
           name: 'Задачи', 
           icon: 'fas fa-tasks', 
           badge: 0,
-          url: 'tasks.html'
+          url: 'tasks.html',
+          color: '#fcc419'
         },
         { 
           id: 'family-management', 
           name: 'Семья', 
           icon: 'fas fa-users', 
           badge: 0,
-          url: 'family-management.html'
+          url: 'family-management.html',
+          color: '#7950f2'
         },
         { 
           id: 'menu', 
           name: 'Меню', 
           icon: 'fas fa-utensils', 
           badge: 0,
-          url: 'menu.html'
+          url: 'menu.html',
+          color: '#fd7e14'
         },
         { 
           id: 'pets', 
           name: 'Питомцы', 
           icon: 'fas fa-paw', 
           badge: 0,
-          url: 'pets.html'
+          url: 'pets.html',
+          color: '#e8590c'
         },
         { 
           id: 'profile', 
           name: 'Профиль', 
           icon: 'fas fa-user', 
           badge: 0,
-          url: 'profile.html'
+          url: 'profile.html',
+          color: '#228be6'
         },
         { 
           id: 'settings', 
           name: 'Настройки', 
           icon: 'fas fa-cog', 
           badge: 0,
-          url: 'settings.html'
+          url: 'settings.html',
+          color: '#868e96'
         },
         { 
           id: 'ai-chat', 
           name: 'ИИ Помощник', 
           icon: 'fas fa-robot', 
           badge: 0,
-          url: 'ai-chat.html'
+          url: 'ai-chat.html',
+          color: '#20c997'
         }
       ];
       
@@ -268,22 +459,22 @@
         appElement.className = 'app-tile';
         appElement.id = `app-${app.id}`;
         appElement.innerHTML = `
-          <div class="app-icon">
+          <div class="app-icon" style="background: rgba(${hexToRgb(app.color)}, 0.2); color: ${app.color}">
             <i class="${app.icon}"></i>
           </div>
           <div class="app-name">${app.name}</div>
-          ${app.badge > 0 ? `<div class="notification-badge">${app.badge}</div>` : ''}
+          ${app.badge > 0 ? `<div class="tile-badge">${app.badge}</div>` : ''}
         `;
         
         // Обработчик клика
         appElement.addEventListener('click', () => {
           // Анимация нажатия
-          appElement.classList.add('active');
-          setTimeout(() => appElement.classList.remove('active'), 200);
+          appElement.classList.add('new-notification');
+          setTimeout(() => appElement.classList.remove('new-notification'), 500);
           
           // Переход на страницу приложения
           if (app.url) {
-            window.location.href = app.url;
+            setTimeout(() => window.location.href = app.url, 300);
           } else {
             alert(`Раздел "${app.name}" в разработке`);
           }
@@ -295,33 +486,70 @@
       // Загрузка реальных уведомлений
       async function loadNotifications() {
         try {
-          const response = await fetch('/api/notifications');
-          if (!response.ok) throw new Error('Ошибка загрузки уведомлений');
-          const notifications = await response.json();
-          
-          notifications.forEach(notif => {
-            const appElement = document.getElementById(`app-${notif.appId}`);
-            if (appElement) {
-              const badge = appElement.querySelector('.notification-badge');
-              
-              if (badge) {
-                const count = parseInt(badge.textContent) + notif.count;
-                badge.textContent = count > 9 ? '9+' : count;
-              } else {
-                const badgeElement = document.createElement('div');
-                badgeElement.className = 'notification-badge';
-                badgeElement.textContent = notif.count > 9 ? '9+' : notif.count;
-                appElement.appendChild(badgeElement);
-              }
-              
-              // Анимация пульсации
-              appElement.classList.add('new-notification');
-              setTimeout(() => appElement.classList.remove('new-notification'), 3000);
-            }
+          const response = await fetch('/api/notifications', {
+            credentials: 'include'
           });
+          
+          if (!response.ok) throw new Error('Ошибка загрузки уведомлений');
+          const data = await response.json();
+          
+          // Обновляем бейджи для конкретных приложений
+          updateAppBadge('family-chat', data.unreadMessages);
+          updateAppBadge('calendar', data.upcomingEvents);
+          updateAppBadge('tasks', data.overdueTasks);
+          
+          // Обновляем общий бейдж в шапке
+          const totalBadge = document.getElementById('notification-badge');
+          if (totalBadge) {
+            totalBadge.textContent = data.total > 9 ? '9+' : data.total;
+            totalBadge.style.display = data.total > 0 ? 'flex' : 'none';
+          }
+          
         } catch (error) {
           console.error('Ошибка загрузки уведомлений:', error);
         }
+      }
+      
+      // Обновление бейджа приложения
+      function updateAppBadge(appId, count) {
+        if (count <= 0) return;
+        
+        const appElement = document.getElementById(`app-${appId}`);
+        if (appElement) {
+          let badge = appElement.querySelector('.tile-badge');
+          
+          if (badge) {
+            const currentCount = parseInt(badge.textContent);
+            const newCount = currentCount + count;
+            badge.textContent = newCount > 9 ? '9+' : newCount;
+          } else {
+            badge = document.createElement('div');
+            badge.className = 'tile-badge';
+            badge.textContent = count > 9 ? '9+' : count;
+            appElement.appendChild(badge);
+          }
+          
+          // Анимация пульсации
+          appElement.classList.add('new-notification');
+          setTimeout(() => appElement.classList.remove('new-notification'), 2000);
+        }
+      }
+      
+      // Вспомогательная функция для преобразования цвета
+      function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? 
+          `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
+          '66, 99, 235';
+      }
+      
+      // Переключение темы
+      function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
       }
       
       // Загрузка уведомлений
@@ -330,6 +558,21 @@
     
     // Запуск после загрузки
     window.addEventListener('DOMContentLoaded', initHomeScreen);
+  </script>
+  
+  <!-- Скрипт для работы с Service Worker -->
+  <script>
+    // Регистрация Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('/sw.js');
+          console.log('ServiceWorker зарегистрирован с областью видимости: ', registration.scope);
+        } catch (error) {
+          console.error('Ошибка регистрации Service Worker: ', error);
+        }
+      });
+    }
   </script>
 </body>
 </html>
