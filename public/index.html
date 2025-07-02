@@ -176,6 +176,15 @@
       z-index: 10;
     }
     
+    /* Стиль для иконки профиля с аватаром */
+    .profile-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--primary);
+    }
+    
     .content {
       flex: 1;
       display: flex;
@@ -759,6 +768,12 @@
           <i class="fas fa-bell"></i>
           <div class="notification-badge" id="notification-badge">3</div>
         </button>
+        
+        <!-- Иконка профиля -->
+        <button class="icon-btn" id="profile-btn">
+          <!-- Аватар будет добавлен динамически -->
+        </button>
+        
         <button class="icon-btn" id="theme-btn">
           <i class="fas fa-cog"></i>
         </button>
@@ -954,10 +969,22 @@
       const savedTheme = localStorage.getItem('theme') || 'dark';
       document.documentElement.setAttribute('data-theme', savedTheme);
       
-      // Персонализация приветствия
+      // Проверка состояния входа
+      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
       const userName = localStorage.getItem('userName') || '';
+      
+      // Персонализация приветствия
       document.getElementById('greeting-text').textContent = 
         userName ? `Привет, ${userName}!` : 'Добро пожаловать в FamilySpace!';
+      
+      // Обновление кнопки "Начать использовать"
+      const startBtn = document.getElementById('start-btn');
+      if (isLoggedIn) {
+        startBtn.style.display = 'none';
+      }
+      
+      // Инициализация иконки профиля
+      initProfileIcon(isLoggedIn, userName);
       
       // Загрузка данных активности
       loadRecentActivity();
@@ -996,7 +1023,7 @@
       });
       
       // Проверяем, была ли начата регистрация
-      if (localStorage.getItem('registrationStarted') === 'true') {
+      if (!isLoggedIn && localStorage.getItem('registrationStarted') === 'true') {
         // Если регистрация была начата, но не завершена, показываем модалку
         setTimeout(() => {
           document.getElementById('registration-modal').classList.add('active');
@@ -1005,6 +1032,27 @@
       
       // Убедимся, что текст видим сразу
       document.documentElement.style.visibility = 'visible';
+    }
+    
+    // Инициализация иконки профиля
+    function initProfileIcon(isLoggedIn, userName) {
+      const profileBtn = document.getElementById('profile-btn');
+      
+      if (isLoggedIn) {
+        // Если пользователь вошел - показываем аватар
+        profileBtn.innerHTML = `
+          <img src="/images/avatar.webp" alt="${userName}" class="profile-avatar"
+               onerror="this.onerror=null; this.src='/images/default.webp';">
+        `;
+      } else {
+        // Если пользователь не вошел - показываем иконку пользователя
+        profileBtn.innerHTML = `<i class="fas fa-user"></i>`;
+      }
+      
+      // Обработчик клика - переход на страницу профиля
+      profileBtn.addEventListener('click', () => {
+        window.location.href = 'profile.html';
+      });
     }
     
     // Загрузка последней активности
