@@ -7,9 +7,9 @@
   <title>FamilySpace - Организуйте свою семью</title>
   
   <!-- Предзагрузка критических ресурсов -->
-  <link rel="preload" href="/images/assets/logo.webp" as="image">
-  <link rel="preload" href="/images/assets/default.webp" as="image">
-  <link rel="preload" href="/images/assets/vista-bg.webp" as="image">
+  <link rel="preload" href="/images/logo.webp" as="image">
+  <link rel="preload" href="/images/default.webp" as="image">
+  <link rel="preload" href="/images/vista-bg.webp" as="image">
   <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style">
   
   <!-- Основные стили -->
@@ -64,7 +64,11 @@
       margin: 0;
       padding: 0;
       font-family: 'Segoe UI', system-ui, sans-serif;
-      background: var(--fallback-bg) url('/images/assets/vista-bg.webp') no-repeat center center fixed;
+      background: 
+        var(--fallback-bg) 
+        url('/images/vista-bg.webp'),
+        url('/images/vista-bg.jpg') 
+        no-repeat center center fixed;
       background-size: cover;
       color: var(--text-primary);
       min-height: 100vh;
@@ -754,7 +758,7 @@
     <!-- Шапка -->
     <header class="header">
       <div class="logo-container">
-        <img src="/images/assets/logo.webp" alt="FamilySpace" class="logo-img"
+        <img src="/images/logo.webp" alt="FamilySpace" class="logo-img" loading="lazy"
              onerror="this.classList.add('broken-image-fallback'); this.alt='Ошибка загрузки логотипа';">
         <div class="app-info">
           <h1 class="app-name">FamilySpace</h1>
@@ -1016,7 +1020,7 @@
       document.querySelectorAll('img').forEach(img => {
         img.onerror = function() {
           this.onerror = null;
-          this.src = '/images/assets/default.webp';
+          this.src = '/images/default.webp';
           this.classList.add('broken-image-fallback');
         };
       });
@@ -1040,8 +1044,8 @@
       if (isLoggedIn) {
         // Если пользователь вошел - показываем аватар
         profileBtn.innerHTML = `
-          <img src="/images/assets/avatar.webp" alt="${userName}" class="profile-avatar"
-               onerror="this.onerror=null; this.src='/images/assets/default.webp';">
+          <img src="/images/avatar.webp" alt="${userName}" class="profile-avatar" loading="lazy"
+               onerror="this.onerror=null; this.src='/images/default.webp';">
         `;
       } else {
         // Если пользователь не вошел - показываем иконку пользователя
