@@ -1,5 +1,5 @@
-// ===== Service Worker для FamilySpace PWA (v5.2) =====
-const CACHE_VERSION = 'v5.2';
+// ===== Service Worker для FamilySpace PWA (v5.2.1) =====
+const CACHE_VERSION = 'v5.2.1';
 const CACHE_NAME = `familyspace-cache-${CACHE_VERSION}`;
 const API_CACHE_NAME = 'familyspace-api-cache-v2';
 const OFFLINE_URL = '/offline.html';
@@ -48,6 +48,7 @@ const NO_CACHE_ENDPOINTS = [
 
 // Улучшенное логирование
 function log(message) {
+  // В production пропускаем логи запросов
   if (IS_PRODUCTION && message.includes('Запрос:')) return;
   
   const timestamp = new Date().toISOString();
