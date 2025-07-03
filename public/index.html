@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#ffffff">
   <title>FamilySpace - Организуйте свою семью</title>
   
-  <!-- Предзагрузка критических ресурсов -->
+  <!-- Предзагрузка ресурсов -->
   <link rel="preload" href="/images/logo.webp" as="image" importance="low">
   <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style">
   
@@ -117,6 +117,7 @@
       align-items: center;
       justify-content: center;
       transition: var(--transition);
+      position: relative;
     }
     
     .nav-btn:hover, .nav-btn:focus {
@@ -381,30 +382,130 @@
       background-color: var(--surface);
     }
     
-    /* Splash screen */
-    #splash {
+    /* Модальные окна */
+    .modal {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: var(--surface);
-      display: grid;
-      place-items: center;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       z-index: 1000;
-      transition: opacity 0.3s ease;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
     }
     
-    .splash-logo {
-      width: 80px;
-      height: 80px;
-      animation: pulse 1.5s infinite;
+    .modal.active {
+      opacity: 1;
+      visibility: visible;
     }
     
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
+    .modal-content {
+      background: var(--surface);
+      border-radius: var(--border-radius);
+      padding: 40px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--divider);
+      max-width: 600px;
+      width: 90%;
+      transform: translateY(30px);
+      transition: transform 0.4s;
+      position: relative;
+      color: var(--text-primary);
+    }
+    
+    .modal.active .modal-content {
+      transform: translateY(0);
+    }
+    
+    .modal-header {
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .modal-icon {
+      font-size: 2.5rem;
+      color: var(--warning);
+    }
+    
+    .modal-title {
+      font-size: 1.8rem;
+      margin: 0;
+      color: var(--text-primary);
+    }
+    
+    .changelog {
+      max-height: 300px;
+      overflow-y: auto;
+      padding-right: 15px;
+      margin-bottom: 30px;
+      border-bottom: 1px solid var(--divider);
+      padding-bottom: 20px;
+    }
+    
+    .changelog-title {
+      font-size: 1.2rem;
+      margin: 0 0 15px;
+      color: var(--text-primary);
+    }
+    
+    .changelog-list {
+      padding-left: 20px;
+      margin: 0;
+    }
+    
+    .changelog-item {
+      margin-bottom: 10px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    
+    .changelog-item::marker {
+      color: var(--primary);
+    }
+    
+    .modal-actions {
+      display: flex;
+      gap: 15px;
+    }
+    
+    .registration-content {
+      padding: 20px 0;
+      text-align: center;
+    }
+    
+    .registration-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 25px;
+    }
+    
+    #google-auth-btn {
+      background: #4285F4;
+      color: white;
+      font-weight: bold;
+      padding: 15px;
+      font-size: 1.1rem;
+      border-radius: 50px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    
+    #google-auth-btn:hover {
+      background: #3367d6;
+      transform: translateY(-3px);
     }
     
     /* Адаптивность */
@@ -423,6 +524,10 @@
       
       .app-header {
         padding: 12px 16px;
+      }
+      
+      .modal-content {
+        padding: 25px;
       }
     }
     
@@ -444,6 +549,10 @@
         width: 100%;
         justify-content: space-between;
       }
+      
+      .modal-actions {
+        flex-direction: column;
+      }
     }
     
     /* Фокус-стили для доступности */
@@ -454,11 +563,6 @@
   </style>
 </head>
 <body>
-  <!-- Splash screen -->
-  <div id="splash">
-    <img src="/images/logo.webp" class="splash-logo" alt="FamilySpace">
-  </div>
-  
   <!-- Заголовок приложения -->
   <header class="app-header">
     <div class="header-content">
@@ -470,7 +574,7 @@
       <nav class="app-nav">
         <button class="nav-btn" id="notifications-btn" aria-label="Уведомления">
           <i class="fas fa-bell"></i>
-          <div class="notification-badge">3</div>
+          <div class="notification-badge" id="notification-badge">3</div>
         </button>
         
         <button class="nav-btn" id="theme-btn" aria-label="Переключить тему">
@@ -488,14 +592,15 @@
   <main class="app-content">
     <!-- Герой-секция -->
     <section class="hero-section">
-      <h2 class="hero-title">Семейное пространство</h2>
-      <p class="hero-subtitle">Все важное для вашей семьи в одном удобном месте</p>
+      <h2 class="hero-title" id="greeting-text">Добро пожаловать в FamilySpace!</h2>
+      <p class="hero-subtitle">Ваше семейное пространство в одном приложении</p>
       <button class="btn" id="start-btn">Начать использовать</button>
     </section>
     
     <!-- Сетка функций -->
     <div class="features-grid">
       <div class="feature-card">
+        <div class="feature-badge" id="family-badge">3</div>
         <div class="feature-header">
           <div class="feature-icon">
             <i class="fas fa-home"></i>
@@ -504,8 +609,23 @@
         </div>
         <p class="feature-description">Общий центр для вашей семьи с доступом ко всем функциям приложения</p>
         <div class="feature-actions">
-          <button class="btn btn-secondary">
+          <button class="btn btn-secondary" id="family-space-btn">
             <i class="fas fa-arrow-right"></i> Открыть
+          </button>
+        </div>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-header">
+          <div class="feature-icon">
+            <i class="fas fa-gift"></i>
+          </div>
+          <h3 class="feature-title">Вишлисты</h3>
+        </div>
+        <p class="feature-description">Создавайте и делитесь списками желаний для семейных праздников</p>
+        <div class="feature-actions">
+          <button class="btn btn-secondary">
+            <i class="fas fa-plus"></i> Создать
           </button>
         </div>
       </div>
@@ -524,57 +644,45 @@
           </button>
         </div>
       </div>
-      
-      <div class="feature-card">
-        <div class="feature-header">
-          <div class="feature-icon">
-            <i class="fas fa-shopping-cart"></i>
-          </div>
-          <h3 class="feature-title">Список покупок</h3>
-        </div>
-        <p class="feature-description">Совместный список покупок для всей семьи</p>
-        <div class="feature-actions">
-          <button class="btn btn-secondary">
-            <i class="fas fa-plus"></i> Добавить товар
-          </button>
-        </div>
-      </div>
     </div>
     
-    <!-- Стиль напоминаний -->
+    <!-- Последняя активность -->
     <div class="reminders-style">
       <div class="list-header">
-        <h3 class="list-title">Семейные проекты</h3>
-        <button class="add-btn" aria-label="Добавить проект">+</button>
+        <h3 class="list-title">
+          <i class="fas fa-history"></i> Последняя активность
+        </h3>
       </div>
       
-      <ul class="reminders-list">
+      <ul class="reminders-list" id="activity-list">
         <li class="reminder-item">
-          <div class="checkbox"></div>
           <div class="reminder-content">
-            <div class="reminder-text">Планирование летнего отпуска</div>
-            <div class="reminder-meta">Сегодня, 18:00</div>
+            <div class="reminder-text">
+              <span class="activity-user">Мария</span>
+              <span class="activity-action">добавила событие</span>
+              <span class="activity-details">"Ужин" на завтра</span>
+            </div>
+            <div class="reminder-meta">15 минут назад</div>
           </div>
         </li>
         <li class="reminder-item">
-          <div class="checkbox completed"></div>
           <div class="reminder-content">
-            <div class="reminder-text">Организация дня рождения папы</div>
-            <div class="reminder-meta">Завтра, 15:00</div>
+            <div class="reminder-text">
+              <span class="activity-user">Петр</span>
+              <span class="activity-action">отправил фото</span>
+              <span class="activity-details">в семейный чат</span>
+            </div>
+            <div class="reminder-meta">2 часа назад</div>
           </div>
         </li>
         <li class="reminder-item">
-          <div class="checkbox"></div>
           <div class="reminder-content">
-            <div class="reminder-text">Ремонт в детской комнате</div>
-            <div class="reminder-meta">Следующая неделя</div>
-          </div>
-        </li>
-        <li class="reminder-item">
-          <div class="checkbox"></div>
-          <div class="reminder-content">
-            <div class="reminder-text">Выбор школы для детей</div>
-            <div class="reminder-meta">До 1 сентября</div>
+            <div class="reminder-text">
+              <span class="activity-user">Анна</span>
+              <span class="activity-action">завершила задачу</span>
+              <span class="activity-details">"Купить продукты"</span>
+            </div>
+            <div class="reminder-meta">вчера</div>
           </div>
         </li>
       </ul>
@@ -588,6 +696,9 @@
       <button class="btn" id="install-btn">
         <i class="fas fa-download"></i> Установить приложение
       </button>
+      <button class="btn" id="update-btn">
+        <i class="fas fa-sync-alt"></i> Проверить обновления
+      </button>
     </div>
   </main>
   
@@ -596,58 +707,336 @@
     <p>FamilySpace &copy; 2025 | Ваше семейное пространство</p>
   </footer>
   
+  <!-- Модальное окно регистрации -->
+  <div class="modal" id="registration-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-icon">
+          <i class="fas fa-user-plus"></i>
+        </div>
+        <h3 class="modal-title">Регистрация в FamilySpace</h3>
+      </div>
+      
+      <div class="registration-content">
+        <p>Для использования FamilySpace необходимо войти через Google</p>
+        <div class="registration-actions">
+          <a href="/auth/google" class="btn" id="google-auth-btn">
+            <i class="fab fa-google"></i> Войти через Google
+          </a>
+          <button class="btn btn-secondary" id="cancel-registration">
+            <i class="fas fa-times"></i> Отмена
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Модальное окно обновлений -->
+  <div class="modal" id="update-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-icon">
+          <i class="fas fa-sync-alt"></i>
+        </div>
+        <h3 class="modal-title">Доступно обновление!</h3>
+      </div>
+      
+      <div class="changelog">
+        <h4 class="changelog-title">Что нового в версии 3.1:</h4>
+        <ul class="changelog-list">
+          <li class="changelog-item">Новый минималистичный дизайн</li>
+          <li class="changelog-item">Улучшена производительность на мобильных устройствах</li>
+          <li class="changelog-item">Добавлена поддержка темной темы</li>
+          <li class="changelog-item">Исправлены ошибки с загрузкой изображений</li>
+          <li class="changelog-item">Оптимизирована работа в офлайн-режиме</li>
+        </ul>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="btn" id="confirm-update">
+          <i class="fas fa-download"></i> Обновить сейчас
+        </button>
+        <button class="btn btn-secondary" id="cancel-update">
+          <i class="fas fa-times"></i> Напомнить позже
+        </button>
+      </div>
+    </div>
+  </div>
+  
   <script>
+    // Конфигурация приложения
+    const APP_VERSION = "3.0";
+    
     // Инициализация приложения
     function initApp() {
-      // Убрать splash screen
-      setTimeout(() => {
-        document.getElementById('splash').style.opacity = '0';
-        setTimeout(() => {
-          document.getElementById('splash').style.display = 'none';
-        }, 300);
-      }, 1000);
+      // Установка темы из localStorage
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        document.querySelector('#theme-btn i').classList.replace('fa-moon', 'fa-sun');
+      }
       
-      // Переключение темы
-      document.getElementById('theme-btn').addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        const icon = document.querySelector('#theme-btn i');
-        if (document.body.classList.contains('dark-mode')) {
-          icon.classList.replace('fa-moon', 'fa-sun');
-        } else {
-          icon.classList.replace('fa-sun', 'fa-moon');
-        }
-      });
+      // Проверка состояния входа
+      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+      const userName = localStorage.getItem('userName') || '';
+      
+      // Персонализация приветствия
+      document.getElementById('greeting-text').textContent = 
+        userName ? `Привет, ${userName}!` : 'Добро пожаловать в FamilySpace!';
+      
+      // Обновление кнопки "Начать использовать"
+      const startBtn = document.getElementById('start-btn');
+      if (isLoggedIn) {
+        startBtn.style.display = 'none';
+      }
+      
+      // Инициализация иконки профиля
+      initProfileIcon(isLoggedIn, userName);
+      
+      // Загрузка данных активности
+      loadRecentActivity();
       
       // Настройка кнопки установки PWA
+      setupPWAInstall();
+      
+      // Обработчики кнопок
+      document.getElementById('share-btn').addEventListener('click', handleShare);
+      document.getElementById('update-btn').addEventListener('click', checkForUpdates);
+      document.getElementById('theme-btn').addEventListener('click', toggleTheme);
+      document.getElementById('family-space-btn').addEventListener('click', () => {
+        window.location.href = 'family.html';
+      });
+      document.getElementById('start-btn').addEventListener('click', showRegistrationModal);
+      
+      // Обработчики модальных окон
+      document.getElementById('confirm-update').addEventListener('click', confirmUpdate);
+      document.getElementById('cancel-update').addEventListener('click', () => {
+        document.getElementById('update-modal').classList.remove('active');
+      });
+      document.getElementById('cancel-registration').addEventListener('click', () => {
+        document.getElementById('registration-modal').classList.remove('active');
+      });
+      document.getElementById('google-auth-btn').addEventListener('click', () => {
+        localStorage.setItem('registrationStarted', 'true');
+      });
+      
+      // Автоматическое восстановление изображений
+      document.querySelectorAll('img').forEach(img => {
+        img.onerror = function() {
+          this.onerror = null;
+          this.src = '/images/default.webp';
+        };
+      });
+      
+      // Проверяем, была ли начата регистрация
+      if (!isLoggedIn && localStorage.getItem('registrationStarted') === 'true') {
+        // Если регистрация была начата, но не завершена, показываем модалку
+        setTimeout(() => {
+          document.getElementById('registration-modal').classList.add('active');
+        }, 1000);
+      }
+    }
+    
+    // Инициализация иконки профиля
+    function initProfileIcon(isLoggedIn, userName) {
+      const profileBtn = document.getElementById('profile-btn');
+      
+      if (isLoggedIn) {
+        // Если пользователь вошел - показываем аватар
+        profileBtn.innerHTML = `
+          <img src="/images/avatar.webp" alt="${userName}" class="profile-avatar" loading="lazy"
+               onerror="this.onerror=null; this.src='/images/default.webp';">
+        `;
+      } else {
+        // Если пользователь не вошел - показываем иконку пользователя
+        profileBtn.innerHTML = `<i class="fas fa-user"></i>`;
+      }
+      
+      // Обработчик клика - переход на страницу профиля
+      profileBtn.addEventListener('click', () => {
+        window.location.href = 'profile.html';
+      });
+    }
+    
+    // Загрузка последней активности
+    async function loadRecentActivity() {
+      try {
+        // В реальном приложении здесь будет запрос к API
+        // const response = await fetch('/api/recent-activity?limit=3');
+        // const activities = await response.json();
+        
+        // Заглушка для демонстрации
+        const activities = [
+          { user: "Мария", action: "добавила событие", details: "Ужин", time: "15 минут назад", icon: "calendar-plus" },
+          { user: "Петр", action: "отправил фото", details: "в семейный чат", time: "2 часа назад", icon: "image" },
+          { user: "Анна", action: "завершила задачу", details: "Купить продукты", time: "вчера", icon: "check-circle" }
+        ];
+        
+        const list = document.getElementById('activity-list');
+        list.innerHTML = activities.map(activity => `
+          <li class="reminder-item">
+            <div class="reminder-content">
+              <div class="reminder-text">
+                <span class="activity-user">${activity.user}</span>
+                <span class="activity-action">${activity.action}</span>
+                <span class="activity-details">"${activity.details}"</span>
+              </div>
+              <div class="reminder-meta">${activity.time}</div>
+            </div>
+          </li>
+        `).join('');
+      } catch (error) {
+        console.error('Ошибка загрузки активности:', error);
+      }
+    }
+    
+    // Настройка PWA-установки
+    function setupPWAInstall() {
       let deferredPrompt;
       const installBtn = document.getElementById('install-btn');
       
+      // Скрыть кнопку, если приложение уже установлено
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        installBtn.style.display = 'none';
+      }
+      
+      // Событие перед установкой
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
         installBtn.style.display = 'inline-block';
       });
       
+      // Обработчик кнопки установки
       installBtn.addEventListener('click', async () => {
         if (!deferredPrompt) return;
+        
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
+        
         if (outcome === 'accepted') {
+          console.log('Пользователь принял установку');
           installBtn.style.display = 'none';
         }
+        
         deferredPrompt = null;
       });
       
-      // Обработчики кнопок
-      document.getElementById('start-btn').addEventListener('click', () => {
-        alert('Начало работы с FamilySpace');
+      // Событие после установки
+      window.addEventListener('appinstalled', () => {
+        console.log('Приложение установлено');
+        installBtn.style.display = 'none';
       });
+    }
+    
+    // Проверка обновлений
+    async function checkForUpdates() {
+      try {
+        // В реальном приложении здесь будет запрос к API
+        // const response = await fetch('/api/check-update');
+        // const updateInfo = await response.json();
+        
+        // Заглушка для демонстрации
+        const updateInfo = {
+          newVersionAvailable: true,
+          version: "3.1",
+          changelog: [
+            "Новый минималистичный дизайн",
+            "Улучшена производительность на мобильных устройствах",
+            "Добавлена поддержка темной темы",
+            "Исправлены ошибки с загрузкой изображений",
+            "Оптимизирована работа в офлайн-режиме"
+          ]
+        };
+        
+        if (updateInfo.newVersionAvailable) {
+          showUpdateModal(updateInfo);
+        } else {
+          alert('У вас установлена последняя версия приложения!');
+        }
+      } catch (error) {
+        console.error('Ошибка проверки обновлений:', error);
+        alert('Не удалось проверить обновления. Попробуйте позже.');
+      }
+    }
+    
+    // Показ модального окна обновления
+    function showUpdateModal(updateInfo) {
+      const modal = document.getElementById('update-modal');
+      const changelog = modal.querySelector('.changelog-list');
       
-      // Регистрация Service Worker
+      // Заполнение списка изменений
+      changelog.innerHTML = updateInfo.changelog.map(item => 
+        `<li class="changelog-item">${item}</li>`
+      ).join('');
+      
+      // Обновление заголовка версии
+      modal.querySelector('.modal-title').textContent = 
+        `Доступно обновление ${updateInfo.version}!`;
+      
+      // Показ модального окна
+      modal.classList.add('active');
+    }
+    
+    // Показ модального окна регистрации
+    function showRegistrationModal() {
+      document.getElementById('registration-modal').classList.add('active');
+    }
+    
+    // Подтверждение обновления
+    function confirmUpdate() {
+      // Обновление Service Worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(reg => {
+          reg.update().then(() => {
+            window.location.reload();
+          });
+        });
+      } else {
+        window.location.reload();
+      }
+    }
+    
+    // Переключение темы
+    function toggleTheme() {
+      document.body.classList.toggle('dark-mode');
+      const icon = document.querySelector('#theme-btn i');
+      const isDarkMode = document.body.classList.contains('dark-mode');
+      
+      if (isDarkMode) {
+        icon.classList.replace('fa-moon', 'fa-sun');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        icon.classList.replace('fa-sun', 'fa-moon');
+        localStorage.setItem('theme', 'light');
+      }
+    }
+    
+    // Поделиться приложением
+    function handleShare() {
+      if (navigator.share) {
+        navigator.share({
+          title: 'FamilySpace',
+          text: 'Приложение для организации семейной жизни',
+          url: 'https://familyspace.app'
+        }).catch(console.error);
+      } else {
+        // Fallback для браузеров без поддержки Web Share API
+        navigator.clipboard.writeText('https://familyspace.app').then(() => {
+          alert('Ссылка скопирована в буфер обмена!');
+        });
+      }
+    }
+    
+    // Регистрация Service Worker
+    function registerServiceWorker() {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js')
           .then(registration => {
             console.log('ServiceWorker зарегистрирован:', registration.scope);
+            
+            // Регистрация push-уведомлений
+            registerPushNotifications(registration);
           })
           .catch(error => {
             console.error('Ошибка регистрации Service Worker:', error);
@@ -655,8 +1044,49 @@
       }
     }
     
+    // Регистрация push-уведомлений
+    async function registerPushNotifications(registration) {
+      // Запрос разрешения на уведомления
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return;
+      
+      // Конвертация VAPID ключа
+      function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding)
+          .replace(/-/g, '+')
+          .replace(/_/g, '/');
+        const rawData = atob(base64);
+        return new Uint8Array([...rawData].map(char => char.charCodeAt(0)));
+      }
+      
+      // Подписка на push-уведомления
+      try {
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(
+            'BHlRR33D_L19ZAfcmTqJz9boQacOqRAVBwx4beTj7UgKWBX9ZkYbW0oOfZAtbdCT9jaCJWQ3ng5VaaUrWU8KJLo'
+          )
+        });
+        
+        // Отправка подписки на сервер
+        await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(subscription)
+        });
+        
+        console.log('Push-уведомления успешно зарегистрированы');
+      } catch (e) {
+        console.error('Ошибка регистрации push-уведомлений:', e);
+      }
+    }
+    
     // Запуск приложения после загрузки
-    window.addEventListener('DOMContentLoaded', initApp);
+    window.addEventListener('DOMContentLoaded', () => {
+      initApp();
+      registerServiceWorker();
+    });
   </script>
 </body>
 </html>
