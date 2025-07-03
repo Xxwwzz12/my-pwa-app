@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#4263eb">
   <title>Моя семья | FamilySpace</title>
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/style.css">
   <link rel="manifest" href="/manifest.json" type="application/manifest+json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -43,7 +43,7 @@
       margin: 0;
       padding: 0;
       font-family: 'Segoe UI', system-ui, sans-serif;
-      background: var(--fallback-bg) url('/images/vista-bg.webp') no-repeat center center fixed;
+      background: var(--fallback-bg) url('/images/assets/vista-bg.webp') no-repeat center center fixed;
       background-size: cover;
       color: var(--text-primary);
       min-height: 100vh;
@@ -324,7 +324,7 @@
     <!-- Шапка -->
     <header class="header">
       <div class="logo-container">
-        <img src="/images/logo.webp" alt="FamilySpace" class="logo-img"
+        <img src="/images/assets/logo.webp" alt="FamilySpace" class="logo-img"
              onerror="this.classList.add('broken-image-fallback'); this.alt='Ошибка загрузки логотипа';">
         <div class="app-info">
           <h1 class="app-name">Моя семья</h1>
@@ -573,6 +573,59 @@
         }
       });
     }
+  </script>
+  
+  <!-- Регистрация для push-уведомлений -->
+  <script>
+    // Функция конвертации ключа для push-уведомлений
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+      const rawData = atob(base64);
+      return new Uint8Array([...rawData].map(char => char.charCodeAt(0)));
+    }
+
+    // Регистрация Service Worker + Push
+    const registerPush = async () => {
+      if (!('serviceWorker' in navigator)) return;
+      
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const permission = await Notification.requestPermission();
+        
+        if (permission !== 'granted') return;
+        
+        const subscription = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array('BHlRR33D_L19ZAfcmTqJz9boQacOqRAVBwx4beTj7UgKWBX9ZkYbW0oOfZAtbdCT9jaCJWQ3ng5VaaUrWU8KJLo')
+        });
+        
+        await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(subscription)
+        });
+        
+        console.log('Push-уведомления успешно зарегистрированы');
+      } catch (e) {
+        console.error('Ошибка регистрации push-уведомлений:', e);
+      }
+    };
+
+    // Инициализация при загрузке страницы
+    window.addEventListener('DOMContentLoaded', () => {
+      // Обработчик для кнопки уведомлений
+      document.getElementById('notifications-btn').addEventListener('click', () => {
+        registerPush().catch(console.error);
+      });
+      
+      // Автоматическая регистрация при наличии разрешения
+      if (Notification.permission === 'granted') {
+        registerPush();
+      }
+    });
   </script>
 </body>
 </html>
