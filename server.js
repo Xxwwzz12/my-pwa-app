@@ -1,19 +1,21 @@
-const express = require('express');
-const path = require('path');
-const session = require('express-session');
-const MongoStore = require('connect-mongo');
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const mongoose = require('mongoose');
-const cookieParser = require('cookie-parser');
-const multer = require('multer');
-const fs = require('fs');
-const webpush = require('web-push'); // Добавлено для push-уведомлений
-require('dotenv').config();
+import express from 'express';
+import path from 'path';
+import session from 'express-session';
+import MongoStore from 'connect-mongo';
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import mongoose from 'mongoose';
+import cookieParser from 'cookie-parser';
+import multer from 'multer';
+import fs from 'fs';
+import webpush from 'web-push';
+import dotenv from 'dotenv';
+dotenv.config();
 
 // Импорт модели пользователя
-const User = require('./models/User');
+import User from './models/User.js';
 
+const __dirname = path.resolve();
 const app = express();
 
 // ========== Подключение к MongoDB ==========
@@ -27,13 +29,10 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const CALLBACK_URL = process.env.CALLBACK_URL || 'https://my-pwa-app-w519.onrender.com/auth/google/callback';
 
 // ========== Настройка VAPID для push-уведомлений ==========
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
-
 webpush.setVapidDetails(
   'mailto:contact@familyspace.app',
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
 );
 
 // ========== Настройка Multer для загрузки аватаров ==========
@@ -67,7 +66,7 @@ const upload = multer({
 // ========== Middleware ==========
 app.set('trust proxy', 1);
 
-// ФИКС: Обновленная обработка статических файлов
+// Обновленная обработка статических файлов
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -318,7 +317,7 @@ app.post('/api/save-profile',
   }
 );
 
-// ========== API для push-уведомлений (НОВОЕ) ==========
+// ========== API для push-уведомлений ==========
 app.post('/api/send-push', async (req, res) => {
   try {
     const { subscription, title, body, url } = req.body;
@@ -342,6 +341,13 @@ app.post('/api/send-push', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('Ошибка отправки push:', error);
+    
+    // Обработка специфических ошибок web-push
+    if (error.statusCode === 410) {
+      // Подписка больше не действительна
+      return res.status(410).json({ error: 'Подписка устарела' });
+    }
+    
     res.status(500).json({ error: error.message });
   }
 });
@@ -360,14 +366,18 @@ app.get('/registration.html', checkRegistration, (req, res) => {
 });
 
 // ========== Подключение API уведомлений ==========
-const notificationsRouter = require('./api/notifications');
+import notificationsRouter from './api/notifications.js';
 app.use('/api/notifications', notificationsRouter);
 
 // ========== API для проверки обновлений ==========
 app.get('/api/check-update', (req, res) => {
   try {
-    const checkUpdate = require('./api/check-update');
-    checkUpdate(req, res);
+    import('./api/check-update.js')
+      .then(module => module.default(req, res))
+      .catch(error => {
+        console.error('Ошибка загрузки API модуля:', error);
+        res.status(500).json({ error: "Internal server error" });
+      });
   } catch (error) {
     console.error('Ошибка загрузки API модуля:', error);
     res.status(500).json({ error: "Internal server error" });
@@ -419,4 +429,8 @@ app.listen(PORT, () => {
   if (!process.env.MONGO_URI) {
     console.error('ВНИМАНИЕ: MongoDB URI не установлен!');
   }
+  
+  console.log('Push-уведомления:', 
+    process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY ? 
+    'настроены' : 'ОШИБКА! Проверьте VAPID ключи в .env');
 });
