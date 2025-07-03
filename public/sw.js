@@ -10,7 +10,7 @@ const MAX_LOGS = 100;
 // VAPID Public Key
 const VAPID_PUBLIC_KEY = 'BHlRR33D_L19ZAfcmTqJz9boQacOqRAVBwx4beTj7UgKWBX9ZkYbW0oOfZAtbdCT9jaCJWQ3ng5VaaUrWU8KJLo';
 
-// Список ресурсов для предварительного кэширования
+// Список ресурсов для предварительного кэширования (ОБНОВЛЕНЫ ПУТИ)
 const PRECACHE_RESOURCES = [
   '/',
   '/index.html',
@@ -18,16 +18,17 @@ const PRECACHE_RESOURCES = [
   '/profile.html',
   '/registration.html',
   '/family-chat.html',
+  '/chat.html', // Добавлен ИИ-чат
   '/calendar.html',
   '/tasks.html',
   '/wishlist.html',
   '/offline.html',
-  '/styles.css',
+  '/style.css', // Исправлено название
   '/manifest.json',
-  '/images/logo.webp',
-  '/images/default.webp',
-  '/images/vista-bg.webp',
-  '/images/badge.webp',
+  '/images/assets/logo.webp', // Обновлён путь
+  '/images/assets/default.webp', // Обновлён путь
+  '/images/assets/vista-bg.webp', // Обновлён путь
+  '/images/assets/badge.webp', // Обновлён путь
   '/js/api.js',
   '/js/auth.js',
   '/js/index.js'
@@ -269,9 +270,9 @@ self.addEventListener('fetch', event => {
             .catch(error => {
               log(`Ошибка загрузки ресурса: ${requestUrl.pathname} - ${error}`);
               
-              // Fallback для изображений
+              // Fallback для изображений (ОБНОВЛЁН ПУТЬ)
               if (/\.(png|jpg|jpeg|gif|svg|webp)$/.test(requestUrl.pathname)) {
-                return caches.match('/images/default.webp');
+                return caches.match('/images/assets/default.webp');
               }
               
               return Response.error();
@@ -441,10 +442,11 @@ self.addEventListener('periodicsync', event => {
         .then(response => response.json())
         .then(data => {
           if (data.total > 0) {
+            // ОБНОВЛЁНЫ ПУТИ К ИЗОБРАЖЕНИЯМ
             self.registration.showNotification('Новые уведомления', {
               body: `У вас ${data.total} новых уведомлений`,
-              icon: '/images/logo.webp',
-              badge: '/images/badge.webp',
+              icon: '/images/assets/logo.webp',
+              badge: '/images/assets/badge.webp',
               data: { url: '/family.html' }
             });
           }
@@ -476,10 +478,11 @@ self.addEventListener('push', event => {
   const data = event.data.json();
   log(`Получено push-уведомление: ${data.title}`);
   
+  // ОБНОВЛЁНЫ ПУТИ К ИЗОБРАЖЕНИЯМ
   const options = {
     body: data.body,
-    icon: '/images/logo.webp',
-    badge: '/images/badge.webp',
+    icon: '/images/assets/logo.webp',
+    badge: '/images/assets/badge.webp',
     data: {
       url: data.url || '/'
     }
