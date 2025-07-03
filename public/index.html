@@ -7,14 +7,13 @@
   <title>FamilySpace - Организуйте свою семью</title>
   
   <!-- Предзагрузка критических ресурсов -->
-  <link rel="preload" href="/styles.css" as="style">
-  <link rel="preload" href="/images/logo.webp" as="image">
-  <link rel="preload" href="/images/default.webp" as="image">
-  <link rel="preload" href="/images/vista-bg.webp" as="image">
+  <link rel="preload" href="/images/assets/logo.webp" as="image">
+  <link rel="preload" href="/images/assets/default.webp" as="image">
+  <link rel="preload" href="/images/assets/vista-bg.webp" as="image">
   <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style">
   
   <!-- Основные стили -->
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="manifest" href="/manifest.json" type="application/manifest+json">
   
@@ -65,7 +64,7 @@
       margin: 0;
       padding: 0;
       font-family: 'Segoe UI', system-ui, sans-serif;
-      background: var(--fallback-bg) url('/images/vista-bg.webp') no-repeat center center fixed;
+      background: var(--fallback-bg) url('/images/assets/vista-bg.webp') no-repeat center center fixed;
       background-size: cover;
       color: var(--text-primary);
       min-height: 100vh;
@@ -755,7 +754,7 @@
     <!-- Шапка -->
     <header class="header">
       <div class="logo-container">
-        <img src="/images/logo.webp" alt="FamilySpace" class="logo-img"
+        <img src="/images/assets/logo.webp" alt="FamilySpace" class="logo-img"
              onerror="this.classList.add('broken-image-fallback'); this.alt='Ошибка загрузки логотипа';">
         <div class="app-info">
           <h1 class="app-name">FamilySpace</h1>
@@ -1017,7 +1016,7 @@
       document.querySelectorAll('img').forEach(img => {
         img.onerror = function() {
           this.onerror = null;
-          this.src = '/images/default.webp';
+          this.src = '/images/assets/default.webp';
           this.classList.add('broken-image-fallback');
         };
       });
@@ -1041,8 +1040,8 @@
       if (isLoggedIn) {
         // Если пользователь вошел - показываем аватар
         profileBtn.innerHTML = `
-          <img src="/images/avatar.webp" alt="${userName}" class="profile-avatar"
-               onerror="this.onerror=null; this.src='/images/default.webp';">
+          <img src="/images/assets/avatar.webp" alt="${userName}" class="profile-avatar"
+               onerror="this.onerror=null; this.src='/images/assets/default.webp';">
         `;
       } else {
         // Если пользователь не вошел - показываем иконку пользователя
@@ -1253,6 +1252,63 @@
         }
       });
     }
+  </script>
+  
+  <!-- Регистрация для push-уведомлений -->
+  <script>
+    // Функция конвертации ключа для push-уведомлений
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+      const rawData = atob(base64);
+      return new Uint8Array([...rawData].map(char => char.charCodeAt(0)));
+    }
+
+    // Регистрация Service Worker + Push
+    const registerServiceWorker = async () => {
+      if ('serviceWorker' in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.register('/sw.js');
+          
+          // Запрос разрешения на уведомления
+          const permission = await Notification.requestPermission();
+          if (permission !== 'granted') {
+            console.log('Разрешение на уведомления не получено');
+            return;
+          }
+          
+          // Получение VAPID ключа из Service Worker
+          const vapidKey = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array('BHlRR33D_L19ZAfcmTqJz9boQacOqRAVBwx4beTj7UgKWBX9ZkYbW0oOfZAtbdCT9jaCJWQ3ng5VaaUrWU8KJLo')
+          });
+          
+          // Отправка подписки на сервер
+          await fetch('/api/subscribe', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(vapidKey)
+          });
+          
+          console.log('Push-уведомления успешно зарегистрированы');
+        } catch (e) {
+          console.error('Ошибка регистрации Service Worker:', e);
+        }
+      }
+    };
+
+    // Инициализация при загрузке страницы
+    window.addEventListener('DOMContentLoaded', () => {
+      // Запуск регистрации push-уведомлений
+      registerServiceWorker();
+      
+      // Обработчик для кнопки уведомлений
+      document.getElementById('notifications-btn').addEventListener('click', () => {
+        registerServiceWorker().catch(console.error);
+      });
+    });
   </script>
 </body>
 </html>
