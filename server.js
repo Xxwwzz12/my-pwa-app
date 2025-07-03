@@ -8,6 +8,7 @@ const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const multer = require('multer');
 const fs = require('fs');
+const webpush = require('web-push'); // Добавлено для push-уведомлений
 require('dotenv').config();
 
 // Импорт модели пользователя
@@ -24,6 +25,16 @@ mongoose.connect(process.env.MONGO_URI)
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const CALLBACK_URL = process.env.CALLBACK_URL || 'https://my-pwa-app-w519.onrender.com/auth/google/callback';
+
+// ========== Настройка VAPID для push-уведомлений ==========
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+
+webpush.setVapidDetails(
+  'mailto:contact@familyspace.app',
+  VAPID_PUBLIC_KEY,
+  VAPID_PRIVATE_KEY
+);
 
 // ========== Настройка Multer для загрузки аватаров ==========
 const storage = multer.diskStorage({
@@ -55,8 +66,12 @@ const upload = multer({
 
 // ========== Middleware ==========
 app.set('trust proxy', 1);
-app.use(express.static('public'));
+
+// ФИКС: Обновленная обработка статических файлов
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -72,8 +87,10 @@ app.use((req, res, next) => {
   
   // Разрешаем preflight запросы
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    if (origin && allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     return res.sendStatus(200);
@@ -300,6 +317,34 @@ app.post('/api/save-profile',
     }
   }
 );
+
+// ========== API для push-уведомлений (НОВОЕ) ==========
+app.post('/api/send-push', async (req, res) => {
+  try {
+    const { subscription, title, body, url } = req.body;
+    
+    if (!subscription || !title || !body) {
+      return res.status(400).json({ error: 'Недостаточно данных' });
+    }
+
+    const payload = JSON.stringify({ 
+      title, 
+      body,
+      url: url || '/family.html'
+    });
+
+    const options = {
+      TTL: 3600 // 1 час жизни уведомления
+    };
+
+    await webpush.sendNotification(subscription, payload, options);
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Ошибка отправки push:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // ========== Защищенные маршруты ==========
 app.get('/family.html', checkRegistration, (req, res) => {
