@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тестирование Push-уведомлений</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <script src="/service-worker-registration.js"></script>
     <style>
-        /* Существующие стили сохранены без изменений */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             max-width: 800px;
@@ -275,31 +275,53 @@
             
             try {
                 // FIX: Исправлен путь к API
-                const response = await fetch('/api/send-push', {
+                const response = await fetch('/api/notifications/send-push', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Cookie': `connect.sid=${getSessionCookie()}`
+                    },
+                    credentials: 'include',
                     body: JSON.stringify({
                         // FIX: Добавлена передача подписки
                         subscription: currentSubscription,
                         title: "Тестовое уведомление",
                         body: "Поздравляем! Push-уведомления работают! 🎉",
                         icon: "/images/assets/icon-message.webp"
-                    }),
-                    credentials: 'include'
+                    })
                 });
                 
                 if (response.ok) {
                     addLog('Тестовое уведомление успешно отправлено', 'success');
                     statusDiv.textContent = 'Уведомление отправлено. Проверьте ваше устройство.';
                 } else {
-                    const errorText = await response.text();
-                    throw new Error(errorText);
+                    // FIX: Чтение ошибки из JSON-ответа
+                    const errorData = await response.json();
+                    const errorMessage = errorData.error || `Ошибка сервера: ${response.status}`;
+                    throw new Error(errorMessage);
                 }
             } catch (error) {
                 addLog(`Ошибка отправки: ${error.message}`, 'error');
                 statusDiv.textContent = `Ошибка отправки: ${error.message}`;
+                
+                // FIX: Дополнительная диагностика
+                if (error.message.includes('404')) {
+                    addLog('Серверный эндпоинт не найден. Проверьте конфигурацию сервера.', 'error');
+                }
             }
         });
+
+        // Получение сессионной куки
+        function getSessionCookie() {
+            const cookies = document.cookie.split(';');
+            for (const cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'connect.sid') {
+                    return value;
+                }
+            }
+            return '';
+        }
 
         // Функция подписки
         async function subscribe() {
@@ -361,12 +383,21 @@
                     await subscription.unsubscribe();
                     addLog('Подписка отменена в браузере', 'success');
                     
-                    await fetch('/api/notifications/save-subscription', {
+                    // FIX: Исправлен формат запроса
+                    const response = await fetch('/api/notifications/save-subscription', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ subscription: null }),
-                        credentials: 'include'
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Cookie': `connect.sid=${getSessionCookie()}`
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({ subscription: null })
                     });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || `Ошибка сервера: ${response.status}`);
+                    }
                     
                     addLog('Подписка удалена с сервера', 'success');
                 }
@@ -421,13 +452,18 @@
             try {
                 const response = await fetch('/api/notifications/save-subscription', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ subscription }),
-                    credentials: 'include'
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Cookie': `connect.sid=${getSessionCookie()}`
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ subscription })
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`Ошибка сервера: ${response.status}`);
+                    // FIX: Чтение ошибки из JSON-ответа
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Ошибка сервера: ${response.status}`);
                 }
                 
                 addLog('Подписка успешно сохранена на сервере', 'success');
