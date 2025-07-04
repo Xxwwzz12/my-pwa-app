@@ -1,5 +1,5 @@
 // ===== Service Worker для FamilySpace PWA (v5.3.0) =====
-const CACHE_VERSION = '5.3.0';
+const CACHE_VERSION = 'v5.3.0';
 const CACHE_NAME = `familyspace-cache-${CACHE_VERSION}`;
 const API_CACHE_NAME = 'familyspace-api-cache-v2';
 const OFFLINE_URL = '/offline.html';
@@ -18,6 +18,7 @@ const PRECACHE_RESOURCES = [
   '/wishlist.html',
   '/test-notifications.html',
   '/offline.html',
+  '/favicon.ico', // Добавлен favicon
   '/style.css',
   '/manifest.json',
   '/images/assets/logo.webp',
@@ -122,7 +123,7 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Обработчик запросов
+// Обработчик запросов с улучшенной обработкой ошибок
 self.addEventListener('fetch', event => {
   const requestUrl = new URL(event.request.url);
   const pathname = requestUrl.pathname;
@@ -229,6 +230,12 @@ async function handleStaticRequest(event) {
       if (fallback) return fallback;
     }
     
+    // Fallback для favicon
+    if (event.request.url.includes('favicon.ico')) {
+      const fallback = await caches.match('/favicon.ico');
+      if (fallback) return fallback;
+    }
+    
     return Response.error();
   }
 }
@@ -325,11 +332,6 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
-// Обработчик закрытия уведомлений
-self.addEventListener('notificationclose', event => {
-  log(`Уведомление закрыто: ${event.notification.title}`);
-});
-
 // Обработчик сообщений
 self.addEventListener('message', event => {
   if (!event.data) return;
@@ -339,6 +341,14 @@ self.addEventListener('message', event => {
       log('Получена команда SKIP_WAITING');
       self.skipWaiting();
       event.source.postMessage({ type: 'RELOAD_REQUIRED' });
+      break;
+      
+    case 'GET_VAPID_KEY':
+      log('Запрос VAPID-ключа');
+      event.source.postMessage({ 
+        type: 'VAPID_KEY',
+        key: process.env.VAPID_PUBLIC_KEY || 'BHlRR33D_L19ZAfcmTqJz9boQacOqRAVBwx4beTj7UgKWBX9ZkYbW0oOfZAtbdCT9jaCJWQ3ng5VaaUrWU8KJLo' 
+      });
       break;
       
     case 'CLEAR_CACHE':
@@ -384,51 +394,5 @@ function fetchWithTimeout(request, timeout) {
   });
 }
 
-// Периодическая проверка обновлений
-self.addEventListener('periodicsync', event => {
-  if (event.tag === 'update-check') {
-    event.waitUntil(checkForUpdates());
-  }
-});
-
-// Проверка обновлений ресурсов
-async function checkForUpdates() {
-  const cache = await caches.open(CACHE_NAME);
-  const updatePromises = PRECACHE_RESOURCES.map(async url => {
-    try {
-      const networkResponse = await fetch(url, { cache: 'reload' });
-      if (networkResponse.ok) {
-        const cachedResponse = await cache.match(url);
-        
-        // Проверяем ETag или Last-Modified
-        if (!cachedResponse || 
-            networkResponse.headers.get('ETag') !== cachedResponse.headers.get('ETag') ||
-            networkResponse.headers.get('Last-Modified') !== cachedResponse.headers.get('Last-Modified')) {
-          await cache.put(url, networkResponse.clone());
-          log(`Ресурс обновлен: ${url}`);
-        }
-      }
-    } catch (error) {
-      log(`Не удалось проверить обновление для ${url}: ${error.message}`);
-    }
-  });
-  
-  await Promise.all(updatePromises);
-  log('Фоновая проверка обновлений завершена');
-}
-
 // Инициализация
 log(`Service Worker v${CACHE_VERSION} запущен`);
-
-// Фоновая синхронизация данных
-self.addEventListener('sync', event => {
-  if (event.tag === 'sync-notifications') {
-    log('Запуск фоновой синхронизации уведомлений');
-    event.waitUntil(syncNotifications());
-  }
-});
-
-async function syncNotifications() {
-  // В реальном приложении здесь была бы синхронизация данных
-  log('Фоновая синхронизация выполнена');
-}
