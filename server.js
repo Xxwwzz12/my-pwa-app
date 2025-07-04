@@ -14,6 +14,7 @@ dotenv.config();
 
 // Импорт модели пользователя
 import User from './models/User.js';
+import PushSubscription from './models/PushSubscription.js';
 
 const __dirname = path.resolve();
 const app = express();
@@ -29,11 +30,16 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const CALLBACK_URL = process.env.CALLBACK_URL || 'https://my-pwa-app-w519.onrender.com/auth/google/callback';
 
 // ========== Настройка VAPID для push-уведомлений ==========
-webpush.setVapidDetails(
-  'mailto:contact@familyspace.app',
-  process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
-);
+if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+  console.error('VAPID ключи не установлены! Push-уведомления работать не будут.');
+} else {
+  webpush.setVapidDetails(
+    'mailto:contact@familyspace.app',
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+  console.log('VAPID ключи успешно настроены');
+}
 
 // ========== Настройка Multer для загрузки аватаров ==========
 const storage = multer.diskStorage({
@@ -78,7 +84,8 @@ app.use(express.urlencoded({ extended: true }));
 // ========== Улучшенный CORS Middleware ==========
 const allowedOrigins = [
   'https://my-pwa-app-w519.onrender.com',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  'http://localhost:8080'
 ];
 
 app.use((req, res, next) => {
@@ -317,38 +324,97 @@ app.post('/api/save-profile',
   }
 );
 
-// ========== API для push-уведомлений ==========
-app.post('/api/send-push', async (req, res) => {
+// ========== API для управления подписками ==========
+app.get('/api/subscriptions', async (req, res) => {
   try {
-    const { subscription, title, body, url } = req.body;
-    
-    if (!subscription || !title || !body) {
-      return res.status(400).json({ error: 'Недостаточно данных' });
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: 'Не авторизован' });
     }
+    
+    const subscriptions = await PushSubscription.find({ userId: req.user.id });
+    res.json(subscriptions);
+  } catch (error) {
+    console.error('Ошибка получения подписок:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
 
-    const payload = JSON.stringify({ 
-      title, 
-      body,
-      url: url || '/family.html'
+app.delete('/api/subscriptions/:id', async (req, res) => {
+  try {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: 'Не авторизован' });
+    }
+    
+    const subscription = await PushSubscription.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user.id
     });
-
-    const options = {
-      TTL: 3600 // 1 час жизни уведомления
-    };
-
-    await webpush.sendNotification(subscription, payload, options);
+    
+    if (!subscription) {
+      return res.status(404).json({ error: 'Подписка не найдена' });
+    }
     
     res.json({ success: true });
   } catch (error) {
-    console.error('Ошибка отправки push:', error);
-    
-    // Обработка специфических ошибок web-push
-    if (error.statusCode === 410) {
-      // Подписка больше не действительна
-      return res.status(410).json({ error: 'Подписка устарела' });
+    console.error('Ошибка удаления подписки:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// ========== API для тестирования уведомлений ==========
+app.post('/api/test-notification', async (req, res) => {
+  try {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: 'Не авторизован' });
     }
     
-    res.status(500).json({ error: error.message });
+    // Получаем подписки пользователя
+    const subscriptions = await PushSubscription.find({ userId: req.user.id });
+    if (subscriptions.length === 0) {
+      return res.status(404).json({ error: 'Активные подписки не найдены' });
+    }
+    
+    // Отправляем уведомление на каждую подписку
+    const results = [];
+    
+    for (const sub of subscriptions) {
+      try {
+        const pushSubscription = {
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: sub.keys.p256dh,
+            auth: sub.keys.auth
+          }
+        };
+        
+        const payload = JSON.stringify({
+          title: "Тестовое уведомление",
+          body: `Проверка работы системы уведомлений (${new Date().toLocaleTimeString()})`,
+          url: "/family.html"
+        });
+        
+        await webpush.sendNotification(pushSubscription, payload);
+        results.push({ id: sub._id, status: 'success' });
+      } catch (error) {
+        // Если подписка недействительна - удаляем
+        if (error.statusCode === 410) {
+          await PushSubscription.findByIdAndDelete(sub._id);
+          results.push({ id: sub._id, status: 'expired', message: 'Подписка устарела и удалена' });
+        } else {
+          results.push({ id: sub._id, status: 'error', message: error.message });
+        }
+      }
+    }
+    
+    res.json({
+      success: true,
+      sentCount: results.filter(r => r.status === 'success').length,
+      total: subscriptions.length,
+      results
+    });
+  } catch (error) {
+    console.error('Ошибка отправки тестового уведомления:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
 
@@ -363,6 +429,10 @@ app.get('/profile.html', checkRegistration, (req, res) => {
 
 app.get('/registration.html', checkRegistration, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'registration.html'));
+});
+
+app.get('/test-notifications.html', checkRegistration, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'test-notifications.html'));
 });
 
 // ========== Подключение API уведомлений ==========
@@ -382,6 +452,18 @@ app.get('/api/check-update', (req, res) => {
     console.error('Ошибка загрузки API модуля:', error);
     res.status(500).json({ error: "Internal server error" });
   }
+});
+
+// ========== API для получения VAPID ключа ==========
+app.get('/api/vapid-public-key', (req, res) => {
+  if (!process.env.VAPID_PUBLIC_KEY) {
+    return res.status(503).json({ 
+      error: 'VAPID ключи не настроены на сервере',
+      code: 'VAPID_NOT_CONFIGURED'
+    });
+  }
+  
+  res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
 });
 
 // ========== Базовые маршруты ==========
@@ -412,6 +494,24 @@ app.use((err, req, res, next) => {
   next();
 });
 
+// Обработчик ошибок API
+app.use((err, req, res, next) => {
+  console.error('Ошибка API:', err.stack);
+  
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({ 
+      error: 'Ошибка валидации', 
+      details: err.errors 
+    });
+  }
+  
+  res.status(500).json({ 
+    error: 'Внутренняя ошибка сервера',
+    code: 'INTERNAL_SERVER_ERROR',
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
 // ========== Запуск сервера ==========
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
@@ -433,4 +533,7 @@ app.listen(PORT, () => {
   console.log('Push-уведомления:', 
     process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY ? 
     'настроены' : 'ОШИБКА! Проверьте VAPID ключи в .env');
+    
+  console.log('Тестовые страницы:');
+  console.log(`- Уведомления: http://localhost:${PORT}/test-notifications.html`);
 });
