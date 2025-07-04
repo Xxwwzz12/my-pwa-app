@@ -86,8 +86,15 @@ router.get('/', authenticate, async (req, res) => {
 // Сохранение подписки на push-уведомления
 router.post('/save-subscription', authenticate, async (req, res) => {
   try {
+    // FIX: Правильное извлечение подписки из тела запроса
     const { subscription } = req.body;
     const userId = req.user.id;
+    
+    // Если subscription === null, удаляем подписку
+    if (subscription === null) {
+      await PushSubscription.deleteMany({ userId });
+      return res.status(200).json({ success: true });
+    }
     
     if (!subscription || !subscription.endpoint || !subscription.keys) {
       return res.status(400).json({ 
@@ -96,25 +103,35 @@ router.post('/save-subscription', authenticate, async (req, res) => {
       });
     }
     
-    await PushSubscription.findOneAndUpdate(
-      { userId },
-      {
+    // Поиск существующей подписки
+    let existingSubscription = await PushSubscription.findOne({ 
+      userId,
+      endpoint: subscription.endpoint
+    });
+    
+    if (existingSubscription) {
+      // Обновляем существующую подписку
+      existingSubscription.keys = subscription.keys;
+      existingSubscription.expirationTime = subscription.expirationTime || null;
+      await existingSubscription.save();
+    } else {
+      // Создаем новую подписку
+      existingSubscription = new PushSubscription({
+        userId,
         endpoint: subscription.endpoint,
-        keys: {
-          p256dh: subscription.keys.p256dh,
-          auth: subscription.keys.auth
-        },
+        keys: subscription.keys,
         expirationTime: subscription.expirationTime || null
-      },
-      { upsert: true, new: true }
-    );
+      });
+      await existingSubscription.save();
+    }
 
     res.status(201).json({ success: true });
   } catch (error) {
     console.error('Ошибка сохранения подписки:', error);
     res.status(500).json({ 
       error: 'Ошибка сервера',
-      code: 'SUBSCRIPTION_SAVE_FAILED'
+      code: 'SUBSCRIPTION_SAVE_FAILED',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -122,19 +139,18 @@ router.post('/save-subscription', authenticate, async (req, res) => {
 // Отправка тестового push-уведомления
 router.post('/send-push', authenticate, async (req, res) => {
   try {
-    const { title, body } = req.body;
+    // FIX: Правильное извлечение данных
+    const { subscription, title, body } = req.body;
     const userId = req.user.id;
     
-    // Поиск подписки пользователя
-    const subscription = await PushSubscription.findOne({ userId });
-    if (!subscription) {
-      return res.status(404).json({ 
-        error: 'Подписка не найдена',
-        code: 'SUBSCRIPTION_NOT_FOUND' 
+    if (!subscription || !subscription.endpoint) {
+      return res.status(400).json({ 
+        error: 'Неверный формат подписки',
+        code: 'INVALID_SUBSCRIPTION' 
       });
     }
     
-    // Формирование payload
+    // Формирование объекта подписки для webpush
     const pushSubscription = {
       endpoint: subscription.endpoint,
       keys: {
@@ -143,10 +159,12 @@ router.post('/send-push', authenticate, async (req, res) => {
       }
     };
     
+    // Формирование payload
     const payload = JSON.stringify({ 
       title: title || "Тестовое уведомление",
       body: body || "Это тестовое сообщение от FamilySpace",
-      url: "/family.html"
+      url: "/family.html",
+      icon: "/images/assets/icon-message.webp"
     });
 
     // Отправка уведомления
@@ -156,10 +174,13 @@ router.post('/send-push', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Ошибка отправки push:', error);
     
-    // Специфические ошибки web-push
+    // Обработка специфических ошибок web-push
     if (error.statusCode === 410) {
       // Устаревшая подписка - удаляем
-      await PushSubscription.deleteOne({ userId });
+      await PushSubscription.deleteOne({ 
+        userId: req.user.id,
+        endpoint: subscription.endpoint
+      });
       return res.status(410).json({ 
         error: 'Подписка устарела и удалена',
         code: 'SUBSCRIPTION_EXPIRED' 
