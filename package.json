@@ -5,19 +5,24 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "generate-vapid": "web-push generate-vapid-keys --json > vapid-keys.json"
+    "generate-vapid": "web-push generate-vapid-keys --json > vapid-keys.json",
+    "analyze": "webpack-bundle-analyzer stats.json",
+    "audit": "npm audit --production",
+    "dedupe": "npm dedupe"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "connect-mongo": "^5.0.0",
     "cookie-parser": "^1.4.6",
+    "debug": "^4.3.4",
     "dotenv": "^16.3.1",
-    "express": "^4.18.2",
+    "express": "^5.0.0",
     "express-session": "^1.17.3",
     "mongoose": "^8.0.0",
     "multer": "^1.4.5-lts.1",
     "passport": "^0.6.0",
     "passport-google-oauth20": "^2.0.0",
+    "qs": "^6.15.0",
     "web-push": "^3.6.0"
   }
 }
