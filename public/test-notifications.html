@@ -6,6 +6,7 @@
     <title>Тестирование Push-уведомлений</title>
     <script src="/service-worker-registration.js"></script>
     <style>
+        /* Существующие стили сохранены без изменений */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             max-width: 800px;
@@ -150,6 +151,20 @@
         let swRegistration = null;
         let isSubscribed = false;
         let vapidPublicKey = null;
+        let currentSubscription = null; // Хранит текущую подписку
+
+        // FIX: Восстановление подписки из localStorage при загрузке
+        const savedSubscription = localStorage.getItem('pushSubscription');
+        if (savedSubscription) {
+            try {
+                currentSubscription = JSON.parse(savedSubscription);
+                statusDiv.textContent = 'Статус: Подписка восстановлена из кэша!';
+                sendBtn.disabled = false;
+                addLog('Подписка восстановлена из localStorage', 'success');
+            } catch (e) {
+                addLog(`Ошибка восстановления подписки: ${e.message}`, 'error');
+            }
+        }
 
         // Добавление записи в журнал
         function addLog(message, className = 'info') {
@@ -213,12 +228,17 @@
                 isSubscribed = !(subscription === null);
                 
                 if (isSubscribed) {
+                    // FIX: Сохраняем активную подписку
+                    currentSubscription = subscription;
                     addLog('Найдена существующая подписка', 'success');
                     statusDiv.textContent = 'Вы подписаны на push-уведомления.';
                     sendBtn.disabled = false;
                     subscribeBtn.textContent = 'Отписаться от уведомлений';
+                    
+                    // FIX: Сохраняем в localStorage
+                    localStorage.setItem('pushSubscription', JSON.stringify(subscription));
                 } else {
-                    addLog('Активная подписка не найдена');
+                    addLog('Активная подписка не найдена', 'info');
                     statusDiv.textContent = 'Вы не подписаны на push-уведомления.';
                     subscribeBtn.textContent = 'Подписаться на уведомления';
                 }
@@ -254,12 +274,16 @@
             statusDiv.textContent = 'Отправка тестового уведомления...';
             
             try {
-                const response = await fetch('/api/notifications/send-push', {
+                // FIX: Исправлен путь к API
+                const response = await fetch('/api/send-push', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
+                        // FIX: Добавлена передача подписки
+                        subscription: currentSubscription,
                         title: "Тестовое уведомление",
-                        body: "Поздравляем! Push-уведомления работают успешно! 🎉"
+                        body: "Поздравляем! Push-уведомления работают! 🎉",
+                        icon: "/images/assets/icon-message.webp"
                     }),
                     credentials: 'include'
                 });
@@ -303,6 +327,9 @@
                     applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
                 });
                 
+                // FIX: Сохраняем текущую подписку
+                currentSubscription = subscription;
+                
                 addLog('Подписка получена, сохранение на сервере...');
                 statusDiv.textContent = 'Сохранение подписки...';
                 
@@ -311,6 +338,9 @@
                 isSubscribed = true;
                 sendBtn.disabled = false;
                 subscribeBtn.textContent = 'Отписаться';
+                
+                // FIX: Сохраняем в localStorage
+                localStorage.setItem('pushSubscription', JSON.stringify(subscription));
                 
                 addLog('Подписка успешно оформлена!', 'success');
                 statusDiv.textContent = 'Подписка успешно оформлена!';
@@ -344,6 +374,10 @@
                 isSubscribed = false;
                 sendBtn.disabled = true;
                 subscribeBtn.textContent = 'Подписаться';
+                
+                // FIX: Удаляем из localStorage
+                localStorage.removeItem('pushSubscription');
+                currentSubscription = null;
                 
                 addLog('Вы успешно отписались от уведомлений', 'success');
                 statusDiv.textContent = 'Вы отписались от уведомлений.';
