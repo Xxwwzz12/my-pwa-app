@@ -1,8 +1,9 @@
-// ===== Service Worker для FamilySpace PWA (v5.3.0) =====
-const CACHE_VERSION = 'v5.3.0';
+// ===== Service Worker для FamilySpace PWA (v5.3.1) =====
+const CACHE_VERSION = 'v5.3.1'; // Фикс версии
 const CACHE_NAME = `familyspace-cache-${CACHE_VERSION}`;
 const API_CACHE_NAME = 'familyspace-api-cache-v2';
 const OFFLINE_URL = '/offline.html';
+const VAPID_PUBLIC_KEY = 'BHlRR33D_L19ZAfcmTqJz9boQacOqRAVBwx4beTj7UgKWBX9ZkYbW0oOfZAtbdCT9jaCJWQ3ng5VaaUrWU8KJLo'; // Прямое значение ключа
 
 // Ресурсы для предварительного кэширования
 const PRECACHE_RESOURCES = [
@@ -18,7 +19,7 @@ const PRECACHE_RESOURCES = [
   '/wishlist.html',
   '/test-notifications.html',
   '/offline.html',
-  '/favicon.ico', // Добавлен favicon
+  '/favicon.ico',
   '/style.css',
   '/manifest.json',
   '/images/assets/logo.webp',
@@ -347,7 +348,7 @@ self.addEventListener('message', event => {
       log('Запрос VAPID-ключа');
       event.source.postMessage({ 
         type: 'VAPID_KEY',
-        key: process.env.VAPID_PUBLIC_KEY || 'BHlRR33D_L19ZAfcmTqJz9boQacOqRAVBwx4beTj7UgKWBX9ZkYbW0oOfZAtbdCT9jaCJWQ3ng5VaaUrWU8KJLo' 
+        key: VAPID_PUBLIC_KEY // Использование прямой константы
       });
       break;
       
