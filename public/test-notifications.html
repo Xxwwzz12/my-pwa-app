@@ -2,35 +2,431 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Тестирование API Уведомлений</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тестирование Push-уведомлений</title>
+    <script src="/service-worker-registration.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        #subscribeBtn {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        #subscribeBtn:hover {
+            background-color: #2980b9;
+        }
+        
+        #sendBtn {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        #sendBtn:hover {
+            background-color: #27ae60;
+        }
+        
+        #sendBtn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .status-panel {
+            background-color: #f1f8ff;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        #status {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        .log-container {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+        }
+        
+        #log {
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+        
+        .success { color: #27ae60; }
+        .error { color: #e74c3c; }
+        .info { color: #3498db; }
+        .warning { color: #f39c12; }
+        
+        .support-check {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px dashed #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Тестирование Push-уведомлений</h1>
+        
+        <div class="support-check">
+            <h3>Проверка поддержки браузером:</h3>
+            <div id="supportStatus">Выполняется проверка...</div>
+        </div>
+        
+        <div class="button-group">
+            <button id="subscribeBtn">Подписаться на уведомления</button>
+            <button id="sendBtn" disabled>Отправить тестовое уведомление</button>
+        </div>
+        
+        <div class="status-panel">
+            <h3>Статус:</h3>
+            <div id="status">Ожидание действий...</div>
+        </div>
+        
+        <div class="log-container">
+            <h3>Журнал событий:</h3>
+            <div id="log"></div>
+        </div>
+    </div>
+
     <script>
-        async function testNotifications() {
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = 'Выполняю запрос...';
+        // Элементы интерфейса
+        const statusDiv = document.getElementById('status');
+        const subscribeBtn = document.getElementById('subscribeBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        const supportStatusDiv = document.getElementById('supportStatus');
+        const logDiv = document.getElementById('log');
+        
+        // Состояние приложения
+        let swRegistration = null;
+        let isSubscribed = false;
+        let vapidPublicKey = null;
+
+        // Добавление записи в журнал
+        function addLog(message, className = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = className;
+            logEntry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // Проверка поддержки браузером
+        function checkBrowserSupport() {
+            const supported = 'serviceWorker' in navigator && 'PushManager' in window;
+            
+            if (!supported) {
+                supportStatusDiv.innerHTML = `
+                    <div class="error">❌ Ваш браузер не поддерживает все необходимые технологии</div>
+                    <ul>
+                        <li>Service Workers: ${'serviceWorker' in navigator ? '✅' : '❌'}</li>
+                        <li>Push API: ${'PushManager' in window ? '✅' : '❌'}</li>
+                    </ul>
+                `;
+                
+                subscribeBtn.disabled = true;
+                addLog('Браузер не поддерживает Service Workers и/или Push API', 'error');
+            } else {
+                supportStatusDiv.innerHTML = '<div class="success">✅ Ваш браузер поддерживает все необходимые технологии</div>';
+                addLog('Браузер поддерживает необходимые технологии');
+            }
+            
+            return supported;
+        }
+
+        // Инициализация приложения
+        async function init() {
+            if (!checkBrowserSupport()) return;
             
             try {
-                const sessionCookie = 's:_X5evIKgtBbN-VlzUvRVpxqr8u8Q4Rpq.VRmJQd4j3YolCcczBmOGuZTCxWh4ceZaGAgTMSqUa9A';
+                addLog('Регистрация Service Worker...');
+                swRegistration = await navigator.serviceWorker.register('/sw.js');
                 
-                const response = await fetch('https://my-pwa-app-w519.onrender.com/api/notifications', {
-                    headers: { 'Cookie': `connect.sid=${sessionCookie}` },
+                addLog(`Service Worker зарегистрирован с областью: ${swRegistration.scope}`);
+                statusDiv.textContent = 'Service Worker зарегистрирован. Проверка состояния подписки...';
+                
+                // Проверка подписки
+                await checkSubscription();
+                
+                // Проверка разрешения на уведомления
+                checkNotificationPermission();
+            } catch (error) {
+                addLog(`Ошибка регистрации Service Worker: ${error.message}`, 'error');
+                statusDiv.textContent = `Ошибка: ${error.message}`;
+            }
+        }
+
+        // Проверка состояния подписки
+        async function checkSubscription() {
+            try {
+                const subscription = await swRegistration.pushManager.getSubscription();
+                isSubscribed = !(subscription === null);
+                
+                if (isSubscribed) {
+                    addLog('Найдена существующая подписка', 'success');
+                    statusDiv.textContent = 'Вы подписаны на push-уведомления.';
+                    sendBtn.disabled = false;
+                    subscribeBtn.textContent = 'Отписаться от уведомлений';
+                } else {
+                    addLog('Активная подписка не найдена');
+                    statusDiv.textContent = 'Вы не подписаны на push-уведомления.';
+                    subscribeBtn.textContent = 'Подписаться на уведомления';
+                }
+            } catch (error) {
+                addLog(`Ошибка проверки подписки: ${error.message}`, 'error');
+                statusDiv.textContent = 'Ошибка проверки состояния подписки.';
+            }
+        }
+
+        // Проверка разрешения на уведомления
+        function checkNotificationPermission() {
+            if (Notification.permission === 'granted') {
+                addLog('Разрешение на уведомления уже предоставлено');
+            } else if (Notification.permission === 'denied') {
+                addLog('Разрешение на уведомления отклонено', 'warning');
+                statusDiv.textContent = 'Разрешение на уведомления отклонено. Пожалуйста, измените настройки браузера.';
+                subscribeBtn.disabled = true;
+            }
+        }
+
+        // Подписка/отписка
+        subscribeBtn.addEventListener('click', async () => {
+            if (isSubscribed) {
+                await unsubscribe();
+            } else {
+                await subscribe();
+            }
+        });
+
+        // Отправка тестового уведомления
+        sendBtn.addEventListener('click', async () => {
+            addLog('Инициализация отправки тестового уведомления...');
+            statusDiv.textContent = 'Отправка тестового уведомления...';
+            
+            try {
+                const response = await fetch('/api/notifications/send-push', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: "Тестовое уведомление",
+                        body: "Поздравляем! Push-уведомления работают успешно! 🎉"
+                    }),
                     credentials: 'include'
                 });
                 
                 if (response.ok) {
-                    const data = await response.json();
-                    resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    addLog('Тестовое уведомление успешно отправлено', 'success');
+                    statusDiv.textContent = 'Уведомление отправлено. Проверьте ваше устройство.';
                 } else {
-                    resultDiv.innerHTML = `Ошибка: ${response.status}`;
+                    const errorText = await response.text();
+                    throw new Error(errorText);
                 }
             } catch (error) {
-                resultDiv.innerHTML = `Ошибка: ${error.message}`;
+                addLog(`Ошибка отправки: ${error.message}`, 'error');
+                statusDiv.textContent = `Ошибка отправки: ${error.message}`;
+            }
+        });
+
+        // Функция подписки
+        async function subscribe() {
+            try {
+                addLog('Запрос разрешения на уведомления...');
+                statusDiv.textContent = 'Запрос разрешения...';
+                
+                const permission = await Notification.requestPermission();
+                addLog(`Результат разрешения: ${permission}`);
+                
+                if (permission !== 'granted') {
+                    throw new Error('Разрешение не предоставлено пользователем');
+                }
+                
+                addLog('Получение VAPID-ключа от Service Worker...');
+                statusDiv.textContent = 'Получение ключа...';
+                
+                vapidPublicKey = await getVAPIDKey();
+                
+                addLog('Регистрация подписки в браузере...');
+                statusDiv.textContent = 'Регистрация подписки...';
+                
+                const subscription = await swRegistration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+                });
+                
+                addLog('Подписка получена, сохранение на сервере...');
+                statusDiv.textContent = 'Сохранение подписки...';
+                
+                await saveSubscription(subscription);
+                
+                isSubscribed = true;
+                sendBtn.disabled = false;
+                subscribeBtn.textContent = 'Отписаться';
+                
+                addLog('Подписка успешно оформлена!', 'success');
+                statusDiv.textContent = 'Подписка успешно оформлена!';
+            } catch (error) {
+                addLog(`Ошибка подписки: ${error.message}`, 'error');
+                statusDiv.textContent = `Ошибка: ${error.message}`;
             }
         }
-        window.onload = testNotifications;
+
+        // Функция отписки
+        async function unsubscribe() {
+            try {
+                addLog('Инициализация отписки...');
+                statusDiv.textContent = 'Отмена подписки...';
+                
+                const subscription = await swRegistration.pushManager.getSubscription();
+                if (subscription) {
+                    await subscription.unsubscribe();
+                    addLog('Подписка отменена в браузере', 'success');
+                    
+                    await fetch('/api/notifications/save-subscription', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ subscription: null }),
+                        credentials: 'include'
+                    });
+                    
+                    addLog('Подписка удалена с сервера', 'success');
+                }
+                
+                isSubscribed = false;
+                sendBtn.disabled = true;
+                subscribeBtn.textContent = 'Подписаться';
+                
+                addLog('Вы успешно отписались от уведомлений', 'success');
+                statusDiv.textContent = 'Вы отписались от уведомлений.';
+            } catch (error) {
+                addLog(`Ошибка отписки: ${error.message}`, 'error');
+                statusDiv.textContent = `Ошибка: ${error.message}`;
+            }
+        }
+
+        // Получение VAPID-ключа от SW
+        async function getVAPIDKey() {
+            return new Promise((resolve, reject) => {
+                const messageChannel = new MessageChannel();
+                messageChannel.port1.onmessage = event => {
+                    if (event.data && event.data.type === 'VAPID_KEY') {
+                        resolve(event.data.key);
+                    } else {
+                        reject('Не удалось получить VAPID-ключ');
+                    }
+                };
+                
+                if (!navigator.serviceWorker.controller) {
+                    reject('Service Worker не активирован');
+                    return;
+                }
+                
+                navigator.serviceWorker.controller.postMessage(
+                    { type: 'GET_VAPID_KEY' },
+                    [messageChannel.port2]
+                );
+                
+                // Таймаут на случай отсутствия ответа
+                setTimeout(() => {
+                    reject('Таймаут получения VAPID-ключа');
+                }, 5000);
+            });
+        }
+
+        // Сохранение подписки на сервере
+        async function saveSubscription(subscription) {
+            try {
+                const response = await fetch('/api/notifications/save-subscription', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subscription }),
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Ошибка сервера: ${response.status}`);
+                }
+                
+                addLog('Подписка успешно сохранена на сервере', 'success');
+                return true;
+            } catch (error) {
+                addLog(`Ошибка сохранения подписки: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        // Конвертация ключа
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+            
+            const rawData = atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        // Инициализация при загрузке страницы
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', init);
+        } else {
+            supportStatusDiv.innerHTML = '<div class="error">❌ Ваш браузер не поддерживает Service Workers</div>';
+            addLog('Браузер не поддерживает Service Workers', 'error');
+        }
     </script>
-</head>
-<body>
-    <h1>Тестирование API Уведомлений</h1>
-    <div id="result">Загрузка...</div>
 </body>
 </html>
