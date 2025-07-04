@@ -1,5 +1,5 @@
 // ===== Service Worker для FamilySpace PWA (v5.3.0) =====
-const CACHE_VERSION = 'v5.3.0';
+const CACHE_VERSION = '5.3.0';
 const CACHE_NAME = `familyspace-cache-${CACHE_VERSION}`;
 const API_CACHE_NAME = 'familyspace-api-cache-v2';
 const OFFLINE_URL = '/offline.html';
