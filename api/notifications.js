@@ -1,9 +1,11 @@
 import express from 'express';
 import User from '../models/User.js';
+import PushSubscription from '../models/PushSubscription.js';
+import webpush from 'web-push';
 
 const router = express.Router();
 
-// Улучшенный middleware аутентификации
+// Middleware аутентификации
 const authenticate = (req, res, next) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ 
@@ -19,7 +21,6 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
     
-    // Расширенные mock-данные
     const notifications = {
       unreadMessages: Math.floor(Math.random() * 10),
       upcomingEvents: Math.floor(Math.random() * 5),
@@ -63,7 +64,6 @@ router.get('/', authenticate, async (req, res) => {
                           notifications.upcomingEvents + 
                           notifications.overdueTasks;
 
-    // Добавляем информацию о пользователе
     const user = await User.findById(userId);
     if (user) {
       notifications.user = {
@@ -83,11 +83,101 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
+// Сохранение подписки на push-уведомления
+router.post('/save-subscription', authenticate, async (req, res) => {
+  try {
+    const { subscription } = req.body;
+    const userId = req.user.id;
+    
+    if (!subscription || !subscription.endpoint || !subscription.keys) {
+      return res.status(400).json({ 
+        error: 'Неверный формат подписки',
+        code: 'INVALID_SUBSCRIPTION' 
+      });
+    }
+    
+    await PushSubscription.findOneAndUpdate(
+      { userId },
+      {
+        endpoint: subscription.endpoint,
+        keys: {
+          p256dh: subscription.keys.p256dh,
+          auth: subscription.keys.auth
+        },
+        expirationTime: subscription.expirationTime || null
+      },
+      { upsert: true, new: true }
+    );
+
+    res.status(201).json({ success: true });
+  } catch (error) {
+    console.error('Ошибка сохранения подписки:', error);
+    res.status(500).json({ 
+      error: 'Ошибка сервера',
+      code: 'SUBSCRIPTION_SAVE_FAILED'
+    });
+  }
+});
+
+// Отправка тестового push-уведомления
+router.post('/send-push', authenticate, async (req, res) => {
+  try {
+    const { title, body } = req.body;
+    const userId = req.user.id;
+    
+    // Поиск подписки пользователя
+    const subscription = await PushSubscription.findOne({ userId });
+    if (!subscription) {
+      return res.status(404).json({ 
+        error: 'Подписка не найдена',
+        code: 'SUBSCRIPTION_NOT_FOUND' 
+      });
+    }
+    
+    // Формирование payload
+    const pushSubscription = {
+      endpoint: subscription.endpoint,
+      keys: {
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth
+      }
+    };
+    
+    const payload = JSON.stringify({ 
+      title: title || "Тестовое уведомление",
+      body: body || "Это тестовое сообщение от FamilySpace",
+      url: "/family.html"
+    });
+
+    // Отправка уведомления
+    await webpush.sendNotification(pushSubscription, payload);
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Ошибка отправки push:', error);
+    
+    // Специфические ошибки web-push
+    if (error.statusCode === 410) {
+      // Устаревшая подписка - удаляем
+      await PushSubscription.deleteOne({ userId });
+      return res.status(410).json({ 
+        error: 'Подписка устарела и удалена',
+        code: 'SUBSCRIPTION_EXPIRED' 
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Ошибка сервера',
+      code: 'PUSH_SEND_FAILED',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // Пометить уведомление как прочитанное
 router.put('/:id/read', authenticate, async (req, res) => {
   try {
     const notificationId = req.params.id;
-    // В реальной реализации здесь было бы обновление в базе данных
     res.json({ 
       success: true, 
       message: `Уведомление ${notificationId} помечено как прочитанное`,
@@ -106,7 +196,6 @@ router.put('/:id/read', authenticate, async (req, res) => {
 router.delete('/:id', authenticate, async (req, res) => {
   try {
     const notificationId = req.params.id;
-    // В реальной реализации здесь было бы удаление из базы данных
     res.json({ 
       success: true, 
       message: `Уведомление ${notificationId} удалено`,
