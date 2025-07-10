@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Оффлайн режим | FamilySpace</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      text-align: center;
+      color: var(--text-primary);
+      background-image: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+      position: relative;
+      overflow: hidden;
+      transition: background 0.5s ease;
+    }
+    
+    [data-theme="light"] body {
+      --bg-gradient-start: #f0f4f8;
+      --bg-gradient-end: #d9e2ec;
+      --glass-bg: rgba(255, 255, 255, 0.6);
+      --glass-border: rgba(255, 255, 255, 0.8);
+      --text-primary: #1e293b;
+      --text-secondary: #475569;
+    }
+    
+    [data-theme="dark"] body {
+      --bg-gradient-start: #0f172a;
+      --bg-gradient-end: #1e293b;
+      --glass-bg: rgba(30, 30, 30, 0.25);
+      --glass-border: rgba(255, 255, 255, 0.15);
+      --text-primary: #f1f5f9;
+      --text-secondary: #cbd5e1;
+    }
+    
+    /* Стеклянный контейнер */
+    .glass-container {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 40px 30px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 
+        0 12px 30px rgba(0, 0, 0, 0.15),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+      z-index: 2;
+    }
+    
+    /* Эффект внутреннего свечения */
+    .glass-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: inherit;
+      filter: blur(20px);
+      z-index: -1;
+      opacity: 0.7;
+    }
+    
+    /* Иконка офлайн-статуса */
+    .offline-icon {
+      font-size: 80px;
+      margin-bottom: 25px;
+      color: #ff6b6b;
+      text-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    h1 {
+      font-size: 28px;
+      margin-bottom: 15px;
+      color: var(--text-primary);
+      font-weight: 700;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    p {
+      font-size: 17px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 25px;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Статус подключения */
+    .status {
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 16px;
+      margin: 20px auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      max-width: 80%;
+    }
+    
+    .status i {
+      font-size: 18px;
+    }
+    
+    .status.online {
+      background: rgba(64, 192, 87, 0.2);
+      border: 1px solid rgba(64, 192, 87, 0.4);
+      color: #40c057;
+    }
+    
+    .status.offline {
+      background: rgba(255, 107, 107, 0.2);
+      border: 1px solid rgba(255, 107, 107, 0.4);
+      color: #ff6b6b;
+    }
+    
+    /* Стеклянная кнопка */
+    .glass-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 32px;
+      background: rgba(66, 99, 235, 0.7);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 14px;
+      font-size: 17px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 15px;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 6px 20px rgba(66, 99, 235, 0.25);
+    }
+    
+    .glass-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: 0.5s;
+    }
+    
+    .glass-button:hover {
+      background: rgba(66, 99, 235, 0.85);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(66, 99, 235, 0.35);
+    }
+    
+    .glass-button:hover::before {
+      left: 100%;
+    }
+    
+    .glass-button:active {
+      transform: translateY(1px);
+    }
+    
+    .glass-button.pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    /* Стеклянная панель советов */
+    .glass-tips {
+      margin-top: 30px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 16px;
+      text-align: left;
+      border: 1px solid var(--glass-border);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+    }
+    
+    .glass-tips h2 {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .glass-tips h2 i {
+      color: #4263eb;
+    }
+    
+    .glass-tips ul {
+      padding-left: 24px;
+      color: var(--text-secondary);
+    }
+    
+    .glass-tips li {
+      margin-bottom: 12px;
+      line-height: 1.5;
+      position: relative;
+    }
+    
+    .glass-tips li::before {
+      content: '•';
+      color: #4263eb;
+      font-weight: bold;
+      position: absolute;
+      left: -18px;
+    }
+    
+    /* Анимированные волны */
+    .glass-waves {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%234263eb' fill-opacity='0.15' d='M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,122.7C960,149,1056,203,1152,208C1248,213,1344,171,1392,149.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+      background-size: cover;
+      z-index: 1;
+    }
+    
+    /* Пузыри фона */
+    .bubble {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.03);
+      z-index: 0;
+    }
+    
+    .bubble-1 {
+      width: 200px;
+      height: 200px;
+      top: -50px;
+      left: -50px;
+    }
+    
+    .bubble-2 {
+      width: 150px;
+      height: 150px;
+      bottom: 100px;
+      right: -30px;
+    }
+    
+    .bubble-3 {
+      width: 120px;
+      height: 120px;
+      top: 100px;
+      right: 100px;
+    }
+    
+    /* Адаптивность */
+    @media (max-width: 480px) {
+      .glass-container {
+        padding: 30px 20px;
+        border-radius: 20px;
+      }
+      
+      .offline-icon {
+        font-size: 70px;
+      }
+      
+      h1 {
+        font-size: 24px;
+      }
+      
+      p {
+        font-size: 16px;
+      }
+      
+      .status {
+        font-size: 14px;
+        padding: 10px 15px;
+      }
+      
+      .glass-button {
+        padding: 12px 25px;
+        font-size: 16px;
+      }
+      
+      .glass-tips {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Фоновые элементы -->
+  <div class="bubble bubble-1"></div>
+  <div class="bubble bubble-2"></div>
+  <div class="bubble bubble-3"></div>
+  
+  <div class="glass-container">
+    <div class="offline-icon">📶</div>
+    <h1>Кажется, вы оффлайн</h1>
+    <p>FamilySpace не может подключиться к интернету. Проверьте ваше соединение или попробуйте позже.</p>
+    
+    <div id="connection-status" class="status offline">
+      <i class="fas fa-wifi"></i>
+      <span id="status-text">Соединение отсутствует</span>
+    </div>
+    
+    <button id="reload-button" class="glass-button pulse">
+      <i class="fas fa-sync-alt"></i>
+      <span>Попробовать снова</span>
+    </button>
+    
+    <div class="glass-tips">
+      <h2>
+        <i class="fas fa-lightbulb"></i>
+        <span>Что можно сделать:</span>
+      </h2>
+      <ul>
+        <li>Проверьте подключение к Wi-Fi или мобильной сети</li>
+        <li>Убедитесь, что режим полета выключен</li>
+        <li>Перезагрузите роутер или модем</li>
+        <li>Попробуйте зайти позже, когда соединение восстановится</li>
+      </ul>
+    </div>
+  </div>
+  
+  <div class="glass-waves"></div>
+
+  <script>
+    const statusEl = document.getElementById('connection-status');
+    const statusText = document.getElementById('status-text');
+    const reloadButton = document.getElementById('reload-button');
+    const offlineIcon = document.querySelector('.offline-icon');
+    
+    // Обновляем статус подключения
+    function updateConnectionStatus() {
+      if (navigator.onLine) {
+        statusEl.className = 'status online';
+        statusEl.innerHTML = '<i class="fas fa-wifi"></i> <span>Соединение восстановлено!</span>';
+        offlineIcon.textContent = '✅';
+        offlineIcon.style.color = '#40c057';
+        
+        // Перезагружаем страницу через 2 секунды
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        statusEl.className = 'status offline';
+        statusEl.innerHTML = '<i class="fas fa-wifi-slash"></i> <span>Соединение отсутствует</span>';
+      }
+    }
+    
+    // Обработчик кнопки перезагрузки
+    reloadButton.addEventListener('click', () => {
+      // Добавляем анимацию загрузки
+      reloadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Проверка...</span>';
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    });
+    
+    // Обработчики событий сети
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
+    
+    // Инициализация статуса
+    updateConnectionStatus();
+    
+    // Автоматическая попытка перезагрузки
+    setInterval(() => {
+      if (navigator.onLine) {
+        window.location.reload();
+      }
+    }, 10000);
+    
+    // Управление анимацией кнопки
+    reloadButton.addEventListener('mouseenter', () => {
+      reloadButton.classList.remove('pulse');
+    });
+    
+    reloadButton.addEventListener('mouseleave', () => {
+      if (!navigator.onLine) {
+        reloadButton.classList.add('pulse');
+      }
+    });
+    
+    // Создаем плавающие пузыри
+    function createBubbles() {
+      const bubblesContainer = document.body;
+      const bubbleCount = 8;
+      
+      for (let i = 0; i < bubbleCount; i++) {
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        
+        // Случайные параметры
+        const size = Math.random() * 80 + 20;
+        const posX = Math.random() * 100;
+        const posY = Math.random() * 100;
+        const animationDuration = Math.random() * 20 + 10;
+        
+        bubble.style.width = `${size}px`;
+        bubble.style.height = `${size}px`;
+        bubble.style.left = `${posX}%`;
+        bubble.style.top = `${posY}%`;
+        bubble.style.animation = `float ${animationDuration}s infinite ease-in-out`;
+        bubble.style.animationDelay = `${Math.random() * 5}s`;
+        bubble.style.opacity = 0.05 + Math.random() * 0.1;
+        
+        bubblesContainer.appendChild(bubble);
+      }
+    }
+    
+    // Инициализируем пузыри
+    createBubbles();
+  </script>
+</body>
+</html>

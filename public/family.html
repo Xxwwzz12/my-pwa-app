@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#4263eb">
+  <title>Моя семья | FamilySpace</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="/manifest.json" type="application/manifest+json">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Обновленные стили в стиле index.html */
+    :root {
+      --glass-bg: rgba(255, 255, 255, 0.1);
+      --glass-border: rgba(255, 255, 255, 0.15);
+      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --glass-blur: 12px;
+      --glass-radius: 24px;
+      --primary: #4263eb;
+      --primary-dark: #364fc7;
+      --accent: #ff6b6b;
+      --text-primary: rgba(255, 255, 255, 0.95);
+      --text-secondary: rgba(255, 255, 255, 0.7);
+      --text-tertiary: rgba(255, 255, 255, 0.5);
+      --fallback-bg: #0f172a;
+      --success: #51cf66;
+      --warning: #fcc419;
+      --danger: #ff6b6b;
+    }
+    
+    [data-theme="light"] {
+      --glass-bg: rgba(255, 255, 255, 0.25);
+      --glass-border: rgba(0, 0, 0, 0.1);
+      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+      --text-primary: #212529;
+      --text-secondary: #495057;
+      --text-tertiary: #868e96;
+      --fallback-bg: #f5f7fa;
+    }
+
+    /* Основные стили страницы */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--fallback-bg) url('/images/assets/vista-bg.webp') no-repeat center center fixed;
+      background-size: cover;
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+    
+    .main-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 0;
+      animation: fadeIn 0.6s 0.2s both;
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .logo-img {
+      height: 50px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      padding: 8px;
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+    }
+    
+    .app-info {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .app-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-primary);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    
+    .app-version {
+      font-size: 0.9rem;
+      color: var(--text-tertiary);
+      margin-top: 3px;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 15px;
+      position: relative;
+    }
+    
+    .icon-btn {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 50%;
+      width: 45px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      box-shadow: var(--glass-shadow);
+      color: var(--text-primary);
+    }
+    
+    .icon-btn:hover {
+      transform: translateY(-3px);
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: var(--danger);
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 0.8rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      animation: pulse 2s infinite;
+      z-index: 10;
+    }
+    
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 30px 0;
+      gap: 30px;
+    }
+    
+    .section-title {
+      font-size: 1.8rem;
+      margin: 0 0 25px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    }
+    
+    /* Стили для плиток приложений */
+    .apps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 25px;
+      animation: fadeIn 0.8s 0.6s both;
+    }
+    
+    .app-tile {
+      background: var(--glass-bg);
+      border-radius: var(--glass-radius);
+      padding: 25px 15px;
+      box-shadow: var(--glass-shadow);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      aspect-ratio: 1/1;
+    }
+    
+    .app-tile:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+    
+    .app-icon {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--primary);
+      font-size: 28px;
+      margin-bottom: 15px;
+    }
+    
+    .app-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      text-align: center;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    }
+    
+    .tile-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--danger);
+      color: white;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 0.9rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      z-index: 5;
+    }
+    
+    /* Анимации */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    
+    .app-tile.new-notification {
+      animation: pulse 1s ease;
+    }
+    
+    /* Адаптивность */
+    @media (max-width: 768px) {
+      .apps-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      
+      .app-tile {
+        padding: 20px 10px;
+      }
+      
+      .app-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+      }
+      
+      .app-name {
+        font-size: 1rem;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .apps-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+      }
+      
+      .app-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 22px;
+      }
+      
+      .app-name {
+        font-size: 0.95rem;
+      }
+      
+      :root {
+        --glass-blur: 8px;
+      }
+    }
+    
+    /* Fallback для браузеров без поддержки backdrop-filter */
+    @supports not (backdrop-filter: blur(12px)) {
+      .app-tile, .logo-img, .icon-btn {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: rgba(30, 30, 30, 0.7) !important;
+      }
+      
+      [data-theme="light"] .app-tile, 
+      [data-theme="light"] .logo-img, 
+      [data-theme="light"] .icon-btn {
+        background: rgba(255, 255, 255, 0.8) !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Основной контейнер -->
+  <div class="main-container">
+    <!-- Шапка -->
+    <header class="header">
+      <div class="logo-container">
+        <img src="/images/assets/logo.webp" alt="FamilySpace" class="logo-img"
+             onerror="this.classList.add('broken-image-fallback'); this.alt='Ошибка загрузки логотипа';">
+        <div class="app-info">
+          <h1 class="app-name">Моя семья</h1>
+          <div class="app-version">FamilySpace</div>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <button class="icon-btn" id="notifications-btn">
+          <i class="fas fa-bell"></i>
+          <div class="notification-badge" id="notification-badge">0</div>
+        </button>
+        <button class="icon-btn" id="theme-btn">
+          <i class="fas fa-cog"></i>
+        </button>
+      </div>
+    </header>
+    
+    <!-- Основной контент -->
+    <main class="content">
+      <!-- Заголовок раздела -->
+      <h3 class="section-title">
+        <i class="fas fa-grid"></i> Семейные приложения
+      </h3>
+      
+      <!-- Плитки приложений -->
+      <div class="apps-grid" id="app-grid">
+        <!-- Приложения будут добавляться динамически -->
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Инициализация домашнего экрана
+    function initHomeScreen() {
+      // Установка темы из localStorage
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      
+      // Обработчик кнопки темы
+      document.getElementById('theme-btn').addEventListener('click', toggleTheme);
+      
+      // Список приложений
+      const apps = [
+        { 
+          id: 'family-chat', 
+          name: 'Чат', 
+          icon: 'fas fa-comments', 
+          badge: 0,
+          url: 'family-chat.html',
+          color: '#4263eb'
+        },
+        { 
+          id: 'calendar', 
+          name: 'Календарь', 
+          icon: 'fas fa-calendar-alt', 
+          badge: 0,
+          url: 'calendar.html',
+          color: '#51cf66'
+        },
+        { 
+          id: 'wishlist', 
+          name: 'Вишлист', 
+          icon: 'fas fa-gift', 
+          badge: 0,
+          url: 'wishlist.html',
+          color: '#ff6b6b'
+        },
+        { 
+          id: 'tasks', 
+          name: 'Задачи', 
+          icon: 'fas fa-tasks', 
+          badge: 0,
+          url: 'tasks.html',
+          color: '#fcc419'
+        },
+        { 
+          id: 'family-management', 
+          name: 'Семья', 
+          icon: 'fas fa-users', 
+          badge: 0,
+          url: 'family-management.html',
+          color: '#7950f2'
+        },
+        { 
+          id: 'menu', 
+          name: 'Меню', 
+          icon: 'fas fa-utensils', 
+          badge: 0,
+          url: 'menu.html',
+          color: '#fd7e14'
+        },
+        { 
+          id: 'pets', 
+          name: 'Питомцы', 
+          icon: 'fas fa-paw', 
+          badge: 0,
+          url: 'pets.html',
+          color: '#e8590c'
+        },
+        { 
+          id: 'profile', 
+          name: 'Профиль', 
+          icon: 'fas fa-user', 
+          badge: 0,
+          url: 'profile.html',
+          color: '#228be6'
+        },
+        { 
+          id: 'settings', 
+          name: 'Настройки', 
+          icon: 'fas fa-cog', 
+          badge: 0,
+          url: 'settings.html',
+          color: '#868e96'
+        },
+        { 
+          id: 'ai-chat', 
+          name: 'ИИ Помощник', 
+          icon: 'fas fa-robot', 
+          badge: 0,
+          url: 'ai-chat.html',
+          color: '#20c997'
+        }
+      ];
+      
+      const appGrid = document.getElementById('app-grid');
+      
+      // Создание плиток приложений
+      apps.forEach(app => {
+        const appElement = document.createElement('div');
+        appElement.className = 'app-tile';
+        appElement.id = `app-${app.id}`;
+        appElement.innerHTML = `
+          <div class="app-icon" style="background: rgba(${hexToRgb(app.color)}, 0.2); color: ${app.color}">
+            <i class="${app.icon}"></i>
+          </div>
+          <div class="app-name">${app.name}</div>
+          ${app.badge > 0 ? `<div class="tile-badge">${app.badge}</div>` : ''}
+        `;
+        
+        // Обработчик клика
+        appElement.addEventListener('click', () => {
+          // Анимация нажатия
+          appElement.classList.add('new-notification');
+          setTimeout(() => appElement.classList.remove('new-notification'), 500);
+          
+          // Переход на страницу приложения
+          if (app.url) {
+            setTimeout(() => window.location.href = app.url, 300);
+          } else {
+            alert(`Раздел "${app.name}" в разработке`);
+          }
+        });
+        
+        appGrid.appendChild(appElement);
+      });
+      
+      // Загрузка реальных уведомлений
+      async function loadNotifications() {
+        try {
+          const response = await fetch('/api/notifications', {
+            credentials: 'include'
+          });
+          
+          if (!response.ok) throw new Error('Ошибка загрузки уведомлений');
+          const data = await response.json();
+          
+          // Обновляем бейджи для конкретных приложений
+          updateAppBadge('family-chat', data.unreadMessages);
+          updateAppBadge('calendar', data.upcomingEvents);
+          updateAppBadge('tasks', data.overdueTasks);
+          
+          // Обновляем общий бейдж в шапке
+          const totalBadge = document.getElementById('notification-badge');
+          if (totalBadge) {
+            totalBadge.textContent = data.total > 9 ? '9+' : data.total;
+            totalBadge.style.display = data.total > 0 ? 'flex' : 'none';
+          }
+          
+        } catch (error) {
+          console.error('Ошибка загрузки уведомлений:', error);
+        }
+      }
+      
+      // Обновление бейджа приложения
+      function updateAppBadge(appId, count) {
+        if (count <= 0) return;
+        
+        const appElement = document.getElementById(`app-${appId}`);
+        if (appElement) {
+          let badge = appElement.querySelector('.tile-badge');
+          
+          if (badge) {
+            const currentCount = parseInt(badge.textContent);
+            const newCount = currentCount + count;
+            badge.textContent = newCount > 9 ? '9+' : newCount;
+          } else {
+            badge = document.createElement('div');
+            badge.className = 'tile-badge';
+            badge.textContent = count > 9 ? '9+' : count;
+            appElement.appendChild(badge);
+          }
+          
+          // Анимация пульсации
+          appElement.classList.add('new-notification');
+          setTimeout(() => appElement.classList.remove('new-notification'), 2000);
+        }
+      }
+      
+      // Вспомогательная функция для преобразования цвета
+      function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? 
+          `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
+          '66, 99, 235';
+      }
+      
+      // Переключение темы
+      function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+      }
+      
+      // Загрузка уведомлений
+      loadNotifications();
+    }
+    
+    // Запуск после загрузки
+    window.addEventListener('DOMContentLoaded', initHomeScreen);
+  </script>
+  
+  <!-- Скрипт для работы с Service Worker -->
+  <script>
+    // Регистрация Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('/sw.js');
+          console.log('ServiceWorker зарегистрирован с областью видимости: ', registration.scope);
+        } catch (error) {
+          console.error('Ошибка регистрации Service Worker: ', error);
+        }
+      });
+    }
+  </script>
+  
+  <!-- Регистрация для push-уведомлений -->
+  <script>
+    // Функция конвертации ключа для push-уведомлений
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+      const rawData = atob(base64);
+      return new Uint8Array([...rawData].map(char => char.charCodeAt(0)));
+    }
+
+    // Регистрация Service Worker + Push
+    const registerPush = async () => {
+      if (!('serviceWorker' in navigator)) return;
+      
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const permission = await Notification.requestPermission();
+        
+        if (permission !== 'granted') return;
+        
+        const subscription = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array('BHlRR33D_L19ZAfcmTqJz9boQacOqRAVBwx4beTj7UgKWBX9ZkYbW0oOfZAtbdCT9jaCJWQ3ng5VaaUrWU8KJLo')
+        });
+        
+        await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(subscription)
+        });
+        
+        console.log('Push-уведомления успешно зарегистрированы');
+      } catch (e) {
+        console.error('Ошибка регистрации push-уведомлений:', e);
+      }
+    };
+
+    // Инициализация при загрузке страницы
+    window.addEventListener('DOMContentLoaded', () => {
+      // Обработчик для кнопки уведомлений
+      document.getElementById('notifications-btn').addEventListener('click', () => {
+        registerPush().catch(console.error);
+      });
+      
+      // Автоматическая регистрация при наличии разрешения
+      if (Notification.permission === 'granted') {
+        registerPush();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тестирование Push-уведомлений</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <script src="/service-worker-registration.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        #subscribeBtn {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        #subscribeBtn:hover {
+            background-color: #2980b9;
+        }
+        
+        #sendBtn {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        #sendBtn:hover {
+            background-color: #27ae60;
+        }
+        
+        #sendBtn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .status-panel {
+            background-color: #f1f8ff;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        #status {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        .log-container {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+        }
+        
+        #log {
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+        
+        .success { color: #27ae60; }
+        .error { color: #e74c3c; }
+        .info { color: #3498db; }
+        .warning { color: #f39c12; }
+        
+        .support-check {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px dashed #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Тестирование Push-уведомлений</h1>
+        
+        <div class="support-check">
+            <h3>Проверка поддержки браузером:</h3>
+            <div id="supportStatus">Выполняется проверка...</div>
+        </div>
+        
+        <div class="button-group">
+            <button id="subscribeBtn">Подписаться на уведомления</button>
+            <button id="sendBtn" disabled>Отправить тестовое уведомление</button>
+        </div>
+        
+        <div class="status-panel">
+            <h3>Статус:</h3>
+            <div id="status">Ожидание действий...</div>
+        </div>
+        
+        <div class="log-container">
+            <h3>Журнал событий:</h3>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <script>
+        // Элементы интерфейса
+        const statusDiv = document.getElementById('status');
+        const subscribeBtn = document.getElementById('subscribeBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        const supportStatusDiv = document.getElementById('supportStatus');
+        const logDiv = document.getElementById('log');
+        
+        // Состояние приложения
+        let swRegistration = null;
+        let isSubscribed = false;
+        let vapidPublicKey = null;
+        let currentSubscription = null; // Хранит текущую подписку
+
+        // FIX: Восстановление подписки из localStorage при загрузке
+        const savedSubscription = localStorage.getItem('pushSubscription');
+        if (savedSubscription) {
+            try {
+                currentSubscription = JSON.parse(savedSubscription);
+                statusDiv.textContent = 'Статус: Подписка восстановлена из кэша!';
+                sendBtn.disabled = false;
+                addLog('Подписка восстановлена из localStorage', 'success');
+            } catch (e) {
+                addLog(`Ошибка восстановления подписки: ${e.message}`, 'error');
+            }
+        }
+
+        // Добавление записи в журнал
+        function addLog(message, className = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = className;
+            logEntry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // Проверка поддержки браузером
+        function checkBrowserSupport() {
+            const supported = 'serviceWorker' in navigator && 'PushManager' in window;
+            
+            if (!supported) {
+                supportStatusDiv.innerHTML = `
+                    <div class="error">❌ Ваш браузер не поддерживает все необходимые технологии</div>
+                    <ul>
+                        <li>Service Workers: ${'serviceWorker' in navigator ? '✅' : '❌'}</li>
+                        <li>Push API: ${'PushManager' in window ? '✅' : '❌'}</li>
+                    </ul>
+                `;
+                
+                subscribeBtn.disabled = true;
+                addLog('Браузер не поддерживает Service Workers и/или Push API', 'error');
+            } else {
+                supportStatusDiv.innerHTML = '<div class="success">✅ Ваш браузер поддерживает все необходимые технологии</div>';
+                addLog('Браузер поддерживает необходимые технологии');
+            }
+            
+            return supported;
+        }
+
+        // Инициализация приложения
+        async function init() {
+            if (!checkBrowserSupport()) return;
+            
+            try {
+                addLog('Регистрация Service Worker...');
+                swRegistration = await navigator.serviceWorker.register('/sw.js');
+                
+                addLog(`Service Worker зарегистрирован с областью: ${swRegistration.scope}`);
+                statusDiv.textContent = 'Service Worker зарегистрирован. Проверка состояния подписки...';
+                
+                // Проверка подписки
+                await checkSubscription();
+                
+                // Проверка разрешения на уведомления
+                checkNotificationPermission();
+            } catch (error) {
+                addLog(`Ошибка регистрации Service Worker: ${error.message}`, 'error');
+                statusDiv.textContent = `Ошибка: ${error.message}`;
+            }
+        }
+
+        // Проверка состояния подписки
+        async function checkSubscription() {
+            try {
+                const subscription = await swRegistration.pushManager.getSubscription();
+                isSubscribed = !(subscription === null);
+                
+                if (isSubscribed) {
+                    // FIX: Сохраняем активную подписку
+                    currentSubscription = subscription;
+                    addLog('Найдена существующая подписка', 'success');
+                    statusDiv.textContent = 'Вы подписаны на push-уведомления.';
+                    sendBtn.disabled = false;
+                    subscribeBtn.textContent = 'Отписаться от уведомлений';
+                    
+                    // FIX: Сохраняем в localStorage
+                    localStorage.setItem('pushSubscription', JSON.stringify(subscription));
+                } else {
+                    addLog('Активная подписка не найдена', 'info');
+                    statusDiv.textContent = 'Вы не подписаны на push-уведомления.';
+                    subscribeBtn.textContent = 'Подписаться на уведомления';
+                }
+            } catch (error) {
+                addLog(`Ошибка проверки подписки: ${error.message}`, 'error');
+                statusDiv.textContent = 'Ошибка проверки состояния подписки.';
+            }
+        }
+
+        // Проверка разрешения на уведомления
+        function checkNotificationPermission() {
+            if (Notification.permission === 'granted') {
+                addLog('Разрешение на уведомления уже предоставлено');
+            } else if (Notification.permission === 'denied') {
+                addLog('Разрешение на уведомления отклонено', 'warning');
+                statusDiv.textContent = 'Разрешение на уведомления отклонено. Пожалуйста, измените настройки браузера.';
+                subscribeBtn.disabled = true;
+            }
+        }
+
+        // Подписка/отписка
+        subscribeBtn.addEventListener('click', async () => {
+            if (isSubscribed) {
+                await unsubscribe();
+            } else {
+                await subscribe();
+            }
+        });
+
+        // Отправка тестового уведомления
+        sendBtn.addEventListener('click', async () => {
+            addLog('Инициализация отправки тестового уведомления...');
+            statusDiv.textContent = 'Отправка тестового уведомления...';
+            
+            try {
+                // FIX: Исправлен путь к API
+                const response = await fetch('/api/notifications/send-push', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Cookie': `connect.sid=${getSessionCookie()}`
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        // FIX: Добавлена передача подписки
+                        subscription: currentSubscription,
+                        title: "Тестовое уведомление",
+                        body: "Поздравляем! Push-уведомления работают! 🎉",
+                        icon: "/images/assets/icon-message.webp"
+                    })
+                });
+                
+                if (response.ok) {
+                    addLog('Тестовое уведомление успешно отправлено', 'success');
+                    statusDiv.textContent = 'Уведомление отправлено. Проверьте ваше устройство.';
+                } else {
+                    // FIX: Чтение ошибки из JSON-ответа
+                    const errorData = await response.json();
+                    const errorMessage = errorData.error || `Ошибка сервера: ${response.status}`;
+                    throw new Error(errorMessage);
+                }
+            } catch (error) {
+                addLog(`Ошибка отправки: ${error.message}`, 'error');
+                statusDiv.textContent = `Ошибка отправки: ${error.message}`;
+                
+                // FIX: Дополнительная диагностика
+                if (error.message.includes('404')) {
+                    addLog('Серверный эндпоинт не найден. Проверьте конфигурацию сервера.', 'error');
+                }
+            }
+        });
+
+        // Получение сессионной куки
+        function getSessionCookie() {
+            const cookies = document.cookie.split(';');
+            for (const cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'connect.sid') {
+                    return value;
+                }
+            }
+            return '';
+        }
+
+        // Функция подписки
+        async function subscribe() {
+            try {
+                addLog('Запрос разрешения на уведомления...');
+                statusDiv.textContent = 'Запрос разрешения...';
+                
+                const permission = await Notification.requestPermission();
+                addLog(`Результат разрешения: ${permission}`);
+                
+                if (permission !== 'granted') {
+                    throw new Error('Разрешение не предоставлено пользователем');
+                }
+                
+                addLog('Получение VAPID-ключа от Service Worker...');
+                statusDiv.textContent = 'Получение ключа...';
+                
+                vapidPublicKey = await getVAPIDKey();
+                
+                addLog('Регистрация подписки в браузере...');
+                statusDiv.textContent = 'Регистрация подписки...';
+                
+                const subscription = await swRegistration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+                });
+                
+                // FIX: Сохраняем текущую подписку
+                currentSubscription = subscription;
+                
+                addLog('Подписка получена, сохранение на сервере...');
+                statusDiv.textContent = 'Сохранение подписки...';
+                
+                await saveSubscription(subscription);
+                
+                isSubscribed = true;
+                sendBtn.disabled = false;
+                subscribeBtn.textContent = 'Отписаться';
+                
+                // FIX: Сохраняем в localStorage
+                localStorage.setItem('pushSubscription', JSON.stringify(subscription));
+                
+                addLog('Подписка успешно оформлена!', 'success');
+                statusDiv.textContent = 'Подписка успешно оформлена!';
+            } catch (error) {
+                addLog(`Ошибка подписки: ${error.message}`, 'error');
+                statusDiv.textContent = `Ошибка: ${error.message}`;
+            }
+        }
+
+        // Функция отписки
+        async function unsubscribe() {
+            try {
+                addLog('Инициализация отписки...');
+                statusDiv.textContent = 'Отмена подписки...';
+                
+                const subscription = await swRegistration.pushManager.getSubscription();
+                if (subscription) {
+                    await subscription.unsubscribe();
+                    addLog('Подписка отменена в браузере', 'success');
+                    
+                    // FIX: Исправлен формат запроса
+                    const response = await fetch('/api/notifications/save-subscription', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Cookie': `connect.sid=${getSessionCookie()}`
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({ subscription: null })
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || `Ошибка сервера: ${response.status}`);
+                    }
+                    
+                    addLog('Подписка удалена с сервера', 'success');
+                }
+                
+                isSubscribed = false;
+                sendBtn.disabled = true;
+                subscribeBtn.textContent = 'Подписаться';
+                
+                // FIX: Удаляем из localStorage
+                localStorage.removeItem('pushSubscription');
+                currentSubscription = null;
+                
+                addLog('Вы успешно отписались от уведомлений', 'success');
+                statusDiv.textContent = 'Вы отписались от уведомлений.';
+            } catch (error) {
+                addLog(`Ошибка отписки: ${error.message}`, 'error');
+                statusDiv.textContent = `Ошибка: ${error.message}`;
+            }
+        }
+
+        // Получение VAPID-ключа от SW
+        async function getVAPIDKey() {
+            return new Promise((resolve, reject) => {
+                const messageChannel = new MessageChannel();
+                messageChannel.port1.onmessage = event => {
+                    if (event.data && event.data.type === 'VAPID_KEY') {
+                        resolve(event.data.key);
+                    } else {
+                        reject('Не удалось получить VAPID-ключ');
+                    }
+                };
+                
+                if (!navigator.serviceWorker.controller) {
+                    reject('Service Worker не активирован');
+                    return;
+                }
+                
+                navigator.serviceWorker.controller.postMessage(
+                    { type: 'GET_VAPID_KEY' },
+                    [messageChannel.port2]
+                );
+                
+                // Таймаут на случай отсутствия ответа
+                setTimeout(() => {
+                    reject('Таймаут получения VAPID-ключа');
+                }, 5000);
+            });
+        }
+
+        // Сохранение подписки на сервере
+        async function saveSubscription(subscription) {
+            try {
+                const response = await fetch('/api/notifications/save-subscription', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Cookie': `connect.sid=${getSessionCookie()}`
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ subscription })
+                });
+                
+                if (!response.ok) {
+                    // FIX: Чтение ошибки из JSON-ответа
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Ошибка сервера: ${response.status}`);
+                }
+                
+                addLog('Подписка успешно сохранена на сервере', 'success');
+                return true;
+            } catch (error) {
+                addLog(`Ошибка сохранения подписки: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        // Конвертация ключа
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+            
+            const rawData = atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        // Инициализация при загрузке страницы
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', init);
+        } else {
+            supportStatusDiv.innerHTML = '<div class="error">❌ Ваш браузер не поддерживает Service Workers</div>';
+            addLog('Браузер не поддерживает Service Workers', 'error');
+        }
+    </script>
+</body>
+</html>

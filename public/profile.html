@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4263eb">
+    <title>Мой профиль - FamilySpace</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Обновленные стили для страницы профиля */
+        .profile-container {
+            background: var(--glass-bg);
+            border-radius: var(--glass-radius);
+            padding: 30px;
+            max-width: 800px;
+            margin: 30px auto;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .profile-container::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: inherit;
+            filter: blur(20px);
+            z-index: -1;
+            opacity: 0.5;
+        }
+        
+        .avatar-section {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        .avatar-preview {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(66, 99, 235, 0.5);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        
+        .avatar-options {
+            flex: 1;
+        }
+        
+        .avatar-option {
+            margin-bottom: 20px;
+        }
+        
+        .avatar-option label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-shadow: 0 1px 1px rgba(0,0,0,0.05);
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-shadow: 0 1px 1px rgba(0,0,0,0.05);
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            font-size: 1rem;
+            color: var(--text-primary);
+            transition: all 0.3s;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        
+        input:focus, select:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(66, 99, 235, 0.2);
+            background: rgba(255, 255, 255, 0.25);
+        }
+        
+        .email-display {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            padding: 14px 18px;
+            font-size: 1rem;
+            color: var(--text-primary);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        
+        .required-star {
+            color: var(--danger);
+            margin-left: 3px;
+        }
+        
+        .error-message {
+            color: var(--danger);
+            font-size: 0.9rem;
+            margin-top: 8px;
+            display: none;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.05);
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .btn {
+            padding: 14px 24px;
+            background: rgba(66, 99, 235, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        .btn:hover {
+            background: rgba(66, 99, 235, 0.85);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn-block {
+            width: 100%;
+            justify-content: center;
+            padding: 16px;
+            margin-top: 30px;
+        }
+        
+        .btn i {
+            font-size: 1.1rem;
+        }
+        
+        .upload-btn-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .upload-btn {
+            border: 1px dashed var(--glass-border);
+            color: var(--text-secondary);
+            background-color: transparent;
+            padding: 12px 16px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 500;
+            width: 100%;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        
+        .upload-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(66, 99, 235, 0.1);
+        }
+        
+        .upload-btn-wrapper input[type=file] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .avatar-hint {
+            font-size: 0.9rem;
+            color: var(--text-tertiary);
+            margin-top: 8px;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.05);
+        }
+        
+        @media (max-width: 768px) {
+            .avatar-section {
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .profile-container {
+                padding: 25px;
+                border-radius: 24px;
+            }
+            
+            .avatar-preview {
+                width: 120px;
+                height: 120px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .profile-container {
+                margin: 15px;
+                padding: 20px;
+                border-radius: 20px;
+            }
+            
+            .avatar-section {
+                margin-bottom: 20px;
+                padding-bottom: 20px;
+            }
+            
+            .btn-block {
+                padding: 14px;
+            }
+            
+            .avatar-preview {
+                width: 100px;
+                height: 100px;
+            }
+        }
+        
+        /* Fallback для браузеров без поддержки backdrop-filter */
+        @supports not (backdrop-filter: blur(12px)) {
+            .profile-container,
+            input, 
+            select,
+            .email-display,
+            .btn,
+            .upload-btn {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                background: var(--surface) !important;
+            }
+            
+            .btn {
+                background: var(--primary) !important;
+            }
+            
+            .upload-btn {
+                background: rgba(255, 255, 255, 0.9) !important;
+            }
+            
+            [data-theme="dark"] .upload-btn {
+                background: rgba(30, 30, 30, 0.9) !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Общая шапка приложения -->
+    <header class="family-header">
+        <div class="header-top">
+            <div class="family-name">FamilySpace</div>
+            <div class="user-avatar-container">
+                <div class="user-avatar">
+                    <img id="current-user-avatar" src="/icons/default-avatar.svg" alt="Ваш аватар">
+                </div>
+            </div>
+        </div>
+        
+        <nav class="family-nav">
+            <a href="/family.html" class="nav-link">
+                <i class="fas fa-home"></i>
+                <span>Семья</span>
+            </a>
+            <a href="/calendar.html" class="nav-link">
+                <i class="fas fa-calendar"></i>
+                <span>Календарь</span>
+            </a>
+            <a href="/tasks.html" class="nav-link">
+                <i class="fas fa-tasks"></i>
+                <span>Задачи</span>
+            </a>
+            <a href="/wishlist.html" class="nav-link">
+                <i class="fas fa-gift"></i>
+                <span>Вишлист</span>
+            </a>
+            <a href="/family-chat.html" class="nav-link">
+                <i class="fas fa-comments"></i>
+                <span>Чат</span>
+            </a>
+            <a href="/profile.html" class="nav-link active">
+                <i class="fas fa-user"></i>
+                <span>Профиль</span>
+            </a>
+        </nav>
+    </header>
+
+    <!-- Основное содержимое страницы -->
+    <main class="main-container">
+        <div class="profile-container">
+            <section class="avatar-section">
+                <img id="avatar-preview" class="avatar-preview" src="/icons/default-avatar.svg" alt="Ваш аватар">
+                <div class="avatar-options">
+                    <div class="avatar-option">
+                        <label for="avatar-url">URL аватара:</label>
+                        <input type="url" id="avatar-url" placeholder="https://example.com/avatar.jpg">
+                        <div class="avatar-hint">Введите URL изображения</div>
+                    </div>
+                    <div class="avatar-option">
+                        <label>Загрузить с устройства:</label>
+                        <div class="upload-btn-wrapper">
+                            <button class="upload-btn">
+                                <i class="fas fa-cloud-upload-alt"></i> Выбрать файл
+                            </button>
+                            <input type="file" id="avatar-file" accept="image/*">
+                        </div>
+                        <div class="avatar-hint">JPG, PNG до 2MB</div>
+                    </div>
+                </div>
+            </section>
+            
+            <form id="profile-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="first-name">Имя <span class="required-star">*</span></label>
+                        <input type="text" id="first-name" name="first-name" required>
+                        <div id="first-name-error" class="error-message">Пожалуйста, введите ваше имя</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="last-name">Фамилия <span class="required-star">*</span></label>
+                        <input type="text" id="last-name" name="last-name" required>
+                        <div id="last-name-error" class="error-message">Пожалуйста, введите вашу фамилию</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Ваш email</label>
+                    <div id="email-display" class="email-display">loading...</div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="gender">Пол <span class="required-star">*</span></label>
+                        <select id="gender" name="gender" required>
+                            <option value="">Выберите пол</option>
+                            <option value="male">Мужской</option>
+                            <option value="female">Женский</option>
+                            <option value="other">Другой</option>
+                        </select>
+                        <div id="gender-error" class="error-message">Пожалуйста, выберите ваш пол</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="age">Возраст <span class="required-star">*</span></label>
+                        <input type="number" id="age" name="age" min="1" max="120" required>
+                        <div id="age-error" class="error-message">Пожалуйста, введите ваш возраст</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="role">Роль в семье <span class="required-star">*</span></label>
+                    <select id="role" name="role" required>
+                        <option value="">Выберите роль</option>
+                        <option value="senior_parent">Старший родитель</option>
+                        <option value="parent">Родитель</option>
+                        <option value="child">Ребенок</option>
+                        <option value="relative">Родственник</option>
+                        <option value="grandparent">Бабушка/Дедушка</option>
+                    </select>
+                    <div id="role-error" class="error-message">Пожалуйста, выберите вашу роль</div>
+                </div>
+                
+                <button type="submit" class="btn btn-block">
+                    <i class="fas fa-save"></i> Сохранить изменения
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <!-- Общий футер -->
+    <footer class="login-footer">
+        <div>FamilySpace &copy; 2025</div>
+        <div class="version-info">Версия 3.0</div>
+    </footer>
+
+    <script>
+        // Установка темы из localStorage
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        
+        // Инициализация меню пользователя
+        document.querySelector('.user-avatar').addEventListener('click', function() {
+            this.classList.toggle('active');
+        });
+
+        // Загрузка данных пользователя
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/api/user');
+                if (!response.ok) throw new Error('Ошибка загрузки данных');
+                
+                const userData = await response.json();
+                
+                // Обновление аватара в шапке
+                const headerAvatar = document.getElementById('current-user-avatar');
+                if (userData.avatar) {
+                    headerAvatar.src = userData.avatar.startsWith('http') ? 
+                        userData.avatar : 
+                        `/uploads/${userData.avatar}`;
+                }
+                
+                // Обновление данных профиля
+                document.getElementById('first-name').value = userData.firstName || '';
+                document.getElementById('last-name').value = userData.lastName || '';
+                document.getElementById('email-display').textContent = userData.email || 'Не указан';
+                document.getElementById('gender').value = userData.gender || '';
+                document.getElementById('age').value = userData.age || '';
+                document.getElementById('role').value = userData.role || '';
+                document.getElementById('avatar-url').value = userData.avatarUrl || '';
+                
+                // Установка аватара
+                const avatarPreview = document.getElementById('avatar-preview');
+                if (userData.avatar) {
+                    avatarPreview.src = userData.avatar.startsWith('http') ? 
+                        userData.avatar : 
+                        `/uploads/${userData.avatar}`;
+                }
+                
+                // Обработчики изменения аватара
+                document.getElementById('avatar-url').addEventListener('input', function() {
+                    if (this.value) {
+                        avatarPreview.src = this.value;
+                    }
+                });
+                
+                document.getElementById('avatar-file').addEventListener('change', function(e) {
+                    if (e.target.files && e.target.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            avatarPreview.src = event.target.result;
+                        }
+                        reader.readAsDataURL(e.target.files[0]);
+                    }
+                });
+                
+                // Обработчик формы
+                document.getElementById('profile-form').addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    // Сбор данных формы
+                    const formData = {
+                        firstName: document.getElementById('first-name').value,
+                        lastName: document.getElementById('last-name').value,
+                        gender: document.getElementById('gender').value,
+                        age: document.getElementById('age').value,
+                        role: document.getElementById('role').value,
+                        avatarUrl: document.getElementById('avatar-url').value
+                    };
+                    
+                    // Если выбран файл
+                    const fileInput = document.getElementById('avatar-file');
+                    if (fileInput.files.length > 0) {
+                        const file = fileInput.files[0];
+                        const formDataObj = new FormData();
+                        formDataObj.append('avatar', file);
+                        
+                        try {
+                            const uploadResponse = await fetch('/api/upload-avatar', {
+                                method: 'POST',
+                                body: formDataObj
+                            });
+                            
+                            if (uploadResponse.ok) {
+                                const uploadData = await uploadResponse.json();
+                                formData.avatar = uploadData.fileName;
+                            } else {
+                                throw new Error('Ошибка загрузки аватара');
+                            }
+                        } catch (error) {
+                            alert('Ошибка при загрузке аватара: ' + error.message);
+                            return;
+                        }
+                    }
+                    
+                    // Отправка данных профиля
+                    try {
+                        const saveResponse = await fetch('/api/save-profile', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(formData)
+                        });
+                        
+                        if (saveResponse.ok) {
+                            alert('Профиль успешно обновлен!');
+                            
+                            // Обновляем аватар в шапке
+                            if (formData.avatar) {
+                                document.getElementById('current-user-avatar').src = 
+                                    formData.avatar.startsWith('http') ? 
+                                    formData.avatar : 
+                                    `/uploads/${formData.avatar}`;
+                            }
+                        } else {
+                            throw new Error('Ошибка сохранения профиля');
+                        }
+                    } catch (error) {
+                        alert('Ошибка при сохранении профиля: ' + error.message);
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Ошибка загрузки профиля:', error);
+                alert('Не удалось загрузить данные профиля');
+            }
+        });
+    </script>
+</body>
+</html>

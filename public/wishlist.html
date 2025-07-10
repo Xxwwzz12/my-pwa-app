@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Вишлист | FamilySpace</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Дополнительные стили только для wishlist.html */
+    .wishlist-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 15px;
+    }
+    
+    .glass-wish-item {
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border-radius: var(--glass-radius);
+      border: 1px solid var(--glass-border);
+      overflow: hidden;
+      box-shadow: var(--glass-shadow);
+      transition: transform 0.3s, box-shadow 0.3s;
+      position: relative;
+    }
+    
+    .glass-wish-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    }
+    
+    .gifted {
+      position: relative;
+    }
+    
+    .gifted::after {
+      content: 'ПОДАРЕН';
+      position: absolute;
+      top: 10px;
+      right: -25px;
+      background: var(--success);
+      color: white;
+      padding: 5px 30px;
+      font-size: 12px;
+      font-weight: 600;
+      transform: rotate(45deg);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .item-image {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-bottom: 1px solid var(--glass-border);
+    }
+    
+    .item-content {
+      padding: 15px;
+    }
+    
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    
+    .item-title {
+      font-size: 18px;
+      font-weight: 600;
+      flex: 1;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .item-price {
+      background: rgba(64, 192, 87, 0.2);
+      color: var(--success);
+      padding: 5px 12px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      border: 1px solid rgba(64, 192, 87, 0.3);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    
+    .gifted .item-price {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-tertiary);
+      border-color: var(--glass-border);
+    }
+    
+    .item-description {
+      color: var(--text-secondary);
+      margin-bottom: 15px;
+      line-height: 1.5;
+      font-size: 15px;
+    }
+    
+    .item-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary);
+      text-decoration: none;
+      margin-bottom: 15px;
+      font-size: 14px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .item-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 10px;
+      border-top: 1px solid var(--glass-border);
+    }
+    
+    .item-author {
+      display: flex;
+      align-items: center;
+    }
+    
+    .author-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      margin-right: 8px;
+      font-size: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .author-name {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .action-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--glass-border);
+      cursor: pointer;
+      transition: all 0.3s;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+    
+    .action-btn:active {
+      transform: translateY(0);
+    }
+    
+    .glass-add-btn {
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      cursor: pointer;
+      z-index: 10;
+      transition: all 0.3s;
+      box-shadow: 0 8px 25px rgba(66, 99, 235, 0.35);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .glass-add-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: 0.5s;
+    }
+    
+    .glass-add-btn:hover {
+      background: rgba(66, 99, 235, 0.85);
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 12px 30px rgba(66, 99, 235, 0.45);
+    }
+    
+    .glass-add-btn:hover::before {
+      left: 100%;
+    }
+    
+    .glass-add-btn:active {
+      transform: translateY(0) scale(1);
+    }
+    
+    .glass-filter-bar {
+      padding: 15px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      overflow-x: auto;
+      position: sticky;
+      top: 72px;
+      z-index: 10;
+    }
+    
+    .glass-filter-item {
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 20px;
+      margin-right: 10px;
+      white-space: nowrap;
+      cursor: pointer;
+      border: 1px solid var(--glass-border);
+      transition: all 0.3s;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .glass-filter-item:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    
+    .glass-filter-item.active {
+      background: rgba(66, 99, 235, 0.7);
+      color: white;
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Popup стили */
+    .popup-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+    }
+    
+    .popup-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .glass-popup {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: var(--glass-radius);
+      border: 1px solid var(--glass-border);
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+      transform: translateY(20px);
+      transition: all 0.4s;
+      padding: 25px;
+    }
+    
+    .popup-overlay.active .glass-popup {
+      transform: translateY(0);
+    }
+    
+    .popup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--glass-border);
+    }
+    
+    .popup-title {
+      font-size: 22px;
+      font-weight: 600;
+    }
+    
+    .image-preview {
+      width: 100%;
+      height: 180px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
+      border: 1px dashed var(--glass-border);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      margin-bottom: 15px;
+      position: relative;
+    }
+    
+    .image-preview img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: cover;
+    }
+    
+    .image-placeholder {
+      text-align: center;
+      color: var(--text-tertiary);
+    }
+    
+    .image-placeholder i {
+      font-size: 40px;
+      margin-bottom: 10px;
+      display: block;
+    }
+    
+    .fetch-image-btn {
+      padding: 10px 15px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    
+    .fetch-image-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .form-row {
+      display: flex;
+      gap: 15px;
+    }
+    
+    .form-row .form-group {
+      flex: 1;
+    }
+    
+    .form-buttons {
+      display: flex;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    
+    /* Адаптивность */
+    @media (max-width: 768px) {
+      .wishlist-container {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      }
+      
+      .glass-popup {
+        width: 95%;
+        padding: 20px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .wishlist-container {
+        grid-template-columns: 1fr;
+      }
+      
+      .glass-header {
+        padding: 12px;
+      }
+      
+      .header-title {
+        font-size: 18px;
+      }
+      
+      .glass-filter-bar {
+        padding: 12px;
+      }
+      
+      .glass-popup {
+        padding: 15px;
+      }
+      
+      .popup-title {
+        font-size: 20px;
+      }
+      
+      .form-row {
+        flex-direction: column;
+        gap: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="glass-header">
+    <div class="back-button" id="back-button">
+      <i class="fas fa-arrow-left"></i>
+    </div>
+    <div class="header-title">Семейный вишлист</div>
+    <button class="action-button" id="filter-button">
+      <i class="fas fa-filter"></i>
+    </button>
+  </div>
+  
+  <div class="glass-filter-bar">
+    <div class="glass-filter-item active">Все</div>
+    <div class="glass-filter-item">Иван</div>
+    <div class="glass-filter-item">Мария</div>
+    <div class="glass-filter-item">Петр</div>
+    <div class="glass-filter-item">Анна</div>
+    <div class="glass-filter-item">Подаренные</div>
+  </div>
+  
+  <div class="wishlist-container" id="wishlist-container">
+    <!-- Карточки будут добавляться динамически -->
+  </div>
+  
+  <div class="glass-add-btn" id="add-item-btn">
+    <i class="fas fa-plus"></i>
+  </div>
+  
+  <div class="glass-nav-bar">
+    <div class="nav-item">
+      <div class="nav-icon"><i class="fas fa-home"></i></div>
+      <div class="nav-label">Главная</div>
+    </div>
+    <div class="nav-item">
+      <div class="nav-icon"><i class="fas fa-bell"></i></div>
+      <div class="nav-label">Уведом.</div>
+    </div>
+    <div class="nav-item active">
+      <div class="nav-icon"><i class="fas fa-gift"></i></div>
+      <div class="nav-label">Вишлист</div>
+    </div>
+    <div class="nav-item">
+      <div class="nav-icon"><i class="fas fa-cog"></i></div>
+      <div class="nav-label">Настройки</div>
+    </div>
+  </div>
+  
+  <div class="home-indicator"></div>
+  
+  <!-- Popup для добавления/редактирования -->
+  <div class="popup-overlay" id="wish-popup">
+    <div class="glass-popup">
+      <div class="popup-header">
+        <div class="popup-title" id="popup-title">Добавить подарок</div>
+        <div class="close-popup" id="close-popup">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Изображение товара</label>
+        <div class="image-preview" id="image-preview">
+          <div class="image-placeholder">
+            <i class="fas fa-image"></i>
+            <div>Изображение будет загружено автоматически</div>
+          </div>
+        </div>
+        <button class="fetch-image-btn" id="fetch-image-btn">
+          <i class="fas fa-link"></i> Загрузить из ссылки
+        </button>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Название подарка *</label>
+        <input type="text" class="form-input" id="item-title" placeholder="Умные часы" required>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Описание</label>
+        <textarea class="form-input" id="item-description" placeholder="Apple Watch Series 9, 45mm, GPS" rows="3"></textarea>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Цена *</label>
+          <input type="number" class="form-input" id="item-price" placeholder="15000" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Валюта</label>
+          <select class="form-input" id="item-currency">
+            <option value="₽">Рубли (₽)</option>
+            <option value="$">Доллары ($)</option>
+            <option value="€">Евро (€)</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Ссылка на товар</label>
+        <input type="url" class="form-input" id="item-link" placeholder="https://example.com/product">
+      </div>
+      
+      <div class="form-buttons">
+        <button class="btn secondary" id="cancel-btn">Отмена</button>
+        <button class="btn primary" id="save-btn">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Инициализация приложения
+    function initWishlistApp() {
+      // Установка темы из localStorage
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      
+      // DOM элементы
+      const backButton = document.getElementById('back-button');
+      const filterButton = document.getElementById('filter-button');
+      const addItemBtn = document.getElementById('add-item-btn');
+      const wishlistContainer = document.getElementById('wishlist-container');
+      const popupOverlay = document.getElementById('wish-popup');
+      const closePopup = document.getElementById('close-popup');
+      const cancelBtn = document.getElementById('cancel-btn');
+      const saveBtn = document.getElementById('save-btn');
+      const fetchImageBtn = document.getElementById('fetch-image-btn');
+      const imagePreview = document.getElementById('image-preview');
+      const itemTitle = document.getElementById('item-title');
+      const itemDescription = document.getElementById('item-description');
+      const itemPrice = document.getElementById('item-price');
+      const itemCurrency = document.getElementById('item-currency');
+      const itemLink = document.getElementById('item-link');
+      const popupTitle = document.getElementById('popup-title');
+      
+      // Текущий редактируемый элемент
+      let editingItem = null;
+      
+      // Навигация назад
+      backButton.addEventListener('click', () => {
+        window.history.back();
+      });
+      
+      // Фильтрация по категориям
+      const filterItems = document.querySelectorAll('.glass-filter-item');
+      filterItems.forEach(item => {
+        item.addEventListener('click', function() {
+          filterItems.forEach(i => i.classList.remove('active'));
+          this.classList.add('active');
+          filterWishlist(this.textContent);
+        });
+      });
+      
+      // Функция фильтрации вишлиста
+      function filterWishlist(filter) {
+        const items = wishlistContainer.querySelectorAll('.glass-wish-item');
+        items.forEach(item => {
+          const author = item.querySelector('.author-name').textContent;
+          const isGifted = item.classList.contains('gifted');
+          
+          if (filter === 'Все') {
+            item.style.display = 'block';
+          } else if (filter === 'Подаренные') {
+            item.style.display = isGifted ? 'block' : 'none';
+          } else {
+            item.style.display = author === filter ? 'block' : 'none';
+          }
+        });
+      }
+      
+      // Открытие popup для добавления
+      addItemBtn.addEventListener('click', () => {
+        resetForm();
+        popupTitle.textContent = 'Добавить подарок';
+        editingItem = null;
+        popupOverlay.classList.add('active');
+      });
+      
+      // Закрытие popup
+      closePopup.addEventListener('click', closePopupHandler);
+      cancelBtn.addEventListener('click', closePopupHandler);
+      
+      function closePopupHandler() {
+        popupOverlay.classList.remove('active');
+      }
+      
+      // Загрузка изображения по ссылке
+      fetchImageBtn.addEventListener('click', () => {
+        const url = itemLink.value.trim();
+        if (!url) {
+          alert('Введите ссылку на товар');
+          return;
+        }
+        
+        fetchImageBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка...';
+        fetchImageBtn.disabled = true;
+        
+        // В реальном приложении здесь был бы запрос к бэкенду для извлечения метаданных
+        // Для демонстрации используем заглушку
+        setTimeout(() => {
+          // Генерируем случайное изображение для демонстрации
+          const images = [
+            'https://via.placeholder.com/400x300/4263eb/ffffff?text=Product+Image',
+            'https://via.placeholder.com/400x300/40c057/ffffff?text=Product+Image',
+            'https://via.placeholder.com/400x300/ff6b6b/ffffff?text=Product+Image',
+            'https://via.placeholder.com/400x300/ffd43b/000000?text=Product+Image'
+          ];
+          
+          const randomImage = images[Math.floor(Math.random() * images.length)];
+          
+          imagePreview.innerHTML = `<img src="${randomImage}" alt="Превью товара">`;
+          fetchImageBtn.innerHTML = '<i class="fas fa-link"></i> Загрузить из ссылки';
+          fetchImageBtn.disabled = false;
+          
+          // Автозаполнение названия и описания
+          if (!itemTitle.value) {
+            itemTitle.value = 'Новый товар ' + (Math.floor(Math.random() * 100) + 1);
+          }
+          
+          if (!itemDescription.value) {
+            itemDescription.value = 'Описание товара будет загружено автоматически';
+          }
+        }, 1500);
+      });
+      
+      // Сохранение элемента
+      saveBtn.addEventListener('click', () => {
+        if (!itemTitle.value || !itemPrice.value) {
+          alert('Заполните обязательные поля (Название и Цена)');
+          return;
+        }
+        
+        const itemData = {
+          id: editingItem ? editingItem.id : 'item-' + Date.now(),
+          title: itemTitle.value,
+          description: itemDescription.value,
+          price: parseInt(itemPrice.value),
+          currency: itemCurrency.value,
+          link: itemLink.value,
+          image: imagePreview.querySelector('img') ? imagePreview.querySelector('img').src : null,
+          author: 'Я', // В реальном приложении - текущий пользователь
+          gifted: false
+        };
+        
+        if (editingItem) {
+          updateWishItem(editingItem, itemData);
+        } else {
+          addWishItem(itemData);
+        }
+        
+        closePopupHandler();
+      });
+      
+      // Добавление элемента в вишлист
+      function addWishItem(item) {
+        const itemElement = createWishItem(item);
+        wishlistContainer.insertBefore(itemElement, wishlistContainer.firstChild);
+        saveToLocalStorage();
+      }
+      
+      // Обновление элемента
+      function updateWishItem(itemElement, item) {
+        itemElement.querySelector('.item-title').textContent = item.title;
+        itemElement.querySelector('.item-description').textContent = item.description;
+        itemElement.querySelector('.item-price').textContent = 
+          item.price.toLocaleString() + ' ' + item.currency;
+        
+        const link = itemElement.querySelector('.item-link');
+        if (item.link) {
+          link.href = item.link;
+          link.innerHTML = `<i class="fas fa-link"></i> ${new URL(item.link).hostname}`;
+          link.style.display = 'flex';
+        } else {
+          link.style.display = 'none';
+        }
+        
+        if (item.image) {
+          itemElement.querySelector('.item-image').src = item.image;
+        }
+        
+        saveToLocalStorage();
+      }
+      
+      // Создание HTML элемента вишлиста
+      function createWishItem(item) {
+        const element = document.createElement('div');
+        element.className = 'glass-wish-item';
+        element.id = item.id;
+        
+        element.innerHTML = `
+          <img src="${item.image || 'https://via.placeholder.com/400x300/1e293b/ffffff?text=No+Image'}" 
+               alt="${item.title}" class="item-image">
+          <div class="item-content">
+            <div class="item-header">
+              <div class="item-title">${item.title}</div>
+              <div class="item-price">${item.price.toLocaleString()} ${item.currency}</div>
+            </div>
+            <div class="item-description">${item.description}</div>
+            ${item.link ? `
+              <a href="${item.link}" target="_blank" class="item-link">
+                <i class="fas fa-link"></i> ${new URL(item.link).hostname}
+              </a>
+            ` : ''}
+            <div class="item-footer">
+              <div class="item-author">
+                <div class="author-avatar">${item.author.charAt(0)}</div>
+                <div class="author-name">${item.author}</div>
+              </div>
+              <div class="item-actions">
+                <div class="action-btn gift-btn"><i class="fas fa-gift"></i></div>
+                <div class="action-btn edit-btn"><i class="fas fa-edit"></i></div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Обработчики действий
+        element.querySelector('.gift-btn').addEventListener('click', function(e) {
+          e.stopPropagation();
+          element.classList.add('gifted');
+          this.innerHTML = '<i class="fas fa-check"></i>';
+          this.classList.add('gifted');
+          item.gifted = true;
+          saveToLocalStorage();
+        });
+        
+        element.querySelector('.edit-btn').addEventListener('click', function(e) {
+          e.stopPropagation();
+          editingItem = element;
+          fillForm(item);
+          popupTitle.textContent = 'Редактировать подарок';
+          popupOverlay.classList.add('active');
+        });
+        
+        element.addEventListener('click', function(e) {
+          if (!e.target.closest('.action-btn')) {
+            // Открытие деталей подарка
+            alert(`Открыть детали: ${item.title}`);
+          }
+        });
+        
+        return element;
+      }
+      
+      // Заполнение формы для редактирования
+      function fillForm(item) {
+        itemTitle.value = item.title;
+        itemDescription.value = item.description;
+        itemPrice.value = item.price;
+        itemCurrency.value = item.currency;
+        itemLink.value = item.link || '';
+        
+        if (item.image) {
+          imagePreview.innerHTML = `<img src="${item.image}" alt="Превью товара">`;
+        } else {
+          imagePreview.innerHTML = `
+            <div class="image-placeholder">
+              <i class="fas fa-image"></i>
+              <div>Изображение отсутствует</div>
+            </div>
+          `;
+        }
+      }
+      
+      // Сброс формы
+      function resetForm() {
+        itemTitle.value = '';
+        itemDescription.value = '';
+        itemPrice.value = '';
+        itemCurrency.value = '₽';
+        itemLink.value = '';
+        imagePreview.innerHTML = `
+          <div class="image-placeholder">
+            <i class="fas fa-image"></i>
+            <div>Изображение будет загружено автоматически</div>
+          </div>
+        `;
+      }
+      
+      // Сохранение в localStorage
+      function saveToLocalStorage() {
+        const items = [];
+        document.querySelectorAll('.glass-wish-item').forEach(item => {
+          items.push({
+            id: item.id,
+            title: item.querySelector('.item-title').textContent,
+            description: item.querySelector('.item-description').textContent,
+            price: parseInt(item.querySelector('.item-price').textContent.replace(/\D/g, '')),
+            currency: item.querySelector('.item-price').textContent.slice(-1),
+            link: item.querySelector('.item-link')?.href || '',
+            image: item.querySelector('.item-image').src,
+            author: item.querySelector('.author-name').textContent,
+            gifted: item.classList.contains('gifted')
+          });
+        });
+        
+        localStorage.setItem('wishlist', JSON.stringify(items));
+      }
+      
+      // Загрузка из localStorage
+      function loadFromLocalStorage() {
+        const savedItems = JSON.parse(localStorage.getItem('wishlist')) || [];
+        
+        // Если нет сохраненных элементов, добавляем демо-данные
+        if (savedItems.length === 0) {
+          const demoItems = [
+            {
+              id: 'item-1',
+              title: "Умные часы",
+              description: "Apple Watch Series 9, 45mm, GPS",
+              price: 15000,
+              currency: "₽",
+              link: "https://example.com/product1",
+              image: "https://via.placeholder.com/400x300/4263eb/ffffff?text=Apple+Watch",
+              author: "Иван",
+              gifted: false
+            },
+            {
+              id: 'item-2',
+              title: "Книга 'Искусство программирования'",
+              description: "Полное собрание в 4 томах",
+              price: 5000,
+              currency: "₽",
+              link: "https://example.com/product2",
+              image: "https://via.placeholder.com/400x300/40c057/ffffff?text=Programming+Book",
+              author: "Мария",
+              gifted: true
+            },
+            {
+              id: 'item-3',
+              title: "Набор LEGO Technic",
+              description: "Конструктор 'Феррари', 3778 деталей",
+              price: 8000,
+              currency: "₽",
+              link: "https://example.com/product3",
+              image: "https://via.placeholder.com/400x300/ff6b6b/ffffff?text=LEGO+Ferrari",
+              author: "Петр",
+              gifted: false
+            },
+            {
+              id: 'item-4',
+              title: "Беспроводные наушники",
+              description: "Sony WH-1000XM5, черные",
+              price: 12000,
+              currency: "₽",
+              link: "https://example.com/product4",
+              image: "https://via.placeholder.com/400x300/ffd43b/000000?text=Sony+Headphones",
+              author: "Анна",
+              gifted: false
+            }
+          ];
+          
+          demoItems.forEach(item => {
+            addWishItem(item);
+          });
+        } else {
+          savedItems.forEach(item => {
+            addWishItem(item);
+          });
+        }
+      }
+      
+      // Навигация
+      const navItems = document.querySelectorAll('.nav-item');
+      navItems.forEach(item => {
+        item.addEventListener('click', function() {
+          navItems.forEach(i => i.classList.remove('active'));
+          this.classList.add('active');
+          
+          if (this.querySelector('.nav-icon i').classList.contains('fa-home')) {
+            window.location.href = 'family.html';
+          } else if (this.querySelector('.nav-icon i').classList.contains('fa-bell')) {
+            alert('Раздел "Уведомления" в разработке');
+          } else if (this.querySelector('.nav-icon i').classList.contains('fa-cog')) {
+            alert('Раздел "Настройки" в разработке');
+          }
+        });
+      });
+      
+      // Загрузка данных при старте
+      loadFromLocalStorage();
+    }
+    
+    // Запуск приложения после загрузки
+    window.addEventListener('DOMContentLoaded', initWishlistApp);
+  </script>
+</body>
+</html>

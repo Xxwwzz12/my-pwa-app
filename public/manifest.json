@@ -1,0 +1,160 @@
+{
+  "name": "FamilySpace",
+  "short_name": "FamilySpace",
+  "version": "3.0",
+  "description": "Централизованная платформа для семейной организации",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#4f46e5",
+  "background_color": "#0a0a0a",
+  "id": "/",
+  "categories": ["social", "productivity", "lifestyle"],
+  "orientation": "portrait",
+  
+  // Добавлены разрешения для push-уведомлений
+  "permissions": ["notifications", "push"],
+  
+  // Добавлен gcm_sender_id для совместимости
+  "gcm_sender_id": "482941778795",
+  
+  "icons": [
+    {
+      "src": "/icons/icon_1.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon_1.png",
+      "type": "image/png",
+      "sizes": "256x256"
+    },
+    {
+      "src": "/icons/icon_1.png",
+      "type": "image/png",
+      "sizes": "384x384"
+    },
+    {
+      "src": "/icons/icon_1.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  
+  // Добавлены скриншоты для PWA-магазинов
+  "screenshots": [
+    {
+      "src": "/screenshots/home.webp",
+      "type": "image/webp",
+      "sizes": "1080x1920"
+    },
+    {
+      "src": "/screenshots/chat.webp",
+      "type": "image/webp",
+      "sizes": "1080x1920"
+    }
+  ],
+  
+  "features": [
+    "Семейный календарь",
+    "Групповой чат",
+    "Управление задачами",
+    "Вишлисты",
+    "ИИ-помощник",
+    "Оффлайн-работа",
+    "Push-уведомления"  // Добавлена новая функция
+  ],
+  
+  "shortcuts": [
+    {
+      "name": "Семейный чат",
+      "short_name": "Чат",
+      "description": "Открыть семейный чат",
+      "url": "/family-chat.html",
+      "icons": [
+        {
+          "src": "/icons/icon-chat.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Добавить событие",
+      "short_name": "Событие",
+      "description": "Создать новое событие",
+      "url": "/calendar.html?action=create",
+      "icons": [
+        {
+          "src": "/icons/icon-calendar.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Мой профиль",
+      "short_name": "Профиль",
+      "description": "Перейти в личный кабинет",
+      "url": "/profile.html",
+      "icons": [
+        {
+          "src": "/icons/icon-profile.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    // Добавлен новый ярлык для уведомлений
+    {
+      "name": "Уведомления",
+      "short_name": "Уведомления",
+      "description": "Просмотреть новые уведомления",
+      "url": "/family.html?tab=notifications",
+      "icons": [
+        {
+          "src": "/icons/icon-notification.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  
+  "share_target": {
+    "action": "/share.html",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  
+  "protocol_handlers": [
+    {
+      "protocol": "web+familyspace",
+      "url": "/index.html?action=%s"
+    }
+  ],
+  
+  "file_handlers": [
+    {
+      "action": "/upload",
+      "accept": {
+        "image/*": [".png", ".jpg", ".jpeg", ".webp"],  // Добавлен webp
+        "video/*": [".mp4", ".mov"]
+      }
+    }
+  ],
+  
+  "related_applications": [],
+  "prefer_related_applications": false,
+  
+  // Добавлено для улучшения PWA
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "handle_links": "preferred",
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
+}
