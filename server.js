@@ -14,11 +14,13 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import expressValidator from 'express-validator';
 import winston from 'winston';
 import 'winston-daily-rotate-file';
 import crypto from 'crypto';
+import { doubleCsrf } from 'csrf-csrf';
 
+// Инициализация express-validator
+import expressValidator from 'express-validator';
 const { body, validationResult } = expressValidator;
 
 // Получение текущего пути файла
@@ -71,7 +73,21 @@ const FRONTEND_URL = process.env.FRONTEND_URL;
 
 const app = express();
 
-// Force HTTPS in production
+// Проверка обязательных переменных окружения перед запуском
+const REQUIRED_ENV = [
+  'MONGO_URI', 
+  'SESSION_SECRET',
+  'VAPID_PUBLIC_KEY',
+  'VAPID_PRIVATE_KEY'
+];
+
+const missing = REQUIRED_ENV.filter(key => !process.env[key]);
+if (missing.length > 0) {
+  logger.error(`FATAL: Missing required env variables: ${missing.join(', ')}`);
+  process.exit(1);
+}
+
+// Force HTTPS в production
 if (process.env.NODE_ENV === 'production') {
   app.use((req, res, next) => {
     if (req.headers['x-forwarded-proto'] !== 'https') {
@@ -106,7 +122,7 @@ app.use(helmet({
       connectSrc: ["'self'", "https://accounts.google.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
-      frameSrc: ["https://accounts.google.com"],
+      frameSrc: ["'self'", "https://accounts.google.com"],
       upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
     }
   },
@@ -116,7 +132,7 @@ app.use(helmet({
 // Добавление HSTS в production
 if (process.env.NODE_ENV === 'production') {
   app.use(helmet.hsts({
-    maxAge: 31536000, // 1 год
+    maxAge: 31536000,
     includeSubDomains: true,
     preload: true
   }));
@@ -239,6 +255,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// Защита от доступа к скрытым файлам
+app.use((req, res, next) => {
+  if (req.path.split('/').some(part => part.startsWith('.'))) {
+    return res.status(403).send('Forbidden');
+  }
+  next();
+});
+
 // Session Configuration
 app.use(session({
   name: process.env.SESSION_NAME,
@@ -247,7 +271,7 @@ app.use(session({
     collectionName: 'sessions', 
     ttl: 14 * 24 * 60 * 60,
     autoRemove: 'interval',
-    autoRemoveInterval: 60 // minutes
+    autoRemoveInterval: 60
   }),
   secret: process.env.SESSION_SECRET,
   resave: true,
@@ -266,40 +290,29 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // CSRF Protection
-let doubleCsrfProtection = (req, res, next) => next(); // Заглушка на время инициализации
-
-import('csrf-csrf').then(({ doubleCsrf }) => {
-  const { generateToken, doubleCsrfProtection: csrfProtection } = doubleCsrf({
-    getSecret: () => process.env.SESSION_SECRET,
-    cookieName: 'x-csrf-token',
-    cookieOptions: { 
-      httpOnly: true, 
-      sameSite: 'lax', 
-      secure: process.env.NODE_ENV === 'production', 
-      domain: process.env.SESSION_DOMAIN 
-    },
-    size: 64,
-    ignoredMethods: ['GET','HEAD','OPTIONS']
-  });
-  
-  doubleCsrfProtection = csrfProtection;
-  
-  app.use((req, res, next) => {
-    const token = generateToken(res);
-    res.cookie('x-csrf-token', token, { 
-      httpOnly: true, 
-      sameSite: 'lax', 
-      secure: process.env.NODE_ENV === 'production', 
-      domain: process.env.SESSION_DOMAIN,
-      maxAge: 14 * 24 * 60 * 60 * 1000 
-    });
-    next();
-  });
-  
-  logger.info('CSRF protection initialized');
-}).catch(err => {
-  logger.error(`CSRF initialization error: ${err.message}`, { stack: err.stack });
+const { generateToken, doubleCsrfProtection } = doubleCsrf({
+  getSecret: () => process.env.SESSION_SECRET,
+  cookieName: "__Host-psifi.x-csrf-token",
+  cookieOptions: {
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+  },
+  size: 64,
 });
+
+app.use((req, res, next) => {
+  const token = generateToken(res);
+  res.cookie('x-csrf-token', token, { 
+    httpOnly: true, 
+    sameSite: 'lax', 
+    secure: process.env.NODE_ENV === 'production', 
+    path: '/'
+  });
+  next();
+});
+
+logger.info('CSRF protection initialized');
 
 // Импорт модели пользователя
 import User from './models/User.js';
@@ -415,7 +428,6 @@ app.post(
   upload.single('avatar'),
   checkAuth,
   async (req, res) => {
-    // Валидация данных
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       logger.warn(`Avatar upload validation failed: ${JSON.stringify(errors.array())}`);
@@ -445,44 +457,16 @@ app.post(
   }
 );
 
-// Push Notification API
-app.post(
-  '/send-push',
-  authLimiter,
-  [
-    body('subscription').isObject().withMessage('Invalid subscription format'),
-    body('payload').isObject().withMessage('Invalid payload format'),
-    body('payload.title').isString().notEmpty().withMessage('Title is required'),
-    body('payload.body').isString().optional(),
-    body('payload.icon').isString().optional(),
-    body('payload.url').isString().optional()
-  ],
-  async (req, res) => {
-    // Валидация данных
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      logger.warn('[PUSH] Validation failed', { errors: errors.array() });
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { subscription, payload } = req.body;
-    
-    try {
-      await webpush.sendNotification(
-        subscription, 
-        JSON.stringify(payload)
-      );
-      logger.info('[PUSH] Notification sent successfully');
-      res.status(200).json({ status: 'OK' });
-    } catch (err) {
-      logger.error(`[PUSH] Error: ${err.message}`, { 
-        stack: err.stack,
-        subscription: subscription.endpoint 
-      });
-      res.status(500).json({ error: 'Failed to send push notification' });
-    }
-  }
-);
+// Эндпоинт для уведомлений
+app.get('/api/notifications', (req, res) => {
+  res.json({ 
+    status: 'success',
+    data: [
+      {id: 1, text: "System update available"},
+      {id: 2, text: "New message from Alex"}
+    ]
+  });
+});
 
 // Static & SPA routes
 const staticRoutes = [
@@ -504,9 +488,18 @@ app.get('/', (req, res) => req.query.connection_test ? res.sendStatus(204) : res
 // API fallback
 app.use('/api', (req, res) => res.status(404).json({ error: 'API endpoint not found' }));
 
-// SPA fallback
-app.use((req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// Обработка 404 для статики
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'Endpoint not found' });
+  }
+  
+  const filePath = path.join(__dirname, 'public', req.path);
+  if (fs.existsSync(filePath)) {
+    return res.sendFile(filePath);
+  }
+  
+  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
 });
 
 // Error Handler
