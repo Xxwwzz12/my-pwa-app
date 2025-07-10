@@ -4,4 +4,3 @@ logs/
 .config/ 
 *.log 
 .DS_Store 
-package-lock.json 
