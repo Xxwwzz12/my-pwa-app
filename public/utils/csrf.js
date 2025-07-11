@@ -3,35 +3,21 @@
 // Конфигурация модуля
 let csrfConfig = {
   refreshURL: '/refresh-csrf',
-  refreshMethod: 'GET',
-  updateToken: defaultUpdateToken
+  refreshMethod: 'GET'
 };
 
-// 1. Получение токена из мета-тега
-export function getCSRFToken() {
-  const metaTag = document.querySelector('meta[name="csrf-token"]');
-  return metaTag ? metaTag.content : null;
+// 1. Получение токена из куки
+export function getCsrfToken() {
+  const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
-// 2. Установка нового токена в DOM
-function setCSRFToken(token) {
-  let metaTag = document.querySelector('meta[name="csrf-token"]');
-  
-  if (!metaTag) {
-    metaTag = document.createElement('meta');
-    metaTag.name = 'csrf-token';
-    document.head.appendChild(metaTag);
-  }
-  
-  metaTag.content = token;
-}
-
-// 3. Обертка для fetch с обработкой CSRF
+// 2. Обертка для fetch с обработкой CSRF
 let isRefreshing = false;
 let refreshPromise = null;
 
-export async function fetchWithCSRF(url, options = {}) {
-  const token = getCSRFToken();
+export async function fetchWithCsrf(url, options = {}) {
+  const token = getCsrfToken();
   if (!token) console.warn('CSRF token not found!');
 
   // Подготавливаем заголовки
@@ -61,9 +47,11 @@ export async function fetchWithCSRF(url, options = {}) {
       await refreshPromise;
 
       // Повторяем запрос с новым токеном
-      const newToken = getCSRFToken();
+      const newToken = getCsrfToken();
       if (newToken) {
         headers.set('X-CSRF-Token', newToken);
+      } else {
+        console.warn('CSRF token still missing after refresh');
       }
       
       response = await fetch(url, {
@@ -79,7 +67,7 @@ export async function fetchWithCSRF(url, options = {}) {
   return response;
 }
 
-// 4. Обновление CSRF токена
+// 3. Обновление CSRF токена
 export async function refreshCSRF() {
   try {
     const response = await fetch(csrfConfig.refreshURL, {
@@ -91,48 +79,15 @@ export async function refreshCSRF() {
       throw new Error(`Refresh failed with status ${response.status}`);
     }
 
-    const newToken = await csrfConfig.updateToken(response);
-    if (!newToken) {
-      throw new Error('No CSRF token received');
-    }
-
-    setCSRFToken(newToken);
-    return newToken;
+    // Кука автоматически устанавливается браузером
+    return true;
   } catch (error) {
     console.error('CSRF refresh error:', error);
     throw error;
   }
 }
 
-// 5. Функция по умолчанию для извлечения токена
-async function defaultUpdateToken(response) {
-  const contentType = response.headers.get('content-type') || '';
-
-  if (contentType.includes('application/json')) {
-    const data = await response.json();
-    return data.csrfToken || data.token;
-  }
-
-  if (contentType.includes('text/html')) {
-    const text = await response.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, 'text/html');
-    const meta = doc.querySelector('meta[name="csrf-token"]');
-    return meta ? meta.content : null;
-  }
-
-  return null;
-}
-
-// 6. Конфигурирование модуля
-export function configureCSRF(config) {
+// 4. Конфигурирование модуля
+export function configureCsrf(config) {
   Object.assign(csrfConfig, config);
-}
-
-// 7. Инициализация (опционально)
-export function initCSRF() {
-  if (!getCSRFToken()) {
-    console.warn('CSRF token meta tag is missing. Creating default...');
-    setCSRFToken('');
-  }
 }
