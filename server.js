@@ -17,7 +17,6 @@ import rateLimit from 'express-rate-limit';
 import winston from 'winston';
 import 'winston-daily-rotate-file';
 import crypto from 'crypto';
-// Исправленный импорт
 import { doubleCsrf } from 'csrf-csrf';
 import expressValidator from 'express-validator';
 
@@ -111,18 +110,20 @@ app.use(helmet({
       scriptSrc: [
         "'self'", 
         (req, res) => `'nonce-${res.locals.nonce}'`,
-        "https://apis.google.com"
+        "https://apis.google.com",
+        "'unsafe-inline'" // Разрешение для доступа к CSRF cookie
       ],
       styleSrc: [
         "'self'", 
         (req, res) => `'nonce-${res.locals.nonce}'`,
-        "https://fonts.googleapis.com"
+        "https://fonts.googleapis.com",
+        "'unsafe-inline'"
       ],
       imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com"],
       connectSrc: ["'self'", "https://accounts.google.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
-      frameSrc: ["'self'", "https://accounts.google.com"],
+      frameSrc: ["'self'", "https://accounts.google.com"], // Добавлено для Google OAuth
       upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
     }
   },
@@ -207,7 +208,12 @@ app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res, filePath) => filePath.endsWith('.html') && res.setHeader('Cache-Control', 'no-store')
 }));
 app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Защита загрузок - только для авторизованных пользователей
+app.use('/uploads', (req, res, next) => {
+  if (req.isAuthenticated()) return next();
+  res.status(403).send('Access denied');
+}, express.static(path.join(__dirname, 'uploads')));
 
 // Cookie parser
 app.use(cookieParser());
@@ -249,7 +255,7 @@ app.use((req, res, next) => {
   
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Origin,Content-Type,Accept,Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin,Content-Type,Accept,Authorization,X-CSRF-Token');
     return res.sendStatus(204);
   }
   next();
@@ -264,7 +270,7 @@ app.use((req, res, next) => {
 });
 
 // Session Configuration
-app.use(session({
+const sessionConfig = {
   name: process.env.SESSION_NAME,
   store: MongoStore.create({ 
     mongoUrl: process.env.MONGO_URI, 
@@ -274,8 +280,8 @@ app.use(session({
     autoRemoveInterval: 60
   }),
   secret: process.env.SESSION_SECRET,
-  resave: true,
-  saveUninitialized: true,
+  resave: false, // Исправлено с true на false
+  saveUninitialized: false, // Исправлено с true на false
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
@@ -283,7 +289,16 @@ app.use(session({
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     domain: process.env.SESSION_DOMAIN
   }
-}));
+};
+
+// Добавление префиксов безопасности в production
+if (process.env.NODE_ENV === 'production') {
+  sessionConfig.name = `__Secure-${sessionConfig.name}`; // Префикс безопасности
+  sessionConfig.cookie.sameSite = 'none'; // Требуется для кросс-доменных запросов
+  sessionConfig.cookie.secure = true; // Обязательно для production
+}
+
+app.use(session(sessionConfig));
 
 // Passport Initialization
 app.use(passport.initialize());
@@ -307,9 +322,13 @@ const generateToken = doubleCsrfUtilities.generateToken;
 const doubleCsrfProtection = doubleCsrfUtilities.doubleCsrfProtection;
 
 app.use((req, res, next) => {
+  // Динамическое имя cookie для production
+  const cookieName = process.env.NODE_ENV === 'production' 
+    ? '__Host-x-csrf-token' 
+    : 'x-csrf-token';
+
   const token = generateToken(res);
-  res.cookie('x-csrf-token', token, { 
-    httpOnly: true, 
+  res.cookie(cookieName, token, { 
     sameSite: 'lax', 
     secure: process.env.NODE_ENV === 'production', 
     path: '/'
@@ -382,7 +401,7 @@ app.get('/logout', (req, res) => {
   });
   
   req.session.destroy(() => { 
-    res.clearCookie(process.env.SESSION_NAME); 
+    res.clearCookie(sessionConfig.name); 
     res.redirect('/'); 
   });
 });
@@ -535,7 +554,7 @@ async function startServer() {
     logger.info(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
     logger.info('Security features:');
     logger.info(`- Helmet CSP: enabled`);
-    logger.info(`- CSRF Protection: enabled (x-csrf-token)`);
+    logger.info(`- CSRF Protection: enabled (${process.env.NODE_ENV === 'production' ? '__Host-x-csrf-token' : 'x-csrf-token'})`);
     logger.info(`- HTTP-Only cookies: enabled`);
     logger.info(`- Rate Limiter: API=100/15min, Auth=10/15min`);
     logger.info('Optimizations:');
@@ -549,6 +568,7 @@ async function startServer() {
     logger.info(`- OAuth Callback: ${process.env.CALLBACK_URL || `${process.env.BASE_URL}/auth/google/callback`}`);
     if (process.env.NODE_ENV === 'production') {
       logger.info(`- HSTS: enabled with preload`);
+      logger.info(`- Session cookie: ${sessionConfig.name}`);
     }
   });
 }
