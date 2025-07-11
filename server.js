@@ -511,7 +511,12 @@ app.get(/(.*)/, (req, res) => {
     return res.sendFile(filePath);
   }
   
-  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+  const errorPage = path.join(__dirname, 'public', '404.html');
+if (fs.existsSync(errorPage)) {
+  res.status(404).sendFile(errorPage);
+} else {
+  res.status(404).send('Page not found');
+}
 });
 
 // Error Handler
