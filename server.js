@@ -17,8 +17,12 @@ import rateLimit from 'express-rate-limit';
 import winston from 'winston';
 import 'winston-daily-rotate-file';
 import crypto from 'crypto';
-import { doubleCsrf } from 'csrf-csrf';
 import expressValidator from 'express-validator';
+import { createRequire } from 'module'; // Для использования require с ES-модулями
+
+// Создаем require для использования CommonJS модулей
+const require = createRequire(import.meta.url);
+const csrf = require('csurf'); // Импортируем csurf через CommonJS
 
 const { body, validationResult } = expressValidator;
 
@@ -110,20 +114,18 @@ app.use(helmet({
       scriptSrc: [
         "'self'", 
         (req, res) => `'nonce-${res.locals.nonce}'`,
-        "https://apis.google.com",
-        "'unsafe-inline'" // Разрешение для доступа к CSRF cookie
+        "https://apis.google.com"
       ],
       styleSrc: [
         "'self'", 
         (req, res) => `'nonce-${res.locals.nonce}'`,
-        "https://fonts.googleapis.com",
-        "'unsafe-inline'"
+        "https://fonts.googleapis.com"
       ],
       imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com"],
       connectSrc: ["'self'", "https://accounts.google.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
-      frameSrc: ["'self'", "https://accounts.google.com"], // Добавлено для Google OAuth
+      frameSrc: ["'self'", "https://accounts.google.com"],
       upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
     }
   },
@@ -280,8 +282,8 @@ const sessionConfig = {
     autoRemoveInterval: 60
   }),
   secret: process.env.SESSION_SECRET,
-  resave: false, // Исправлено с true на false
-  saveUninitialized: false, // Исправлено с true на false
+  resave: false,
+  saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
@@ -293,9 +295,9 @@ const sessionConfig = {
 
 // Добавление префиксов безопасности в production
 if (process.env.NODE_ENV === 'production') {
-  sessionConfig.name = `__Secure-${sessionConfig.name}`; // Префикс безопасности
-  sessionConfig.cookie.sameSite = 'none'; // Требуется для кросс-доменных запросов
-  sessionConfig.cookie.secure = true; // Обязательно для production
+  sessionConfig.name = `__Secure-${sessionConfig.name}`;
+  sessionConfig.cookie.sameSite = 'none';
+  sessionConfig.cookie.secure = true;
 }
 
 app.use(session(sessionConfig));
@@ -305,32 +307,16 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // =================================================
-// ИСПРАВЛЕННЫЙ БЛОК: CSRF Protection
+// НОВАЯ РЕАЛИЗАЦИЯ CSRF PROTECTION с использованием csurf
 // =================================================
-const doubleCsrfUtilities = doubleCsrf({
-  getSecret: () => process.env.SESSION_SECRET,
-  cookieName: "__Host-psifi.x-csrf-token",
-  cookieOptions: {
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-  },
-  size: 64,
-});
+const csrfProtection = csrf({ cookie: true });
+app.use(csrfProtection);
 
-const generateToken = doubleCsrfUtilities.generateToken;
-const doubleCsrfProtection = doubleCsrfUtilities.doubleCsrfProtection;
-
+// Установка CSRF-токена в cookie
 app.use((req, res, next) => {
-  // Динамическое имя cookie для production
-  const cookieName = process.env.NODE_ENV === 'production' 
-    ? '__Host-x-csrf-token' 
-    : 'x-csrf-token';
-
-  const token = generateToken(res);
-  res.cookie(cookieName, token, { 
-    sameSite: 'lax', 
-    secure: process.env.NODE_ENV === 'production', 
+  res.cookie('XSRF-TOKEN', req.csrfToken(), {
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
     path: '/'
   });
   next();
@@ -438,9 +424,22 @@ app.get('/api/user', checkAuth, async (req, res) => {
   }
 });
 
+// Эндпоинт для уведомлений (исключен из CSRF)
+app.get('/api/notifications', (req, res, next) => {
+  // Пропускаем CSRF-проверку для этого эндпоинта
+  next();
+}, (req, res) => {
+  res.json({ 
+    status: 'success',
+    data: [
+      {id: 1, text: "System update available"},
+      {id: 2, text: "New message from Alex"}
+    ]
+  });
+});
+
 app.post(
   '/api/upload-avatar',
-  (req, res, next) => doubleCsrfProtection(req, res, next),
   [
     body('userId').isMongoId().withMessage('Invalid user ID'),
     body('avatarType').isIn(['user', 'family']).withMessage('Invalid avatar type'),
@@ -480,17 +479,6 @@ app.post(
     }
   }
 );
-
-// Эндпоинт для уведомлений
-app.get('/api/notifications', (req, res) => {
-  res.json({ 
-    status: 'success',
-    data: [
-      {id: 1, text: "System update available"},
-      {id: 2, text: "New message from Alex"}
-    ]
-  });
-});
 
 // Static & SPA routes
 const staticRoutes = [
@@ -554,7 +542,7 @@ async function startServer() {
     logger.info(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
     logger.info('Security features:');
     logger.info(`- Helmet CSP: enabled`);
-    logger.info(`- CSRF Protection: enabled (${process.env.NODE_ENV === 'production' ? '__Host-x-csrf-token' : 'x-csrf-token'})`);
+    logger.info(`- CSRF Protection: enabled (XSRF-TOKEN)`);
     logger.info(`- HTTP-Only cookies: enabled`);
     logger.info(`- Rate Limiter: API=100/15min, Auth=10/15min`);
     logger.info('Optimizations:');
