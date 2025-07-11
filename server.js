@@ -17,6 +17,7 @@ import rateLimit from 'express-rate-limit';
 import winston from 'winston';
 import 'winston-daily-rotate-file';
 import crypto from 'crypto';
+// Исправленный импорт
 import { doubleCsrf } from 'csrf-csrf';
 import expressValidator from 'express-validator';
 
@@ -288,8 +289,10 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// CSRF Protection
-const { generateToken, doubleCsrfProtection } = doubleCsrf({
+// =================================================
+// ИСПРАВЛЕННЫЙ БЛОК: CSRF Protection
+// =================================================
+const doubleCsrfUtilities = doubleCsrf({
   getSecret: () => process.env.SESSION_SECRET,
   cookieName: "__Host-psifi.x-csrf-token",
   cookieOptions: {
@@ -299,6 +302,9 @@ const { generateToken, doubleCsrfProtection } = doubleCsrf({
   },
   size: 64,
 });
+
+const generateToken = doubleCsrfUtilities.generateToken;
+const doubleCsrfProtection = doubleCsrfUtilities.doubleCsrfProtection;
 
 app.use((req, res, next) => {
   const token = generateToken(res);
