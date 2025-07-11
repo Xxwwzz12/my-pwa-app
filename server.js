@@ -18,9 +18,8 @@ import winston from 'winston';
 import 'winston-daily-rotate-file';
 import crypto from 'crypto';
 import { doubleCsrf } from 'csrf-csrf';
-
-// Инициализация express-validator
 import expressValidator from 'express-validator';
+
 const { body, validationResult } = expressValidator;
 
 // Получение текущего пути файла
@@ -488,8 +487,8 @@ app.get('/', (req, res) => req.query.connection_test ? res.sendStatus(204) : res
 // API fallback
 app.use('/api', (req, res) => res.status(404).json({ error: 'API endpoint not found' }));
 
-// Обработка 404 для статики
-app.get('*', (req, res) => {
+// Обработка 404
+app.get(/(.*)/, (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'Endpoint not found' });
   }
