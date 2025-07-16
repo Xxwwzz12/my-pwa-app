@@ -127,16 +127,53 @@ app.use(helmet({
   referrerPolicy: { policy: 'same-origin' }
 }));
 
-// Разрешение CORS для всех в development
-if (process.env.NODE_ENV === 'development') {
-  app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token');
-    next();
-  });
-  logger.warn('⚠️ Разрешение CORS для всех в development режиме');
-}
+// =================================================
+// ОБНОВЛЕННЫЕ НАСТРОЙКИ CORS
+// =================================================
+
+// Список разрешенных доменов
+const allowedOrigins = [
+  FRONTEND_URL,
+  'https://my-pwa-app-w519.onrender.com',
+  'http://localhost:3000',
+  'http://localhost:8080'
+];
+
+// Основной CORS middleware
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+  
+  // Разрешаем необходимые заголовки
+  res.setHeader('Access-Control-Allow-Headers', [
+    'Content-Type', 
+    'Authorization', 
+    'CSRF-Token' // Ключевое добавление
+  ].join(', '));
+  
+  // Заголовки, доступные клиенту
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Length, X-Request-ID');
+  
+  next();
+});
+
+// Обработчик preflight-запросов (OPTIONS)
+app.options('*', (req, res) => {
+  const origin = req.headers.origin;
+  
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, CSRF-Token');
+  res.sendStatus(204);
+});
 
 // Добавление HSTS в PRODUCTION
 if (process.env.NODE_ENV === 'production') {
@@ -250,29 +287,6 @@ const authLimiter = rateLimit({
 app.use('/api', apiLimiter);
 app.use('/auth', authLimiter);
 
-// CORS
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  const allowed = [
-    FRONTEND_URL,
-    'https://my-pwa-app-w519.onrender.com',
-    'http://localhost:3000',
-    'http://localhost:8080'
-  ];
-  
-  if (allowed.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
-  
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Origin,Content-Type,Accept,Authorization,X-CSRF-Token');
-    return res.sendStatus(204);
-  }
-  next();
-});
-
 // Защита от доступа к скрытым файлам
 app.use((req, res, next) => {
   if (req.path.split('/').some(part => part.startsWith('.'))) {
@@ -280,6 +294,10 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// =================================================
+// ОБНОВЛЕННЫЕ НАСТРОЙКИ СЕССИЙ
+// =================================================
 
 // Session Configuration
 const sessionConfig = {
@@ -295,10 +313,10 @@ const sessionConfig = {
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production', // true для HTTPS в production
     httpOnly: true,
     maxAge: 14 * 24 * 60 * 60 * 1000,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' для кросс-доменных запросов
     domain: process.env.NODE_ENV === 'production' ? process.env.SESSION_DOMAIN : undefined
   }
 };
@@ -320,7 +338,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // =================================================
-// ОБНОВЛЕННАЯ РЕАЛИЗАЦИЯ CSRF ЗАЩИТЫ (СЕССИОННАЯ)
+// РЕАЛИЗАЦИЯ CSRF ЗАЩИТЫ (СЕССИОННАЯ)
 // =================================================
 
 // Middleware проверки CSRF
@@ -337,7 +355,6 @@ const csrfProtection = (req, res, next) => {
   logger.debug(`[CSRF] Токен клиента: ${clientToken}`);
   logger.debug(`[CSRF] Токен сервера: ${serverToken}`);
   logger.debug(`[CSRF] Session ID: ${req.sessionID}`);
-  logger.debug(`[CSRF] Session: ${JSON.stringify(req.session)}`);
   
   // Проверка наличия токена от клиента
   if (!clientToken) {
@@ -370,8 +387,7 @@ app.get('/api/csrf-token', (req, res) => {
     // Подробное логирование генерации токена
     logger.debug(`[CSRF] Сгенерирован токен: ${token}`);
     logger.debug(`[CSRF] ID сессии: ${req.sessionID}`);
-    logger.debug(`[CSRF] Токен сохранен в сессии: ${req.session.csrfToken}`);
-    console.log(`CSRF token set in session: ${token}`); // Дополнительный console.log
+    console.log(`CSRF token set in session: ${token}`);
     
     // Устанавливаем cookie для совместимости с фронтендом
     res.cookie('XSRF-TOKEN', token, {
@@ -577,18 +593,6 @@ app.post(
       const savedSub = await subscription.save();
       logger.info(`Подписка сохранена: ${savedSub._id}`);
       
-      // Проверяем дешифровку сразу после сохранения
-      try {
-        const decryptedKeys = decrypt(encryptedKeys, process.env.ENC_KEY);
-        logger.debug('Успешная дешифровка ключей после сохранения');
-        logger.debug(`Дешифрованные ключи: ${decryptedKeys}`);
-      } catch (decryptError) {
-        logger.error('Ошибка дешифровки после сохранения', {
-          error: decryptError.message,
-          stack: decryptError.stack
-        });
-      }
-      
       res.status(201).json({ 
         success: true, 
         message: 'Подписка успешно сохранена',
@@ -722,8 +726,15 @@ async function startServer() {
   const PORT = process.env.PORT || 3000;
   server = app.listen(PORT, () => {
     logger.info(`Сервер запущен на порту ${PORT} в режиме ${process.env.NODE_ENV}`);
-    logger.info('Обновленная CSRF защита активирована (сессионная реализация)');
+    logger.info('Обновленные CORS настройки активированы');
+    logger.info(`Разрешенные домены: ${allowedOrigins.join(', ')}`);
     logger.info(`Frontend URL: ${FRONTEND_URL}`);
+    
+    // Проверка настроек сессии
+    logger.info('Настройки сессии:');
+    logger.info(`- secure: ${sessionConfig.cookie.secure}`);
+    logger.info(`- sameSite: ${sessionConfig.cookie.sameSite}`);
+    logger.info(`- domain: ${sessionConfig.cookie.domain || 'default'}`);
     
     // Тест шифрования в development
     if (process.env.NODE_ENV === 'development') {

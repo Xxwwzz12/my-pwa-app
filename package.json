@@ -15,7 +15,7 @@
     "connect-mongo": "^5.1.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
-    "csurf": "^1.11.0",
+    "csurf": "^1.2.2",
     "debug": "^4.4.1",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
