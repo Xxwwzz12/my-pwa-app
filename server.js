@@ -17,22 +17,22 @@ import rateLimit from 'express-rate-limit';
 import winston from 'winston';
 import 'winston-daily-rotate-file';
 import crypto from 'crypto';
-import expressValidator from 'express-validator';
-import { createRequire } from 'module'; // Для использования require с ES-модулями
+import { body, validationResult } from 'express-validator';
 
-// Создаем require для использования CommonJS модулей
-const require = createRequire(import.meta.url);
-const csrf = require('csurf'); // Импортируем csurf через CommonJS
-
-const { body, validationResult } = expressValidator;
+// Инициализация переменных окружения
+dotenv.config();
 
 // Получение текущего пути файла
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Импорт моделей
+import User from './models/User.js';
+import PushSubscription from './models/PushSubscription.js';
+
 // Конфигурация логгера
 const logger = winston.createLogger({
-  level: 'info',
+  level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.json()
@@ -52,7 +52,10 @@ const logger = winston.createLogger({
       maxFiles: '30d'
     }),
     new winston.transports.Console({
-      format: winston.format.simple()
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      )
     })
   ],
   exceptionHandlers: [
@@ -71,33 +74,24 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-dotenv.config();
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
 const app = express();
 
-// Проверка обязательных переменных окружения перед запуском
+// Проверка обязательных переменных окружения
 const REQUIRED_ENV = [
   'MONGO_URI', 
   'SESSION_SECRET',
   'VAPID_PUBLIC_KEY',
-  'VAPID_PRIVATE_KEY'
+  'VAPID_PRIVATE_KEY',
+  'CSRF_SECRET',
+  'ENC_KEY'
 ];
 
 const missing = REQUIRED_ENV.filter(key => !process.env[key]);
 if (missing.length > 0) {
   logger.error(`FATAL: Missing required env variables: ${missing.join(', ')}`);
   process.exit(1);
-}
-
-// Force HTTPS в production
-if (process.env.NODE_ENV === 'production') {
-  app.use((req, res, next) => {
-    if (req.headers['x-forwarded-proto'] !== 'https') {
-      return res.redirect(301, `https://${req.headers.host}${req.url}`);
-    }
-    next();
-  });
 }
 
 // Middleware для генерации nonce для CSP
@@ -129,23 +123,42 @@ app.use(helmet({
       upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
     }
   },
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
+  referrerPolicy: { policy: 'same-origin' }
 }));
 
-// Добавление HSTS в production
+// Разрешение CORS для всех в development
+if (process.env.NODE_ENV === 'development') {
+  app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token');
+    next();
+  });
+  logger.warn('⚠️ Разрешение CORS для всех в development режиме');
+}
+
+// Добавление HSTS в PRODUCTION
 if (process.env.NODE_ENV === 'production') {
   app.use(helmet.hsts({
     maxAge: 31536000,
     includeSubDomains: true,
     preload: true
   }));
-  logger.info('HSTS middleware enabled');
+  
+  // Force HTTPS
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] !== 'https') {
+      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+    next();
+  });
 }
 
 // Middleware сжатия
 app.use(compression());
 
-// Multer Configuration с валидацией типов
+// Multer Configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadPath = path.join(__dirname, 'uploads');
@@ -166,23 +179,23 @@ const upload = multer({
   }
 });
 
-// Подключение к MongoDB с улучшенной обработкой ошибок
+// Подключение к MongoDB
 async function connectToMongoDB() {
   try {
+    logger.info('Подключение к MongoDB...');
+    
     await mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: parseInt(process.env.DB_TIMEOUT_MS || '10000'),
-      maxPoolSize: parseInt(process.env.DB_POOL_SIZE || '10'),
+      serverSelectionTimeoutMS: 10000,
+      maxPoolSize: 10,
       heartbeatFrequencyMS: 30000,
       retryWrites: true,
       w: 'majority'
     });
-    logger.info('MongoDB connected successfully');
-    mongoose.connection.on('error', err => 
-      logger.error(`MongoDB connection error: ${err.message}`, { stack: err.stack }));
-    mongoose.connection.on('disconnected', () => logger.warn('MongoDB disconnected'));
+    
+    logger.info('MongoDB подключен успешно');
     return true;
   } catch (err) {
-    logger.error(`MongoDB initial connection error: ${err.message}`, { stack: err.stack });
+    logger.error(`Ошибка подключения к MongoDB: ${err.message}`, { stack: err.stack });
     return false;
   }
 }
@@ -194,12 +207,10 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
     process.env.VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY
   );
-  logger.info('VAPID keys configured successfully');
-} else {
-  logger.warn('VAPID keys not configured! Push notifications disabled.');
+  logger.info('VAPID ключи настроены');
 }
 
-// Глобальный лимит запросов и body-parser
+// Глобальный лимит запросов
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.set('trust proxy', 1);
@@ -209,12 +220,11 @@ app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: '1y',
   setHeaders: (res, filePath) => filePath.endsWith('.html') && res.setHeader('Cache-Control', 'no-store')
 }));
-app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
 
-// Защита загрузок - только для авторизованных пользователей
+// Защита загрузок
 app.use('/uploads', (req, res, next) => {
   if (req.isAuthenticated()) return next();
-  res.status(403).send('Access denied');
+  res.status(403).send('Доступ запрещен');
 }, express.static(path.join(__dirname, 'uploads')));
 
 // Cookie parser
@@ -224,7 +234,7 @@ app.use(cookieParser());
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  message: 'Too many requests, please try again later',
+  message: 'Слишком много запросов, попробуйте позже',
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -232,7 +242,7 @@ const apiLimiter = rateLimit({
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
-  message: 'Too many authentication attempts, please try again later',
+  message: 'Слишком много попыток аутентификации',
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -273,7 +283,7 @@ app.use((req, res, next) => {
 
 // Session Configuration
 const sessionConfig = {
-  name: process.env.SESSION_NAME,
+  name: process.env.SESSION_NAME || 'session',
   store: MongoStore.create({ 
     mongoUrl: process.env.MONGO_URI, 
     collectionName: 'sessions', 
@@ -289,15 +299,18 @@ const sessionConfig = {
     httpOnly: true,
     maxAge: 14 * 24 * 60 * 60 * 1000,
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    domain: process.env.SESSION_DOMAIN
+    domain: process.env.NODE_ENV === 'production' ? process.env.SESSION_DOMAIN : undefined
   }
 };
 
-// Добавление префиксов безопасности в production
 if (process.env.NODE_ENV === 'production') {
   sessionConfig.name = `__Secure-${sessionConfig.name}`;
   sessionConfig.cookie.sameSite = 'none';
   sessionConfig.cookie.secure = true;
+  
+  if (process.env.SESSION_DOMAIN) {
+    sessionConfig.cookie.domain = process.env.SESSION_DOMAIN;
+  }
 }
 
 app.use(session(sessionConfig));
@@ -307,25 +320,187 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // =================================================
-// НОВАЯ РЕАЛИЗАЦИЯ CSRF PROTECTION с использованием csurf
+// УЛУЧШЕННАЯ КАСТОМНАЯ РЕАЛИЗАЦИЯ CSRF ЗАЩИТЫ
 // =================================================
-const csrfProtection = csrf({ cookie: true });
-app.use(csrfProtection);
+const CSRF_SECRET = process.env.CSRF_SECRET;
 
-// Установка CSRF-токена в cookie
+// Middleware для генерации и проверки CSRF токена
 app.use((req, res, next) => {
-  res.cookie('XSRF-TOKEN', req.csrfToken(), {
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/'
-  });
+  // Генерация токена
+  req.generateCSRFToken = () => {
+    const timestamp = Date.now();
+    const hash = crypto.createHmac('sha256', CSRF_SECRET)
+      .update(`${timestamp}${req.sessionID}`)
+      .digest('hex');
+    return `${timestamp}-${hash}`;
+  };
+
+  // Проверка токена
+  req.verifyCSRFToken = (token) => {
+    if (!token) {
+      logger.debug('CSRF token not provided');
+      return false;
+    }
+    
+    const [timestamp, hash] = token.split('-');
+    if (!timestamp || !hash) {
+      logger.debug('Invalid CSRF token format');
+      return false;
+    }
+    
+    // Проверяем срок жизни токена (15 минут)
+    const tokenAge = Date.now() - parseInt(timestamp);
+    if (tokenAge > 15 * 60 * 1000) {
+      logger.debug(`CSRF token expired (age: ${tokenAge}ms)`);
+      return false;
+    }
+    
+    // Диагностическое логирование
+    logger.debug(`Verifying token with sessionID: ${req.sessionID}`);
+    logger.debug(`Token timestamp: ${timestamp}`);
+    logger.debug(`Received hash: ${hash}`);
+    
+    const expectedHash = crypto.createHmac('sha256', CSRF_SECRET)
+      .update(`${timestamp}${req.sessionID}`)
+      .digest('hex');
+    
+    logger.debug(`Expected hash: ${expectedHash}`);
+    
+    const isValid = hash === expectedHash;
+    if (!isValid) {
+      logger.debug('CSRF token hash mismatch');
+    }
+    
+    return isValid;
+  };
+
   next();
 });
 
-logger.info('CSRF protection initialized');
+// Эндпоинт для получения CSRF-токена
+app.get('/api/csrf-token', (req, res) => {
+  try {
+    // Принудительная инициализация сессии
+    if (!req.session.initialized) {
+      req.session.initialized = true;
+      logger.debug(`[CSRF-GEN] Инициализирована новая сессия`);
+    }
+    
+    const csrfToken = req.generateCSRFToken();
+    
+    // Устанавливаем cookie
+    res.cookie('XSRF-TOKEN', csrfToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/'
+    });
+    
+    // Логирование для диагностики
+    logger.debug(`[CSRF-GEN] Generated CSRF token: ${csrfToken}`);
+    logger.debug(`[CSRF-GEN] Session ID: ${req.sessionID}`);
+    logger.debug(`[CSRF-GEN] Session initialized: ${!!req.session.initialized}`);
+    
+    res.json({ token: csrfToken });
+  } catch (error) {
+    logger.error('Ошибка генерации CSRF токена', error);
+    res.status(500).json({ error: 'Ошибка генерации токена' });
+  }
+});
 
-// Импорт модели пользователя
-import User from './models/User.js';
+// Middleware проверки CSRF (обновленный)
+const csrfProtection = (req, res, next) => {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+  
+  // ДИАГНОСТИКА: Логируем sessionID перед проверкой
+  logger.debug(`[CSRF-VERIFY] Session ID: ${req.sessionID}`);
+  logger.debug(`[CSRF-VERIFY] Session cookie: ${req.headers.cookie}`);
+  
+  // Получаем токен из различных источников (с триммированием)
+  const tokenSources = [
+    req.headers['x-csrf-token']?.trim(),    // Стандартный заголовок
+    req.headers['xsrf-token']?.trim(),      // Альтернативное написание
+    req.headers['x-xsrf-token']?.trim(),    // Для совместимости
+    req.headers['csrf-token']?.trim(),      // Еще один вариант
+    req.body?._csrf?.trim(),                // Из тела запроса
+    req.query?._csrf?.trim()                // Из параметров URL
+  ];
+  
+  const token = tokenSources.find(t => !!t);
+  
+  if (!token) {
+    logger.warn('CSRF token not found in request', {
+      headers: req.headers,
+      body: req.body,
+      query: req.query
+    });
+    return res.status(403).json({ error: 'CSRF token required' });
+  }
+  
+  logger.debug(`[CSRF-VERIFY] Received CSRF token: ${token}`);
+  
+  if (!req.verifyCSRFToken(token)) {
+    logger.warn(`Invalid CSRF token: ${token}`, {
+      url: req.originalUrl,
+      method: req.method,
+      headers: req.headers,
+      sessionID: req.sessionID
+    });
+    return res.status(403).json({ error: 'Недействительный CSRF токен' });
+  }
+  
+  logger.debug(`CSRF token verified: ${token}`);
+  next();
+};
+
+// Применяем CSRF защиту ко всем маршрутам, кроме /api/csrf-token
+app.use((req, res, next) => {
+  if (req.path === '/api/csrf-token') return next();
+  csrfProtection(req, res, next);
+});
+
+// =================================================
+// ШИФРОВАНИЕ ДЛЯ PUSH-КЛЮЧЕЙ (ФИНАЛЬНАЯ СОВМЕСТИМАЯ ВЕРСИЯ)
+// =================================================
+function getKey(secret) {
+  return crypto.createHash('sha256')
+    .update(secret)
+    .digest()
+    .subarray(0, 32);
+}
+
+function encrypt(text, secretKey) {
+  const key = getKey(secretKey);
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const authTag = cipher.getAuthTag().toString('hex');
+  
+  return `${iv.toString('hex')}:${encrypted}:${authTag}`;
+}
+
+function decrypt(encryptedText, secretKey) {
+  const parts = encryptedText.split(':');
+  if (parts.length !== 3) {
+    throw new Error(`Invalid encrypted text format. Expected 3 parts but got ${parts.length}`);
+  }
+  
+  const key = getKey(secretKey);
+  const iv = Buffer.from(parts[0], 'hex');
+  const encrypted = parts[1];
+  const authTag = Buffer.from(parts[2], 'hex');
+  
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+  decipher.setAuthTag(authTag);
+  
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
 
 // Passport Google Strategy
 passport.use(new GoogleStrategy({
@@ -350,10 +525,10 @@ passport.use(new GoogleStrategy({
     });
     
     await user.save();
-    logger.info(`New user created: ${user.email}`);
+    logger.info(`Новый пользователь: ${user.email}`);
     done(null, user);
   } catch (err) {
-    logger.error(`Google OAuth error: ${err.message}`, { stack: err.stack });
+    logger.error(`Google OAuth ошибка: ${err.message}`, { stack: err.stack });
     done(err);
   }
 }));
@@ -364,7 +539,7 @@ passport.deserializeUser(async (id, done) => {
     const user = await User.findById(id);
     done(null, user || null);
   } catch (err) {
-    logger.error(`Deserialize user error: ${err.message}`, { stack: err.stack });
+    logger.error(`Ошибка десериализации: ${err.message}`, { stack: err.stack });
     done(err);
   }
 });
@@ -382,8 +557,14 @@ app.get('/auth/google/callback',
 );
 
 app.get('/logout', (req, res) => {
+  PushSubscription.deleteMany({ userId: req.user.id }).exec().then(() => {
+    logger.info(`Подписки удалены: ${req.user.id}`);
+  }).catch(err => {
+    logger.error(`Ошибка удаления подписок: ${err.message}`);
+  });
+  
   req.logout(err => {
-    if (err) logger.error(`Logout error: ${err.message}`, { stack: err.stack });
+    if (err) logger.error(`Ошибка выхода: ${err.message}`, { stack: err.stack });
   });
   
   req.session.destroy(() => { 
@@ -392,11 +573,22 @@ app.get('/logout', (req, res) => {
   });
 });
 
-// Middleware to check auth
+// Middleware проверки аутентификации
 const checkAuth = (req, res, next) => {
   if (req.isAuthenticated()) return next();
-  logger.warn(`Unauthorized access attempt to ${req.originalUrl}`);
+  logger.warn(`Неавторизованный доступ: ${req.originalUrl}`);
   res.redirect('/');
+};
+
+// =================================================
+// ВРЕМЕННОЕ ОТКЛЮЧЕНИЕ АУТЕНТИФИКАЦИИ ДЛЯ ТЕСТИРОВАНИЯ
+// =================================================
+
+// Middleware для временного обхода аутентификации
+const tempAuthBypass = (req, res, next) => {
+  logger.warn('⚠️ Аутентификация временно отключена для тестирования CSRF защиты');
+  logger.debug(`Bypassed auth for: ${req.method} ${req.originalUrl}`);
+  next();
 };
 
 // User API
@@ -404,8 +596,8 @@ app.get('/api/user', checkAuth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) {
-      logger.warn(`User not found: ${req.user.id}`);
-      return res.status(404).json({ error: 'User not found' });
+      logger.warn(`Пользователь не найден: ${req.user.id}`);
+      return res.status(404).json({ error: 'Пользователь не найден' });
     }
     
     res.json({ 
@@ -419,63 +611,153 @@ app.get('/api/user', checkAuth, async (req, res) => {
       avatar: user.avatar 
     });
   } catch (err) {
-    logger.error(`User API error: ${err.message}`, { stack: err.stack });
-    res.status(500).json({ error: 'Server error' });
+    logger.error(`Ошибка API пользователя: ${err.message}`, { stack: err.stack });
+    res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
 
-// Эндпоинт для уведомлений (исключен из CSRF)
-app.get('/api/notifications', (req, res, next) => {
-  // Пропускаем CSRF-проверку для этого эндпоинта
-  next();
-}, (req, res) => {
+// Обработчик подписки на push-уведомления (ВРЕМЕННО БЕЗ АУТЕНТИФИКАЦИИ)
+app.post(
+  '/api/push-subscribe',
+  tempAuthBypass,
+  [
+    body('endpoint').isURL().withMessage('Некорректный endpoint URL'),
+    body('keys.auth').isString().withMessage('Ключ auth должен быть строкой'),
+    body('keys.p256dh').isString().withMessage('Ключ p256dh должен быть строкой')
+  ],
+  async (req, res) => {
+    logger.info('Обработчик /api/push-subscribe работает в тестовом режиме без аутентификации');
+    
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      logger.warn('Ошибка валидации подписки', {
+        errors: errors.array()
+      });
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const { endpoint, keys } = req.body;
+      
+      logger.info('Сохранение подписки в БД:', { endpoint });
+      
+      // Для тестов используем фиктивный userId
+      const testUserId = '000000000000000000000000';
+      
+      // Шифруем ключи перед сохранением
+      const keysString = JSON.stringify(keys);
+      const encryptedKeys = encrypt(keysString, process.env.ENC_KEY);
+      
+      // Диагностика формата шифрования
+      const parts = encryptedKeys.split(':');
+      logger.debug(`Формат зашифрованных ключей: ${parts.length} части(ей)`);
+      
+      const subscription = new PushSubscription({
+        endpoint,
+        keys: encryptedKeys, // Сохраняем зашифрованные ключи как строку
+        userId: testUserId
+      });
+      
+      const savedSub = await subscription.save();
+      logger.info('Тестовая подписка сохранена', { id: savedSub._id });
+      
+      // Проверяем дешифровку сразу после сохранения
+      try {
+        const decryptedKeys = savedSub.decryptKeys();
+        logger.debug('Успешная дешифровка ключей после сохранения');
+        logger.debug(`Дешифрованные ключи: ${JSON.stringify(decryptedKeys)}`);
+      } catch (decryptError) {
+        logger.error('Ошибка дешифровки после сохранения', {
+          error: decryptError.message,
+          stack: decryptError.stack
+        });
+      }
+      
+      res.status(201).json({ 
+        success: true, 
+        message: 'ТЕСТОВЫЙ РЕЖИМ: Подписка сохранена без аутентификации',
+        subscriptionId: savedSub._id,
+        warning: 'Аутентификация временно отключена для тестирования'
+      });
+    } catch (error) {
+      if (error.name === 'MongoServerError' && error.code === 11000) {
+        logger.warn('Дубликат подписки', { 
+          endpoint: req.body.endpoint
+        });
+        return res.status(409).json({ error: 'Подписка уже существует' });
+      }
+      
+      logger.error(`Ошибка подписки: ${error.message}`, { 
+        stack: error.stack,
+        body: req.body
+      });
+      res.status(500).json({ error: 'Ошибка сервера' });
+    }
+  }
+);
+
+// Эндпоинт для очистки тестовых данных
+app.delete('/api/test-cleanup', async (req, res) => {
+  try {
+    const result = await PushSubscription.deleteMany({ 
+      userId: '000000000000000000000000' 
+    });
+    
+    logger.warn(`Очищено тестовых подписок: ${result.deletedCount}`);
+    res.json({ 
+      status: 'success',
+      message: `Удалено ${result.deletedCount} тестовых подписок`
+    });
+  } catch (err) {
+    logger.error('Ошибка очистки тестовых данных', err);
+    res.status(500).json({ error: 'Ошибка очистки' });
+  }
+});
+
+// Эндпоинт для уведомлений
+app.get('/api/notifications', (req, res) => {
   res.json({ 
     status: 'success',
     data: [
-      {id: 1, text: "System update available"},
-      {id: 2, text: "New message from Alex"}
+      {id: 1, text: "Доступно обновление системы"},
+      {id: 2, text: "Новое сообщение от Алексея"}
     ]
   });
 });
 
+// Защищенный эндпоинт загрузки аватара
 app.post(
   '/api/upload-avatar',
-  [
-    body('userId').isMongoId().withMessage('Invalid user ID'),
-    body('avatarType').isIn(['user', 'family']).withMessage('Invalid avatar type'),
-    body('avatar').custom((value, { req }) => {
-      if (!req.file) throw new Error('Avatar file is required');
-      return true;
-    })
-  ],
   upload.single('avatar'),
   checkAuth,
+  [
+    body('userId').isMongoId().withMessage('Некорректный ID пользователя'),
+    body('avatarType').isIn(['user', 'family']).withMessage('Некорректный тип аватара')
+  ],
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      logger.warn(`Avatar upload validation failed: ${JSON.stringify(errors.array())}`);
       return res.status(400).json({ errors: errors.array() });
     }
     
     try {
       if (!req.file) {
-        logger.warn('No file uploaded for avatar');
-        return res.status(400).json({ error: 'No file uploaded' });
+        return res.status(400).json({ error: 'Файл не загружен' });
       }
       
       const user = await User.findById(req.user.id);
       if (user.avatar) {
         fs.unlink(path.join(__dirname, 'uploads', user.avatar), err => {
-          if (err) logger.error(`Error deleting old avatar: ${err.message}`, { stack: err.stack });
+          if (err) logger.error(`Ошибка удаления аватара: ${err.message}`);
         });
       }
       
       await User.findByIdAndUpdate(req.user.id, { avatar: req.file.filename });
-      logger.info(`Avatar updated for user: ${user.email}`);
+      logger.info(`Аватар обновлен: ${user.email}`);
       res.json({ success: true, avatarUrl: `/uploads/${req.file.filename}` });
     } catch (err) {
-      logger.error(`Avatar upload error: ${err.message}`, { stack: err.stack });
-      res.status(500).json({ error: 'Server error' });
+      logger.error(`Ошибка загрузки аватара: ${err.message}`);
+      res.status(500).json({ error: 'Ошибка сервера' });
     }
   }
 );
@@ -511,28 +793,26 @@ app.get(/(.*)/, (req, res) => {
     return res.sendFile(filePath);
   }
   
-  const errorPage = path.join(__dirname, 'public', '404.html');
-if (fs.existsSync(errorPage)) {
-  res.status(404).sendFile(errorPage);
-} else {
-  res.status(404).send('Page not found');
-}
+  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
 });
 
 // Error Handler
 app.use((err, req, res, next) => {
-  if (err.code === 'EBADCSRFTOKEN' || err.status === 403) {
-    logger.warn(`Invalid CSRF token: ${err.message}`);
-    return res.status(403).json({ error: 'Invalid CSRF token' });
-  }
-  
   if (err instanceof multer.MulterError) {
-    logger.warn(`File upload error: ${err.message}`);
-    return res.status(400).json({ error: 'File upload error: ' + err.message });
+    return res.status(400).json({ error: 'Ошибка загрузки файла: ' + err.message });
   }
   
-  logger.error(`Server Error: ${err.message}`, { stack: err.stack });
-  res.status(500).json({ error: 'Internal Server Error' });
+  if (err.message === 'Invalid JSON') {
+    return res.status(400).json({ error: 'Некорректный JSON' });
+  }
+  
+  logger.error(`Ошибка сервера: ${err.message}`, { 
+    stack: err.stack,
+    url: req.originalUrl,
+    method: req.method
+  });
+  
+  res.status(500).json({ error: 'Внутренняя ошибка сервера' });
 });
 
 // Start Server
@@ -544,34 +824,44 @@ async function startServer() {
   
   const PORT = process.env.PORT || 3000;
   server = app.listen(PORT, () => {
-    logger.info(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
-    logger.info('Security features:');
-    logger.info(`- Helmet CSP: enabled`);
-    logger.info(`- CSRF Protection: enabled (XSRF-TOKEN)`);
-    logger.info(`- HTTP-Only cookies: enabled`);
-    logger.info(`- Rate Limiter: API=100/15min, Auth=10/15min`);
-    logger.info('Optimizations:');
-    logger.info(`- Gzip compression: enabled`);
-    logger.info(`- Static caching: 1 year (except HTML)`);
-    logger.info(`- File upload limit: 5MB`);
-    logger.info(`- Request body limit: 10MB`);
-    logger.info('\nEnvironment:');
-    logger.info(`- FRONTEND_URL: ${FRONTEND_URL}`);
-    logger.info(`- MongoDB: ${mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'}`);
-    logger.info(`- OAuth Callback: ${process.env.CALLBACK_URL || `${process.env.BASE_URL}/auth/google/callback`}`);
-    if (process.env.NODE_ENV === 'production') {
-      logger.info(`- HSTS: enabled with preload`);
-      logger.info(`- Session cookie: ${sessionConfig.name}`);
+    logger.info(`Сервер запущен на порту ${PORT} в режиме ${process.env.NODE_ENV}`);
+    logger.info('Кастомная CSRF защита активирована');
+    logger.info(`Frontend URL: ${FRONTEND_URL}`);
+    
+    // Тест шифрования в development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('\n=== Testing encryption ===');
+      const testText = 'FamilySpaceSecret123';
+      const encrypted = encrypt(testText, process.env.ENC_KEY);
+      console.log('Encrypted:', encrypted);
+      
+      const decrypted = decrypt(encrypted, process.env.ENC_KEY);
+      console.log('Decrypted:', decrypted);
+      console.log('Test', decrypted === testText ? 'PASSED' : 'FAILED');
+      console.log('=======================\n');
+      
+      // Временные предупреждения
+      logger.warn('⚠️ ВРЕМЕННОЕ ИЗМЕНЕНИЕ: Аутентификация отключена для /api/push-subscribe');
+      logger.warn('⚠️ Для очистки тестовых данных используйте DELETE /api/test-cleanup');
     }
   });
 }
 
-// Грациозное завершение
 process.on('SIGTERM', () => {
-  logger.info('SIGTERM received. Shutting down gracefully');
+  logger.info('SIGTERM получен. Завершение работы');
   server.close(() => {
     mongoose.connection.close(false, () => {
-      logger.info('MongoDB connection closed');
+      logger.info('Подключение к MongoDB закрыто');
+      process.exit(0);
+    });
+  });
+});
+
+process.on('SIGINT', () => {
+  logger.info('SIGINT получен. Завершение работы');
+  server.close(() => {
+    mongoose.connection.close(false, () => {
+      logger.info('Подключение к MongoDB закрыто');
       process.exit(0);
     });
   });
