@@ -320,149 +320,65 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // =================================================
-// УЛУЧШЕННАЯ КАСТОМНАЯ РЕАЛИЗАЦИЯ CSRF ЗАЩИТЫ
+// ОБНОВЛЕННАЯ РЕАЛИЗАЦИЯ CSRF ЗАЩИТЫ (СЕССИОННАЯ)
 // =================================================
-const CSRF_SECRET = process.env.CSRF_SECRET;
 
-// Middleware для генерации и проверки CSRF токена
-app.use((req, res, next) => {
-  // Генерация токена
-  req.generateCSRFToken = () => {
-    const timestamp = Date.now();
-    const hash = crypto.createHmac('sha256', CSRF_SECRET)
-      .update(`${timestamp}${req.sessionID}`)
-      .digest('hex');
-    return `${timestamp}-${hash}`;
-  };
-
-  // Проверка токена
-  req.verifyCSRFToken = (token) => {
-    if (!token) {
-      logger.debug('CSRF token not provided');
-      return false;
-    }
-    
-    const [timestamp, hash] = token.split('-');
-    if (!timestamp || !hash) {
-      logger.debug('Invalid CSRF token format');
-      return false;
-    }
-    
-    // Проверяем срок жизни токена (15 минут)
-    const tokenAge = Date.now() - parseInt(timestamp);
-    if (tokenAge > 15 * 60 * 1000) {
-      logger.debug(`CSRF token expired (age: ${tokenAge}ms)`);
-      return false;
-    }
-    
-    // Диагностическое логирование
-    logger.debug(`Verifying token with sessionID: ${req.sessionID}`);
-    logger.debug(`Token timestamp: ${timestamp}`);
-    logger.debug(`Received hash: ${hash}`);
-    
-    const expectedHash = crypto.createHmac('sha256', CSRF_SECRET)
-      .update(`${timestamp}${req.sessionID}`)
-      .digest('hex');
-    
-    logger.debug(`Expected hash: ${expectedHash}`);
-    
-    const isValid = hash === expectedHash;
-    if (!isValid) {
-      logger.debug('CSRF token hash mismatch');
-    }
-    
-    return isValid;
-  };
-
+// Middleware проверки CSRF
+const csrfProtection = (req, res, next) => {
+  if (['GET', 'OPTIONS', 'HEAD'].includes(req.method)) {
+    logger.debug(`[CSRF] Пропуск проверки для метода: ${req.method}`);
+    return next();
+  }
+  
+  const clientToken = req.headers['csrf-token'];
+  const serverToken = req.session.csrfToken;
+  
+  logger.debug(`[CSRF] Токен клиента: ${clientToken}`);
+  logger.debug(`[CSRF] Токен сервера: ${serverToken}`);
+  
+  if (!clientToken || clientToken !== serverToken) {
+    logger.warn(`Несоответствие CSRF токена! Клиент: ${clientToken}, Сервер: ${serverToken}`);
+    return res.status(419).json({ error: 'CSRF token mismatch' });
+  }
+  
+  logger.debug('[CSRF] Токен верифицирован');
   next();
-});
+};
 
 // Эндпоинт для получения CSRF-токена
 app.get('/api/csrf-token', (req, res) => {
   try {
-    // Принудительная инициализация сессии
-    if (!req.session.initialized) {
-      req.session.initialized = true;
-      logger.debug(`[CSRF-GEN] Инициализирована новая сессия`);
-    }
+    const token = crypto.randomBytes(32).toString('hex');
+    req.session.csrfToken = token;
     
-    const csrfToken = req.generateCSRFToken();
+    logger.debug(`[CSRF] Сгенерирован токен: ${token}`);
+    logger.debug(`[CSRF] ID сессии: ${req.sessionID}`);
     
-    // Устанавливаем cookie
-    res.cookie('XSRF-TOKEN', csrfToken, {
+    // Устанавливаем cookie для совместимости с фронтендом
+    res.cookie('XSRF-TOKEN', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/'
     });
     
-    // Логирование для диагностики
-    logger.debug(`[CSRF-GEN] Generated CSRF token: ${csrfToken}`);
-    logger.debug(`[CSRF-GEN] Session ID: ${req.sessionID}`);
-    logger.debug(`[CSRF-GEN] Session initialized: ${!!req.session.initialized}`);
-    
-    res.json({ token: csrfToken });
+    res.json({ token });
   } catch (error) {
-    logger.error('Ошибка генерации CSRF токена', error);
-    res.status(500).json({ error: 'Ошибка генерации токена' });
+    logger.error('Ошибка генерации CSRF токена:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-// Middleware проверки CSRF (обновленный)
-const csrfProtection = (req, res, next) => {
-  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
-    return next();
-  }
-  
-  // ДИАГНОСТИКА: Логируем sessionID перед проверкой
-  logger.debug(`[CSRF-VERIFY] Session ID: ${req.sessionID}`);
-  logger.debug(`[CSRF-VERIFY] Session cookie: ${req.headers.cookie}`);
-  
-  // Получаем токен из различных источников (с триммированием)
-  const tokenSources = [
-    req.headers['x-csrf-token']?.trim(),    // Стандартный заголовок
-    req.headers['xsrf-token']?.trim(),      // Альтернативное написание
-    req.headers['x-xsrf-token']?.trim(),    // Для совместимости
-    req.headers['csrf-token']?.trim(),      // Еще один вариант
-    req.body?._csrf?.trim(),                // Из тела запроса
-    req.query?._csrf?.trim()                // Из параметров URL
-  ];
-  
-  const token = tokenSources.find(t => !!t);
-  
-  if (!token) {
-    logger.warn('CSRF token not found in request', {
-      headers: req.headers,
-      body: req.body,
-      query: req.query
-    });
-    return res.status(403).json({ error: 'CSRF token required' });
-  }
-  
-  logger.debug(`[CSRF-VERIFY] Received CSRF token: ${token}`);
-  
-  if (!req.verifyCSRFToken(token)) {
-    logger.warn(`Invalid CSRF token: ${token}`, {
-      url: req.originalUrl,
-      method: req.method,
-      headers: req.headers,
-      sessionID: req.sessionID
-    });
-    return res.status(403).json({ error: 'Недействительный CSRF токен' });
-  }
-  
-  logger.debug(`CSRF token verified: ${token}`);
-  next();
-};
-
-// Применяем CSRF защиту ко всем маршрутам, кроме /api/csrf-token
+// Применяем CSRF защиту ко всем маршрутам, кроме статических файлов и /api/csrf-token
 app.use((req, res, next) => {
   if (req.path === '/api/csrf-token') return next();
+  if (req.path.startsWith('/public/')) return next();
+  if (req.path.startsWith('/uploads/')) return next();
   csrfProtection(req, res, next);
 });
 
 // =================================================
-// ШИФРОВАНИЕ ДЛЯ PUSH-КЛЮЧЕЙ (ФИНАЛЬНАЯ СОВМЕСТИМАЯ ВЕРСИЯ)
+// ШИФРОВАНИЕ ДЛЯ PUSH-КЛЮЧЕЙ
 // =================================================
 function getKey(secret) {
   return crypto.createHash('sha256')
@@ -580,17 +496,6 @@ const checkAuth = (req, res, next) => {
   res.redirect('/');
 };
 
-// =================================================
-// ВРЕМЕННОЕ ОТКЛЮЧЕНИЕ АУТЕНТИФИКАЦИИ ДЛЯ ТЕСТИРОВАНИЯ
-// =================================================
-
-// Middleware для временного обхода аутентификации
-const tempAuthBypass = (req, res, next) => {
-  logger.warn('⚠️ Аутентификация временно отключена для тестирования CSRF защиты');
-  logger.debug(`Bypassed auth for: ${req.method} ${req.originalUrl}`);
-  next();
-};
-
 // User API
 app.get('/api/user', checkAuth, async (req, res) => {
   try {
@@ -616,18 +521,16 @@ app.get('/api/user', checkAuth, async (req, res) => {
   }
 });
 
-// Обработчик подписки на push-уведомления (ВРЕМЕННО БЕЗ АУТЕНТИФИКАЦИИ)
+// Обработчик подписки на push-уведомления
 app.post(
   '/api/push-subscribe',
-  tempAuthBypass,
+  checkAuth,
   [
     body('endpoint').isURL().withMessage('Некорректный endpoint URL'),
     body('keys.auth').isString().withMessage('Ключ auth должен быть строкой'),
     body('keys.p256dh').isString().withMessage('Ключ p256dh должен быть строкой')
   ],
   async (req, res) => {
-    logger.info('Обработчик /api/push-subscribe работает в тестовом режиме без аутентификации');
-    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       logger.warn('Ошибка валидации подписки', {
@@ -638,34 +541,28 @@ app.post(
 
     try {
       const { endpoint, keys } = req.body;
+      const userId = req.user.id;
       
-      logger.info('Сохранение подписки в БД:', { endpoint });
-      
-      // Для тестов используем фиктивный userId
-      const testUserId = '000000000000000000000000';
+      logger.info(`Сохранение подписки для пользователя: ${userId}`);
       
       // Шифруем ключи перед сохранением
       const keysString = JSON.stringify(keys);
       const encryptedKeys = encrypt(keysString, process.env.ENC_KEY);
       
-      // Диагностика формата шифрования
-      const parts = encryptedKeys.split(':');
-      logger.debug(`Формат зашифрованных ключей: ${parts.length} части(ей)`);
-      
       const subscription = new PushSubscription({
         endpoint,
-        keys: encryptedKeys, // Сохраняем зашифрованные ключи как строку
-        userId: testUserId
+        keys: encryptedKeys,
+        userId: userId
       });
       
       const savedSub = await subscription.save();
-      logger.info('Тестовая подписка сохранена', { id: savedSub._id });
+      logger.info(`Подписка сохранена: ${savedSub._id}`);
       
       // Проверяем дешифровку сразу после сохранения
       try {
-        const decryptedKeys = savedSub.decryptKeys();
+        const decryptedKeys = decrypt(encryptedKeys, process.env.ENC_KEY);
         logger.debug('Успешная дешифровка ключей после сохранения');
-        logger.debug(`Дешифрованные ключи: ${JSON.stringify(decryptedKeys)}`);
+        logger.debug(`Дешифрованные ключи: ${decryptedKeys}`);
       } catch (decryptError) {
         logger.error('Ошибка дешифровки после сохранения', {
           error: decryptError.message,
@@ -675,9 +572,8 @@ app.post(
       
       res.status(201).json({ 
         success: true, 
-        message: 'ТЕСТОВЫЙ РЕЖИМ: Подписка сохранена без аутентификации',
-        subscriptionId: savedSub._id,
-        warning: 'Аутентификация временно отключена для тестирования'
+        message: 'Подписка успешно сохранена',
+        subscriptionId: savedSub._id
       });
     } catch (error) {
       if (error.name === 'MongoServerError' && error.code === 11000) {
@@ -695,24 +591,6 @@ app.post(
     }
   }
 );
-
-// Эндпоинт для очистки тестовых данных
-app.delete('/api/test-cleanup', async (req, res) => {
-  try {
-    const result = await PushSubscription.deleteMany({ 
-      userId: '000000000000000000000000' 
-    });
-    
-    logger.warn(`Очищено тестовых подписок: ${result.deletedCount}`);
-    res.json({ 
-      status: 'success',
-      message: `Удалено ${result.deletedCount} тестовых подписок`
-    });
-  } catch (err) {
-    logger.error('Ошибка очистки тестовых данных', err);
-    res.status(500).json({ error: 'Ошибка очистки' });
-  }
-});
 
 // Эндпоинт для уведомлений
 app.get('/api/notifications', (req, res) => {
@@ -825,7 +703,7 @@ async function startServer() {
   const PORT = process.env.PORT || 3000;
   server = app.listen(PORT, () => {
     logger.info(`Сервер запущен на порту ${PORT} в режиме ${process.env.NODE_ENV}`);
-    logger.info('Кастомная CSRF защита активирована');
+    logger.info('Обновленная CSRF защита активирована (сессионная реализация)');
     logger.info(`Frontend URL: ${FRONTEND_URL}`);
     
     // Тест шифрования в development
@@ -839,10 +717,6 @@ async function startServer() {
       console.log('Decrypted:', decrypted);
       console.log('Test', decrypted === testText ? 'PASSED' : 'FAILED');
       console.log('=======================\n');
-      
-      // Временные предупреждения
-      logger.warn('⚠️ ВРЕМЕННОЕ ИЗМЕНЕНИЕ: Аутентификация отключена для /api/push-subscribe');
-      logger.warn('⚠️ Для очистки тестовых данных используйте DELETE /api/test-cleanup');
     }
   });
 }

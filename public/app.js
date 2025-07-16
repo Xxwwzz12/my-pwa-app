@@ -1,9 +1,8 @@
+import { initCsrf, fetchWithCsrf } from './utils/csrf.js';
+
 // Централизованный обработчик ошибок
 window.addEventListener('error', (event) => {
   console.error('Глобальная ошибка:', event.error);
-  
-  // Получаем CSRF-токен из мета-тега (#204)
-  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
   
   // Отправка ошибки на сервер (если есть соединение)
   if (navigator.onLine) {
@@ -17,11 +16,11 @@ window.addEventListener('error', (event) => {
       userAgent: navigator.userAgent
     };
     
-    fetch('/api/error-log', {
+    // Используем fetchWithCsrf вместо fetch
+    fetchWithCsrf('/api/error-log', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        ...(csrfToken ? {'X-CSRF-Token': csrfToken} : {})
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(errorData)
     }).catch(() => {/* Не обрабатываем ошибки отправки ошибок */});
@@ -312,6 +311,17 @@ class FamilyController {
     console.log(`Инициализация семейного контроллера для ID: ${this.familyId}`);
     // Реальная реализация должна быть в ./controllers/family-controller.js
     document.body.innerHTML = `<h1>Семейный профиль ${this.familyId}</h1>`;
+    
+    // Пример использования fetchWithCsrf в контроллере
+    try {
+      const response = await fetchWithCsrf(`/api/family/${this.familyId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ lastVisited: Date.now() })
+      });
+      // ... обработка ответа ...
+    } catch (error) {
+      console.error('Ошибка обновления данных семьи', error);
+    }
   }
   
   async destroy() {
@@ -328,6 +338,17 @@ class ChatController {
     console.log(`Инициализация чат-контроллера для ID: ${this.chatId}`);
     // Реальная реализация должна быть в ./controllers/chat-controller.js
     document.body.innerHTML = `<h1>Чат ${this.chatId}</h1>`;
+    
+    // Пример использования fetchWithCsrf в контроллере
+    try {
+      const response = await fetchWithCsrf(`/api/chat/${this.chatId}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ text: 'Привет!' })
+      });
+      // ... обработка ответа ...
+    } catch (error) {
+      console.error('Ошибка отправки сообщения', error);
+    }
   }
   
   async destroy() {
@@ -336,7 +357,16 @@ class ChatController {
 }
 
 // ================== ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ================== //
-window.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // Инициализация CSRF (#295)
+  try {
+    await initCsrf();
+    console.log('CSRF защита инициализирована');
+  } catch (error) {
+    console.error('Ошибка инициализации CSRF:', error);
+    showErrorNotification('Ошибка безопасности. Пожалуйста, перезагрузите страницу.');
+  }
+  
   // Глобальная инициализация
   initializePWA();
   initializeIndexedDB();
