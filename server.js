@@ -333,11 +333,27 @@ const csrfProtection = (req, res, next) => {
   const clientToken = req.headers['csrf-token'];
   const serverToken = req.session.csrfToken;
   
+  // Подробное логирование для диагностики
   logger.debug(`[CSRF] Токен клиента: ${clientToken}`);
   logger.debug(`[CSRF] Токен сервера: ${serverToken}`);
+  logger.debug(`[CSRF] Session ID: ${req.sessionID}`);
+  logger.debug(`[CSRF] Session: ${JSON.stringify(req.session)}`);
   
-  if (!clientToken || clientToken !== serverToken) {
-    logger.warn(`Несоответствие CSRF токена! Клиент: ${clientToken}, Сервер: ${serverToken}`);
+  // Проверка наличия токена от клиента
+  if (!clientToken) {
+    logger.error('CSRF токен не предоставлен клиентом');
+    return res.status(419).json({ error: 'CSRF token missing' });
+  }
+  
+  // Проверка наличия токена в сессии
+  if (!serverToken) {
+    logger.error('CSRF токен отсутствует в сессии');
+    return res.status(419).json({ error: 'CSRF token missing in session' });
+  }
+  
+  // Сравнение токенов
+  if (clientToken !== serverToken) {
+    logger.error(`Несоответствие CSRF токенов! Клиент: ${clientToken}, Сервер: ${serverToken}`);
     return res.status(419).json({ error: 'CSRF token mismatch' });
   }
   
@@ -351,8 +367,11 @@ app.get('/api/csrf-token', (req, res) => {
     const token = crypto.randomBytes(32).toString('hex');
     req.session.csrfToken = token;
     
+    // Подробное логирование генерации токена
     logger.debug(`[CSRF] Сгенерирован токен: ${token}`);
     logger.debug(`[CSRF] ID сессии: ${req.sessionID}`);
+    logger.debug(`[CSRF] Токен сохранен в сессии: ${req.session.csrfToken}`);
+    console.log(`CSRF token set in session: ${token}`); // Дополнительный console.log
     
     // Устанавливаем cookie для совместимости с фронтендом
     res.cookie('XSRF-TOKEN', token, {
