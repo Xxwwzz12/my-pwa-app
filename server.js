@@ -71,6 +71,24 @@ const logger = winston.createLogger({
 // Обработчик критических ошибок
 process.on('uncaughtException', (err) => {
   logger.error(`Critical Uncaught Exception: ${err.message}`, { stack: err.stack });
+  
+  // Проверка на ошибки маршрутизации
+  if (err.message.includes('path-to-regexp') || err.message.includes('Missing parameter name')) {
+    logger.error('⚠️ ОШИБКА МАРШРУТИЗАЦИИ: Проверьте определения путей!');
+    logger.error('1. Пути не должны содержать полные URL (например, "https://example.com/api")');
+    logger.error('2. Параметры должны быть в формате :paramName (не {paramName})');
+    logger.error('3. Спецсимволы должны быть экранированы');
+    logger.error('Проблемные маршруты:');
+    
+    // Выводим все маршруты для проверки
+    app._router.stack.forEach((layer) => {
+      if (layer.route) {
+        const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
+        logger.error(`- ${methods} ${layer.route.path}`);
+      }
+    });
+  }
+  
   process.exit(1);
 });
 
@@ -127,10 +145,6 @@ app.use(helmet({
   referrerPolicy: { policy: 'same-origin' }
 }));
 
-// =================================================
-// ОБНОВЛЕННЫЕ НАСТРОЙКИ CORS
-// =================================================
-
 // Список разрешенных доменов
 const allowedOrigins = [
   FRONTEND_URL,
@@ -152,7 +166,7 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Headers', [
     'Content-Type', 
     'Authorization', 
-    'CSRF-Token' // Ключевое добавление
+    'CSRF-Token'
   ].join(', '));
   
   // Заголовки, доступные клиенту
@@ -295,10 +309,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// =================================================
-// ОБНОВЛЕННЫЕ НАСТРОЙКИ СЕССИЙ
-// =================================================
-
 // Session Configuration
 const sessionConfig = {
   name: process.env.SESSION_NAME || 'session',
@@ -313,10 +323,10 @@ const sessionConfig = {
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // true для HTTPS в production
+    secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     maxAge: 14 * 24 * 60 * 60 * 1000,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' для кросс-доменных запросов
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     domain: process.env.NODE_ENV === 'production' ? process.env.SESSION_DOMAIN : undefined
   }
 };
@@ -518,8 +528,11 @@ app.get('/logout', (req, res) => {
     if (err) logger.error(`Ошибка выхода: ${err.message}`, { stack: err.stack });
   });
   
+  // Сохраняем имя сессии до уничтожения
+  const sessionName = sessionConfig.name;
+  
   req.session.destroy(() => { 
-    res.clearCookie(sessionConfig.name); 
+    res.clearCookie(sessionName); 
     res.redirect('/'); 
   });
 });
@@ -684,7 +697,7 @@ app.get('/', (req, res) => req.query.connection_test ? res.sendStatus(204) : res
 app.use('/api', (req, res) => res.status(404).json({ error: 'API endpoint not found' }));
 
 // Обработка 404
-app.get(/(.*)/, (req, res) => {
+app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'Endpoint not found' });
   }
@@ -736,17 +749,15 @@ async function startServer() {
     logger.info(`- sameSite: ${sessionConfig.cookie.sameSite}`);
     logger.info(`- domain: ${sessionConfig.cookie.domain || 'default'}`);
     
-    // Тест шифрования в development
+    // Логирование всех маршрутов для проверки
     if (process.env.NODE_ENV === 'development') {
-      console.log('\n=== Testing encryption ===');
-      const testText = 'FamilySpaceSecret123';
-      const encrypted = encrypt(testText, process.env.ENC_KEY);
-      console.log('Encrypted:', encrypted);
-      
-      const decrypted = decrypt(encrypted, process.env.ENC_KEY);
-      console.log('Decrypted:', decrypted);
-      console.log('Test', decrypted === testText ? 'PASSED' : 'FAILED');
-      console.log('=======================\n');
+      logger.info('Зарегистрированные маршруты:');
+      app._router.stack.forEach((layer) => {
+        if (layer.route) {
+          const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
+          logger.info(`${methods} ${layer.route.path}`);
+        }
+      });
     }
   });
 }
