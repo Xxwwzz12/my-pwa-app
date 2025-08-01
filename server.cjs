@@ -18,7 +18,7 @@ const { body, validationResult } = require('express-validator');
 // Инициализация переменных окружения
 dotenv.config();
 
-// Получение текущего пути (исправлено для CommonJS)
+// Получение текущего пути
 const currentDir = path.resolve();
 
 // Импорт моделей
@@ -50,12 +50,44 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
+// Middleware для генерации nonce для CSP
+app.use((req, res, next) => {
+  res.locals.nonce = crypto.randomBytes(16).toString('base64');
+  next();
+});
+
+// Настройка Helmet с CSP
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+  "'self'", 
+  "'unsafe-inline'", // Разрешаем inline-скрипты
+  "https://apis.google.com"
+],
+      styleSrc: [
+        "'self'", 
+        "'unsafe-inline'", // Разрешаем inline-стили
+        "https://fonts.googleapis.com"
+      ],
+      imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com"],
+      connectSrc: ["'self'", "https://accounts.google.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      objectSrc: ["'none'"],
+      frameSrc: ["'self'", "https://accounts.google.com"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
+    }
+  },
+  crossOriginEmbedderPolicy: false,
+  referrerPolicy: { policy: 'same-origin' }
+}));
+
 // Базовые middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(compression());
-app.use(helmet());
 
 // Подключение к MongoDB
 async function connectToMongoDB() {
@@ -82,6 +114,12 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
 
 // Static files
 app.use(express.static(path.join(currentDir, 'public')));
+
+// Обработчик для manifest.json с правильным заголовком
+app.get('/manifest.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/manifest+json');
+  res.sendFile(path.join(currentDir, 'public', 'manifest.json'));
+});
 
 // Session Configuration
 const sessionConfig = {
@@ -210,6 +248,7 @@ async function startServer() {
     console.log('GET /logout');
     console.log('GET /api/user');
     console.log('GET /');
+    console.log('GET /manifest.json');
     console.log('------------------------------------');
   });
 }
